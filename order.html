@@ -1256,7 +1256,7 @@ function renderMenu() {
     const defaultSet = new Set(item.defaultAddons || []);
     const addonsHTML = item.addons?.length ? `
       <details class="addon-dropdown">
-        <summary class="addon-summary">Add-ons <span class="addon-arrow">&#9662;</span></summary>
+        <summary class="addon-summary">Options <span class="addon-arrow">&#9662;</span></summary>
         <ul class="addons-list">${item.addons.map(a => {
           const isDefault = defaultSet.has(a);
           return `<li class="addon-item${isDefault?' checked':''}" data-default="${isDefault}"><label><input type="checkbox"${isDefault?' checked':''} onchange="syncAddon(this)"/><span>${a}</span></label></li>`;
@@ -1264,13 +1264,16 @@ function renderMenu() {
       </details>` : '';
 
     const optionsHTML = item.options?.length ? `
-      <div class="item-options">${item.options.map(opt => `
-        <div class="option-select-group">
-          <label class="option-select-label">${opt.name}</label>
-          <select class="option-select" data-option-name="${opt.name}">
-            ${opt.choices.map(c => `<option value="${c}">${c}</option>`).join('')}
-          </select>
-        </div>`).join('')}
+      <div class="item-options">
+        <div class="addon-summary" style="pointer-events:none;border-bottom:1px solid var(--charcoal-border);padding:8px 12px;font-size:13px;letter-spacing:1px">Choices</div>
+        <div style="padding:10px 12px;display:flex;flex-direction:column;gap:10px">${item.options.map(opt => `
+          <div class="option-select-group">
+            <label class="option-select-label">${opt.name}</label>
+            <select class="option-select" data-option-name="${opt.name}">
+              ${opt.choices.map(c => `<option value="${c}">${c}</option>`).join('')}
+            </select>
+          </div>`).join('')}
+        </div>
       </div>` : '';
 
     const slideContent = item.photo
