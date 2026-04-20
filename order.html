@@ -307,51 +307,64 @@
     font-style: italic;
   }
 
-  /* Options (add-ons) — always-visible bulleted list */
-  .addon-list-wrap { margin-top: 10px; }
-  .addon-list-label {
+  /* Add-ons — collapsible dropdown */
+  .addon-dropdown {
+    margin-top: 10px;
+    border: 1px solid var(--charcoal-border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .addon-dropdown[open] .addon-arrow { transform: rotate(180deg); }
+  .addon-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 12px;
+    cursor: pointer;
     font-family: 'Oswald', sans-serif;
     font-size: 10px;
     letter-spacing: 3px;
     text-transform: uppercase;
     color: var(--cream-dim);
-    margin-bottom: 6px;
-    opacity: 0.7;
+    background: rgba(255,255,255,0.03);
+    list-style: none;
+    user-select: none;
+  }
+  .addon-summary::-webkit-details-marker { display: none; }
+  .addon-summary:hover { color: var(--cream); }
+  .addon-arrow {
+    font-size: 12px;
+    transition: transform 0.2s;
+    color: var(--gold-dark);
   }
   .addons-list {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 0;
     list-style: none;
-    padding: 0;
+    padding: 6px 0;
+    margin: 0;
+    background: rgba(0,0,0,0.12);
   }
   .addon-item {
-    border-radius: 2px;
+    border-radius: 0;
     transition: background 0.15s;
   }
   .addon-item label {
     display: flex;
     align-items: center;
-    gap: 7px;
-    padding: 3px 0;
+    gap: 9px;
+    padding: 5px 12px;
     cursor: pointer;
     font-size: 13px;
     color: var(--cream-dim);
     user-select: none;
   }
-  .addon-item label::before {
-    content: '•';
-    color: rgba(201,169,110,0.3);
-    font-size: 16px;
-    line-height: 1;
-    flex-shrink: 0;
-    margin-right: 2px;
-  }
+  .addon-item:hover { background: rgba(255,255,255,0.04); }
   .addon-item:hover label { color: var(--cream); }
-  .addon-item:hover label::before { color: var(--gold); }
-  .addon-item input[type="checkbox"] { width: 13px; height: 13px; accent-color: var(--gold); cursor: pointer; }
+  .addon-item input[type="checkbox"] { width: 13px; height: 13px; accent-color: var(--gold); cursor: pointer; flex-shrink: 0; }
   .addon-item.checked label { color: var(--gold-light); }
-  .addon-item.checked label::before { color: var(--gold); }
+  .addon-item.checked { background: rgba(201,169,110,0.06); }
 
   .btn-add {
     margin-top: auto;
@@ -1249,13 +1262,13 @@ function renderMenu() {
   function renderItemCard(item) {
     const defaultSet = new Set(item.defaultAddons || []);
     const addonsHTML = item.addons?.length ? `
-      <div class="addon-list-wrap">
-        <div class="addon-list-label">Options</div>
+      <details class="addon-dropdown">
+        <summary class="addon-summary">Add-ons <span class="addon-arrow">&#9662;</span></summary>
         <ul class="addons-list">${item.addons.map(a => {
           const isDefault = defaultSet.has(a);
           return `<li class="addon-item${isDefault?' checked':''}" data-default="${isDefault}"><label><input type="checkbox"${isDefault?' checked':''} onchange="syncAddon(this)"/><span>${a}</span></label></li>`;
         }).join('')}</ul>
-      </div>` : '';
+      </details>` : '';
 
     const optionsHTML = item.options?.length ? `
       <div class="item-options">${item.options.map(opt => `
