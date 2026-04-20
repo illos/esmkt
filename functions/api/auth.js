@@ -13,6 +13,14 @@ const CORS = {
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
+// Debug
+export async function onRequestGet({ env }) {
+  return Response.json({
+    hasAdminPassword: !!env.ADMIN_PASSWORD,
+    hasAuthSecret: !!env.AUTH_SECRET,
+  });
+}
+
 export async function onRequestOptions() {
   return new Response(null, { status: 204, headers: CORS });
 }
