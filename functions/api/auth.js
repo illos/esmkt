@@ -6,20 +6,12 @@
  *   ADMIN_PASSWORD  — the password the admin enters
  *   AUTH_SECRET     — random secret used to sign tokens (generate any long random string)
  */
- 
+
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
 };
-
-// Debug
-export async function onRequestGet({ env }) {
-  return Response.json({
-    hasAdminPassword: !!env.ADMIN_PASSWORD,
-    hasAuthSecret: !!env.AUTH_SECRET,
-  });
-}
 
 export async function onRequestOptions() {
   return new Response(null, { status: 204, headers: CORS });

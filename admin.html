@@ -720,6 +720,95 @@
     border-radius: 2px;
   }
 
+  /* ─── ADMIN TABS ─── */
+  .admin-tabs {
+    display: none;
+    position: relative; z-index: 1;
+    background: rgba(26,26,26,0.97);
+    border-bottom: 1px solid var(--charcoal-border);
+    padding: 0 28px;
+    gap: 0;
+    max-width: 100%;
+  }
+  .admin-tabs.visible { display: flex; }
+  .tab-btn {
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--cream-dim);
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 14px 20px 12px;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .tab-btn:hover { color: var(--cream); }
+  .tab-btn.active { color: var(--gold); border-bottom-color: var(--gold); }
+
+  /* ─── HOURS EDITOR ─── */
+  .hours-section-title {
+    font-family: 'Oswald', sans-serif;
+    font-size: 12px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 14px;
+    margin-top: 28px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .hours-section-title:first-child { margin-top: 0; }
+  .hours-section-title::after { content: ''; flex: 1; height: 1px; background: var(--charcoal-border); }
+  .hours-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 10px;
+  }
+  .hours-table th {
+    font-family: 'Oswald', sans-serif; font-size: 10px;
+    letter-spacing: 3px; text-transform: uppercase;
+    color: var(--cream-dim); text-align: left;
+    padding: 8px 12px; border-bottom: 1px solid var(--charcoal-border); font-weight: 400;
+  }
+  .hours-table td { padding: 7px 12px; border-bottom: 1px solid rgba(58,56,48,0.5); vertical-align: middle; }
+  .hours-table tr:last-child td { border-bottom: none; }
+  .hours-day-label {
+    font-family: 'Oswald', sans-serif; font-size: 13px;
+    letter-spacing: 2px; color: var(--cream); width: 44px;
+  }
+  .hours-time-input {
+    background: var(--charcoal-mid); border: 1px solid var(--charcoal-border);
+    color: var(--cream); font-family: 'Source Sans 3', sans-serif;
+    font-size: 14px; padding: 6px 10px; border-radius: 2px;
+    outline: none; width: 130px; transition: border-color 0.2s;
+  }
+  .hours-time-input:focus { border-color: var(--gold-dark); }
+  .hours-time-input:disabled { opacity: 0.35; cursor: not-allowed; }
+  .hours-closed-wrap {
+    display: flex; align-items: center; gap: 6px;
+    font-family: 'Oswald', sans-serif; font-size: 11px;
+    letter-spacing: 2px; text-transform: uppercase;
+    color: var(--cream-dim); cursor: pointer; white-space: nowrap;
+  }
+  .hours-closed-wrap input[type="checkbox"] { accent-color: var(--gold); width: 14px; height: 14px; cursor: pointer; }
+
+  /* ─── EVENTS ─── */
+  .event-list { display: flex; flex-direction: column; gap: 12px; }
+  .event-list-item {
+    background: var(--charcoal-card); border: 1px solid var(--charcoal-border);
+    border-radius: 4px; padding: 14px 16px;
+    display: grid; grid-template-columns: 1fr auto;
+    align-items: center; gap: 16px;
+  }
+  .event-list-meta {
+    font-family: 'Oswald', sans-serif; font-size: 10px;
+    letter-spacing: 3px; text-transform: uppercase; color: var(--gold);
+    margin-bottom: 4px;
+  }
+  .event-list-title { font-weight: 600; font-size: 15px; }
+  .event-list-desc { font-size: 12px; color: var(--cream-dim); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 500px; }
+
   /* ─── SPINNER ─── */
   .spinner {
     display: inline-block;
@@ -834,6 +923,13 @@
   <button class="nav-logout" id="navLogout" onclick="logout()">Sign Out</button>
 </nav>
 
+<!-- Admin Section Tabs -->
+<div class="admin-tabs" id="adminTabs">
+  <button class="tab-btn active" id="tabMenu"   onclick="switchTab('menu')">Menu</button>
+  <button class="tab-btn"        id="tabHours"  onclick="switchTab('hours')">Hours</button>
+  <button class="tab-btn"        id="tabEvents" onclick="switchTab('events')">Events</button>
+</div>
+
 <!-- ─── LOGIN PAGE ─── -->
 <div class="page active" id="pageLogin">
   <div class="login-wrap">
@@ -861,6 +957,95 @@
   </div>
   <div id="categoryContainer">
     <div style="padding:40px;text-align:center;color:var(--cream-dim);font-style:italic"><span class="spinner"></span> Loading…</div>
+  </div>
+</div>
+
+<!-- ─── HOURS PAGE ─── -->
+<div class="page" id="pageHours">
+  <div class="hours-section-title">Store Hours</div>
+  <div class="form-card" style="margin-bottom:24px">
+    <table class="hours-table" id="storeHoursTable">
+      <thead><tr>
+        <th style="width:50px">Day</th>
+        <th>Opens</th><th>Closes</th>
+        <th style="width:90px">Closed</th>
+      </tr></thead>
+      <tbody id="storeHoursBody"></tbody>
+    </table>
+  </div>
+
+  <div class="hours-section-title">Deli Hours</div>
+  <div class="form-card" style="margin-bottom:28px">
+    <table class="hours-table" id="deliHoursTable">
+      <thead><tr>
+        <th style="width:50px">Day</th>
+        <th>Opens</th><th>Closes</th>
+        <th style="width:90px">Closed</th>
+      </tr></thead>
+      <tbody id="deliHoursBody"></tbody>
+    </table>
+  </div>
+
+  <button class="btn-save" id="saveHoursBtn" onclick="saveHours()">Save Hours</button>
+  <span id="savingHoursIndicator" style="display:none;align-items:center;color:var(--cream-dim);font-size:13px;margin-left:16px">
+    <span class="spinner"></span> Saving…
+  </span>
+</div>
+
+<!-- ─── EVENTS LIST PAGE ─── -->
+<div class="page" id="pageEvents">
+  <div class="list-header">
+    <span class="section-title" style="margin:0;flex:1">Upcoming Events</span>
+    <button class="btn-add-item" onclick="openEventForm(null)">+ Add Event</button>
+  </div>
+  <div id="eventListContainer">
+    <div style="padding:40px;text-align:center;color:var(--cream-dim);font-style:italic"><span class="spinner"></span> Loading…</div>
+  </div>
+</div>
+
+<!-- ─── EVENT FORM PAGE ─── -->
+<div class="page" id="pageEventForm">
+  <button class="form-back" onclick="switchTab('events')">&#8592; Back to Events</button>
+  <div class="section-title" id="eventFormTitle">Add Event</div>
+  <div class="form-card">
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="efTitle">Event Title *</label>
+        <input class="form-input" type="text" id="efTitle" placeholder="e.g. 4th of July Fireworks Sale"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="efDate">Date *</label>
+        <input class="form-input" type="date" id="efDate"/>
+      </div>
+    </div>
+    <div class="form-group-full">
+      <label class="form-label" for="efDesc">Description</label>
+      <textarea class="form-textarea" id="efDesc" placeholder="Details about this event…" style="min-height:120px"></textarea>
+    </div>
+    <!-- Event Image Upload -->
+    <div class="form-group-full">
+      <label class="form-label">Event Photo</label>
+      <div class="image-upload-area" id="eventUploadArea">
+        <input type="file" id="eventPhotoFile" accept="image/jpeg,image/png,image/webp,image/gif" onchange="handleEventPhotoSelect(this)"/>
+        <div class="upload-placeholder" id="eventUploadPlaceholder">
+          <span class="upload-icon">&#128247;</span>
+          <span class="upload-label">Click or drag to upload</span>
+          <span class="upload-hint">JPEG, PNG, WebP or GIF &middot; Max 5 MB</span>
+        </div>
+        <div class="image-preview-wrap" id="eventPreviewWrap">
+          <img class="image-preview" id="eventImagePreview" src="" alt="Preview"/>
+          <button class="image-preview-remove" onclick="clearEventPhoto(event)" title="Remove photo">&#215;</button>
+        </div>
+      </div>
+      <div class="current-image-note" id="eventCurrentImageNote"></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-save" id="saveEventBtn" onclick="saveEvent()">Save Event</button>
+      <button class="btn-cancel" onclick="switchTab('events')">Cancel</button>
+      <span id="savingEventIndicator" style="display:none;align-items:center;color:var(--cream-dim);font-size:13px">
+        <span class="spinner"></span> Saving…
+      </span>
+    </div>
   </div>
 </div>
 
@@ -961,20 +1146,22 @@ let clearExistingPhoto = false;
 
 // ─── BOOT ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-  if (authToken) {
-    showList();
-  }
-  // Drag-over styling for upload area
-  const area = document.getElementById('uploadArea');
+  if (authToken) showList();
+  setupUploadArea('uploadArea', applyPhotoFile);
+  setupUploadArea('eventUploadArea', applyEventPhotoFile);
+});
+
+function setupUploadArea(areaId, onFileFn) {
+  const area = document.getElementById(areaId);
+  if (!area) return;
   area.addEventListener('dragover', e => { e.preventDefault(); area.classList.add('drag-over'); });
   area.addEventListener('dragleave', () => area.classList.remove('drag-over'));
   area.addEventListener('drop', e => {
-    e.preventDefault();
-    area.classList.remove('drag-over');
+    e.preventDefault(); area.classList.remove('drag-over');
     const f = e.dataTransfer?.files?.[0];
-    if (f) applyPhotoFile(f);
+    if (f) onFileFn(f);
   });
-});
+}
 
 // ─── AUTH ─────────────────────────────────────────────────────────────────────
 async function doLogin() {
@@ -1019,6 +1206,7 @@ function logout() {
   sessionStorage.removeItem('esm_admin_token');
   showPage('pageLogin');
   document.getElementById('navLogout').classList.remove('visible');
+  document.getElementById('adminTabs').classList.remove('visible');
 }
 
 // ─── PAGE ROUTING ─────────────────────────────────────────────────────────────
@@ -1027,10 +1215,21 @@ function showPage(id) {
   document.getElementById(id).classList.add('active');
 }
 
+let activeTab = 'menu';
+
+function switchTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1))?.classList.add('active');
+  if (tab === 'menu')   { showPage('pageList');   loadMenu(); }
+  if (tab === 'hours')  { showPage('pageHours');  loadHours(); }
+  if (tab === 'events') { showPage('pageEvents'); loadEvents(); }
+}
+
 async function showList() {
-  showPage('pageList');
   document.getElementById('navLogout').classList.add('visible');
-  await loadMenu();
+  document.getElementById('adminTabs').classList.add('visible');
+  switchTab('menu');
 }
 
 // ─── MENU API ─────────────────────────────────────────────────────────────────
@@ -1559,6 +1758,216 @@ function promptDeleteItem(id, name) {
       showToast('Item deleted.');
       renderCategories();
     } catch (e) { showToast(e.message, true); }
+  });
+}
+
+// ─── HOURS ────────────────────────────────────────────────────────────────────
+let settingsData = null;
+
+async function loadHours() {
+  try {
+    const res  = await apiFetch('/api/settings');
+    const data = await res.json();
+    settingsData = data;
+    renderHoursTable('storeHoursBody', data.storeHours);
+    renderHoursTable('deliHoursBody',  data.deliHours);
+  } catch(e) { showToast('Could not load hours.', true); }
+}
+
+function renderHoursTable(tbodyId, hours) {
+  const tbody = document.getElementById(tbodyId);
+  tbody.innerHTML = hours.map((h, i) => `
+    <tr>
+      <td class="hours-day-label">${h.day}</td>
+      <td><input class="hours-time-input" type="time" value="${h.open || ''}" id="${tbodyId}-open-${i}" ${h.closed ? 'disabled' : ''}/></td>
+      <td><input class="hours-time-input" type="time" value="${h.close || ''}" id="${tbodyId}-close-${i}" ${h.closed ? 'disabled' : ''}/></td>
+      <td>
+        <label class="hours-closed-wrap">
+          <input type="checkbox" ${h.closed ? 'checked' : ''} onchange="toggleDayClosed('${tbodyId}',${i},this.checked)"/>
+          Closed
+        </label>
+      </td>
+    </tr>`).join('');
+}
+
+function toggleDayClosed(tbodyId, idx, closed) {
+  const openEl  = document.getElementById(`${tbodyId}-open-${idx}`);
+  const closeEl = document.getElementById(`${tbodyId}-close-${idx}`);
+  openEl.disabled  = closed;
+  closeEl.disabled = closed;
+  if (closed) { openEl.value = ''; closeEl.value = ''; }
+}
+
+function collectHours(tbodyId, days) {
+  return days.map((h, i) => {
+    const closed = document.querySelector(`#${tbodyId} tr:nth-child(${i+1}) input[type="checkbox"]`).checked;
+    const open   = document.getElementById(`${tbodyId}-open-${i}`).value  || null;
+    const close  = document.getElementById(`${tbodyId}-close-${i}`).value || null;
+    return { day: h.day, open: closed ? null : open, close: closed ? null : close, closed };
+  });
+}
+
+async function saveHours() {
+  if (!settingsData) return;
+  const btn = document.getElementById('saveHoursBtn');
+  const ind = document.getElementById('savingHoursIndicator');
+  btn.disabled = true; ind.style.display = 'flex';
+  try {
+    const storeHours = collectHours('storeHoursBody', settingsData.storeHours);
+    const deliHours  = collectHours('deliHoursBody',  settingsData.deliHours);
+    const res = await apiFetch('/api/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ storeHours, deliHours }),
+    });
+    if (!res.ok) throw new Error('Save failed');
+    settingsData = { storeHours, deliHours };
+    showToast('Hours saved.');
+  } catch(e) { showToast(e.message, true); }
+  finally { btn.disabled = false; ind.style.display = 'none'; }
+}
+
+// ─── EVENTS ───────────────────────────────────────────────────────────────────
+let events = [];
+let editingEvent = null;
+let newEventPhotoFile = null;
+let clearEventPhoto_flag = false;
+
+async function loadEvents() {
+  const container = document.getElementById('eventListContainer');
+  container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--cream-dim);font-style:italic"><span class="spinner"></span> Loading…</div>';
+  try {
+    const res  = await apiFetch('/api/events');
+    const data = await res.json();
+    events = data.events || [];
+    renderEventList();
+  } catch(e) { container.innerHTML = `<div style="padding:20px;color:var(--danger)">${e.message}</div>`; }
+}
+
+function renderEventList() {
+  const container = document.getElementById('eventListContainer');
+  if (!events.length) {
+    container.innerHTML = '<div class="empty-state">No events yet. Click "+ Add Event" to create one.</div>';
+    return;
+  }
+  container.innerHTML = `<div class="event-list">${events.map(ev => {
+    const dateStr = ev.date ? new Date(ev.date + 'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
+    return `<div class="event-list-item">
+      <div>
+        <div class="event-list-meta">${dateStr}</div>
+        <div class="event-list-title">${esc(ev.title)}</div>
+        <div class="event-list-desc">${esc(ev.description||'')}</div>
+      </div>
+      <div class="table-actions">
+        <button class="btn-edit" onclick="openEventForm(${ev.id})">Edit</button>
+        <button class="btn-delete" onclick="promptDeleteEvent(${ev.id},'${esc(ev.title)}')">Delete</button>
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function openEventForm(eventId) {
+  editingEvent = eventId ? events.find(e => e.id === eventId) || null : null;
+  newEventPhotoFile = null; clearEventPhoto_flag = false;
+  document.getElementById('eventFormTitle').textContent = editingEvent ? 'Edit Event' : 'Add Event';
+  document.getElementById('efTitle').value = editingEvent?.title       || '';
+  document.getElementById('efDate').value  = editingEvent?.date        || '';
+  document.getElementById('efDesc').value  = editingEvent?.description || '';
+  resetEventPhotoUI();
+  const note = document.getElementById('eventCurrentImageNote');
+  if (editingEvent?.photo) {
+    document.getElementById('eventImagePreview').src = `/images/${editingEvent.photo}`;
+    document.getElementById('eventPreviewWrap').classList.add('has-image');
+    document.getElementById('eventUploadPlaceholder').style.display = 'none';
+    note.textContent = 'Current photo shown. Upload new to replace, or × to remove.';
+  } else { note.textContent = ''; }
+  showPage('pageEventForm');
+}
+
+function resetEventPhotoUI() {
+  document.getElementById('eventPhotoFile').value = '';
+  document.getElementById('eventImagePreview').src = '';
+  document.getElementById('eventPreviewWrap').classList.remove('has-image');
+  document.getElementById('eventUploadPlaceholder').style.display = '';
+}
+
+function handleEventPhotoSelect(input) {
+  const f = input.files?.[0]; if (f) applyEventPhotoFile(f);
+}
+function applyEventPhotoFile(file) {
+  if (!file.type.startsWith('image/')) { showToast('Please select an image file.', true); return; }
+  if (file.size > 5*1024*1024)         { showToast('Image must be under 5 MB.', true);   return; }
+  newEventPhotoFile = file; clearEventPhoto_flag = false;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('eventImagePreview').src = e.target.result;
+    document.getElementById('eventPreviewWrap').classList.add('has-image');
+    document.getElementById('eventUploadPlaceholder').style.display = 'none';
+    document.getElementById('eventCurrentImageNote').textContent = `Ready to upload: ${file.name}`;
+  };
+  reader.readAsDataURL(file);
+}
+function clearEventPhoto(e) {
+  e.stopPropagation(); e.preventDefault();
+  newEventPhotoFile = null; clearEventPhoto_flag = true;
+  resetEventPhotoUI();
+  document.getElementById('eventCurrentImageNote').textContent = '';
+}
+
+async function saveEvent() {
+  const title = document.getElementById('efTitle').value.trim();
+  const date  = document.getElementById('efDate').value;
+  const desc  = document.getElementById('efDesc').value.trim();
+  if (!title) { showToast('Event title is required.', true); return; }
+  if (!date)  { showToast('Please select a date.', true);   return; }
+  const saveBtn = document.getElementById('saveEventBtn');
+  const ind     = document.getElementById('savingEventIndicator');
+  saveBtn.disabled = true; ind.style.display = 'flex';
+  try {
+    let photoFilename = editingEvent?.photo || null;
+    if (clearEventPhoto_flag) photoFilename = null;
+    if (newEventPhotoFile) {
+      const fd = new FormData();
+      fd.append('file', newEventPhotoFile);
+      fd.append('itemName', title);
+      const upRes  = await apiFetch('/api/upload', { method: 'POST', body: fd });
+      const upData = await upRes.json();
+      if (!upRes.ok) throw new Error(upData.error || 'Photo upload failed.');
+      photoFilename = upData.filename;
+    }
+    const event = { title, date, description: desc, photo: photoFilename };
+    if (editingEvent) event.id = editingEvent.id;
+    const method = editingEvent ? 'PUT' : 'POST';
+    const res    = await apiFetch('/api/events', {
+      method, headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Save failed.');
+    if (editingEvent) {
+      const idx = events.findIndex(e => e.id === data.event.id);
+      if (idx !== -1) events[idx] = data.event; else events.push(data.event);
+    } else { events.push(data.event); }
+    showToast(editingEvent ? 'Event updated.' : 'Event added.');
+    renderEventList();
+    showPage('pageEvents');
+  } catch(e) { showToast(e.message, true); }
+  finally { saveBtn.disabled = false; ind.style.display = 'none'; }
+}
+
+function promptDeleteEvent(id, title) {
+  showConfirmModal('Delete Event?', `Delete "${title}"? This cannot be undone.`, async () => {
+    try {
+      const res  = await apiFetch('/api/events', {
+        method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Delete failed.');
+      events = events.filter(e => e.id !== id);
+      renderEventList();
+      showToast('Event deleted.');
+    } catch(e) { showToast(e.message, true); }
   });
 }
 

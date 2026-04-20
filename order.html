@@ -1054,85 +1054,93 @@ let slideshowTimers = {};
 // ─── BOOT ────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('footerYear').textContent = new Date().getFullYear();
-  checkDeliHours();
-  populatePickupTimes();
+  // checkDeliHours and populatePickupTimes are called inside initMenu()
+  // after loading deli hours from the API
   await initMenu();
 });
 
-// ─── LOAD MENU FROM API ───────────────────────────────────────────────────────
+// ─── DELI HOURS ──────────────────────────────────────────────────────────────
+// Fallback deli hours (Mon-Sat 9am-3pm, Sun closed)
+const DAYS_ARR = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+let deliHours = DAYS_ARR.map((d,i) => ({ day:d, open:i<6?'09:00':null, close:i<6?'15:00':null, closed:i===6 }));
+
+function toMins(t) { if (!t) return null; const [h,m]=t.split(':').map(Number); return h*60+m; }
+
+function getTodayDeliHours() {
+  const jsDay = new Date().getDay(); // 0=Sun
+  const idx   = jsDay === 0 ? 6 : jsDay - 1;
+  return deliHours[idx] || null;
+}
+
+// ─── LOAD MENU + SETTINGS FROM API ───────────────────────────────────────────
 async function initMenu() {
   const grid = document.getElementById('menuGrid');
   grid.innerHTML = '<div class="menu-loading"><span>Loading menu…</span></div>';
   try {
-    const res  = await fetch('/api/menu');
-    if (!res.ok) throw new Error('API error');
-    const data = await res.json();
-    MENU = data.items || [];
-    MENU_CATEGORIES = data.categories || [];
+    const [menuRes, settingsRes] = await Promise.all([
+      fetch('/api/menu'),
+      fetch('/api/settings'),
+    ]);
+    if (menuRes.ok) {
+      const data = await menuRes.json();
+      MENU = data.items || [];
+      MENU_CATEGORIES = data.categories || [];
+    } else {
+      MENU = MENU_FALLBACK;
+    }
+    if (settingsRes.ok) {
+      const sData = await settingsRes.json();
+      if (Array.isArray(sData.deliHours) && sData.deliHours.length === 7) {
+        deliHours = sData.deliHours;
+      }
+    }
   } catch (_) {
-    // Fall back to hardcoded data when running locally or API is unavailable
     MENU = MENU_FALLBACK;
   }
+  populatePickupTimes();
+  checkDeliHours();
   renderMenu();
 }
 
 // ─── DELI HOURS CHECK ────────────────────────────────────────────────────────
-/**
- * Shows the "Deli is Closed" banner and hides the menu/order content
- * when the current time is outside deli hours (9 AM–3 PM, Mon–Sat).
- */
 function checkDeliHours() {
-  const now  = new Date();
-  const day  = now.getDay();              // 0 = Sun, 6 = Sat
-  const mins = now.getHours() * 60 + now.getMinutes();
-
-  const isWeekday  = day >= 1 && day <= 6;  // Mon–Sat
-  const isInWindow = mins >= 9 * 60 && mins < 15 * 60; // 9:00 AM–3:00 PM
-  const isOpen     = isWeekday && isInWindow;
-
+  const today = getTodayDeliHours();
+  const now   = new Date();
+  const mins  = now.getHours() * 60 + now.getMinutes();
+  let isOpen  = false;
+  if (today && !today.closed && today.open && today.close) {
+    isOpen = mins >= toMins(today.open) && mins < toMins(today.close);
+  }
   document.getElementById('deliClosedBanner').classList.toggle('visible', !isOpen);
   document.getElementById('deliOpenContent').style.display = isOpen ? 'block' : 'none';
 }
 
 // ─── PICKUP TIME DROPDOWN ────────────────────────────────────────────────────
-/**
- * Populates the pickup time <select> with 30-minute slots between 9 AM and 3 PM,
- * showing only slots that are still in the future relative to the current time.
- * "As soon as ready" is always the first option.
- */
 function populatePickupTimes() {
   const select = document.getElementById('pickupTime');
   if (!select) return;
-
-  // Clear everything except the first "As soon as ready" option
   while (select.options.length > 1) select.remove(1);
 
-  const now     = new Date();
+  const today  = getTodayDeliHours();
+  const START  = today && !today.closed && today.open  ? toMins(today.open)  : 9  * 60;
+  const END    = today && !today.closed && today.close ? toMins(today.close) : 15 * 60;
+  const STEP   = 30;
+  const now    = new Date();
   const nowMins = now.getHours() * 60 + now.getMinutes();
 
-  // Slots: 9:00 AM (540 min) to 3:00 PM (900 min) in 30-min steps
-  const START = 9  * 60;   // 9:00 AM
-  const END   = 15 * 60;   // 3:00 PM
-  const STEP  = 30;         // minutes between slots
-
-  for (let mins = START; mins <= END; mins += STEP) {
-    // Only add slots that are strictly later than right now
-    if (mins <= nowMins) continue;
-
-    const h   = Math.floor(mins / 60);
-    const m   = mins % 60;
+  for (let m = START; m <= END; m += STEP) {
+    if (m <= nowMins) continue;
+    const h    = Math.floor(m / 60);
+    const min  = m % 60;
     const ampm = h < 12 ? 'AM' : 'PM';
-    const h12  = h > 12 ? h - 12 : h === 0 ? 12 : h;
-    const mStr = m === 0 ? '00' : String(m).padStart(2, '0');
-    const label = `${h12}:${mStr} ${ampm}`;
-
+    const h12  = h % 12 || 12;
+    const label = `${h12}:${String(min).padStart(2,'0')} ${ampm}`;
     const opt = document.createElement('option');
-    opt.value = label;
-    opt.textContent = label;
+    opt.value = label; opt.textContent = label;
     select.appendChild(opt);
   }
 
-  // If it's after 3 PM all slots are gone — add a friendly note
+  // If it's after closing all slots are gone — add a friendly note
   if (select.options.length === 1) {
     const opt = document.createElement('option');
     opt.value    = 'As soon as ready';

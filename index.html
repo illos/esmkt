@@ -403,8 +403,53 @@
     text-transform: uppercase;
   }
 
+  /* ─── EVENTS ─── */
+  .events { background: var(--charcoal-mid); }
+  .events-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 20px;
+  }
+  .event-card {
+    background: var(--charcoal-card);
+    border: 1px solid var(--charcoal-border);
+    border-radius: 4px;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    transition: border-color 0.2s, transform 0.2s;
+    position: relative;
+  }
+  .event-card:hover { border-color: var(--gold-dark); transform: translateY(-2px); }
+  .event-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(to right, var(--gold-dark), var(--gold), var(--gold-dark));
+  }
+  .event-img {
+    width: 100%; height: 180px; object-fit: cover;
+    display: block; background: var(--charcoal-mid);
+  }
+  .event-img-placeholder {
+    width: 100%; height: 80px; display: flex;
+    align-items: center; justify-content: center;
+    color: rgba(201,169,110,0.2); font-size: 32px;
+    background: var(--charcoal-mid);
+  }
+  .event-body { padding: 20px 22px; flex: 1; display: flex; flex-direction: column; gap: 8px; }
+  .event-date {
+    font-family: 'Oswald', sans-serif; font-size: 10px;
+    letter-spacing: 4px; text-transform: uppercase; color: var(--gold);
+  }
+  .event-title {
+    font-family: 'Oswald', sans-serif; font-size: 18px;
+    letter-spacing: 2px; color: var(--cream); text-transform: uppercase;
+    font-weight: 600; line-height: 1.2;
+  }
+  .event-desc { font-size: 13px; color: var(--cream-dim); line-height: 1.6; }
+  @media (max-width: 600px) { .events-grid { grid-template-columns: 1fr; } }
+
   /* ─── SERVICES ─── */
-  .services { background: var(--charcoal-mid); }
+  .services { background: var(--charcoal); }
 
   .services-grid {
     display: grid;
@@ -571,16 +616,25 @@
       <div class="hours-card">
         <div class="hours-card-type">Market &middot; Gas &middot; RV</div>
         <div class="hours-card-name">Esmeralda Market</div>
-        <div class="hours-time">8:30 AM &ndash; 7:30 PM</div>
-        <div class="hours-days">Open Every Day</div>
+        <div class="hours-time" id="storeHoursTime">8:30 AM &ndash; 7:30 PM</div>
+        <div class="hours-days" id="storeHoursDays">Open Every Day</div>
       </div>
       <div class="hours-card">
         <div class="hours-card-type">Hot Food &middot; Made Fresh Daily</div>
         <div class="hours-card-name">Deli Counter</div>
-        <div class="hours-time">9:00 AM &ndash; 3:00 PM</div>
-        <div class="hours-days">Monday &ndash; Saturday</div>
+        <div class="hours-time" id="deliHoursTime">9:00 AM &ndash; 3:00 PM</div>
+        <div class="hours-days" id="deliHoursDays">Monday &ndash; Saturday</div>
       </div>
     </div>
+  </div>
+</section>
+
+<!-- ─── EVENTS ─── -->
+<section class="section events" id="events" style="display:none">
+  <div class="section-inner">
+    <div class="section-label">Coming Up</div>
+    <h2 class="section-heading">Upcoming Events</h2>
+    <div class="events-grid" id="eventsGrid"></div>
   </div>
 </section>
 
@@ -686,29 +740,142 @@
 <script>
   document.getElementById('footerYear').textContent = new Date().getFullYear();
 
-  /* ─── STORE OPEN / CLOSED STATUS ────────────────────────────────────────── */
-  // Market hours: 8:30 AM – 7:30 PM every day
-  function updateStoreStatus() {
-    const now     = new Date();
-    const h       = now.getHours();
-    const m       = now.getMinutes();
-    const current = h * 60 + m;         // minutes since midnight
-    const opens   = 8 * 60 + 30;        // 8:30 → 510
-    const closes  = 19 * 60 + 30;       // 7:30 PM → 1170
+  // ─── Fallback hours (used if API is unavailable) ──────────────────────────
+  const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  let siteSettings = {
+    storeHours: DAYS.map(d => ({ day:d, open:'08:30', close:'19:30', closed:false })),
+    deliHours:  DAYS.map((d,i) => ({ day:d, open:i<6?'09:00':null, close:i<6?'15:00':null, closed:i===6 })),
+  };
 
-    const el = document.getElementById('storeStatus');
+  // ─── Time helpers ─────────────────────────────────────────────────────────
+  function toMins(t) { if (!t) return null; const [h,m] = t.split(':').map(Number); return h*60+m; }
+  function fmt12(t) {
+    if (!t) return '—';
+    const [h,m] = t.split(':').map(Number);
+    const ampm = h < 12 ? 'AM' : 'PM';
+    const h12  = h % 12 || 12;
+    return `${h12}:${String(m).padStart(2,'0')} ${ampm}`;
+  }
+
+  function todayHours(hoursArr) {
+    // JS getDay(): 0=Sun, 1=Mon … 6=Sat
+    // Our array: 0=Mon … 6=Sun
+    const jsDay = new Date().getDay();
+    const idx   = jsDay === 0 ? 6 : jsDay - 1;
+    return hoursArr[idx] || null;
+  }
+
+  function summarizeHours(hoursArr) {
+    // Returns { timeStr, daysStr } for display in the hours card
+    const open  = hoursArr.filter(h => !h.closed);
+    const closed = hoursArr.filter(h => h.closed);
+    if (!open.length) return { timeStr: 'Closed', daysStr: 'All Days' };
+
+    // Check if all open days have same time
+    const times = [...new Set(open.map(h => `${h.open}–${h.close}`))];
+    const timeStr = times.length === 1
+      ? `${fmt12(open[0].open)} \u2013 ${fmt12(open[0].close)}`
+      : `Varies`;
+
+    let daysStr;
+    if (!closed.length) {
+      daysStr = 'Open Every Day';
+    } else if (closed.length === 1) {
+      daysStr = `Closed ${closed[0].day}`;
+    } else {
+      // Find contiguous ranges of open days
+      const openDays = open.map(h => h.day);
+      if (openDays.length >= 5) {
+        daysStr = `${openDays[0]} \u2013 ${openDays[openDays.length-1]}`;
+      } else {
+        daysStr = openDays.join(', ');
+      }
+    }
+    return { timeStr, daysStr };
+  }
+
+  // ─── Update store open/closed pill ────────────────────────────────────────
+  function updateStoreStatus() {
+    const today = todayHours(siteSettings.storeHours);
+    const el    = document.getElementById('storeStatus');
+    if (!today || today.closed || !today.open) {
+      el.textContent = 'Closed Today';
+      el.className   = 'store-status is-closed';
+      return;
+    }
+    const now     = new Date();
+    const current = now.getHours() * 60 + now.getMinutes();
+    const opens   = toMins(today.open);
+    const closes  = toMins(today.close);
     if (current >= opens && current < closes) {
       el.textContent = 'Open Now';
       el.className   = 'store-status is-open';
+    } else if (current < opens) {
+      el.textContent = `Opens ${fmt12(today.open)}`;
+      el.className   = 'store-status is-closed';
     } else {
-      el.textContent = 'Opens at 8:30 AM';
+      el.textContent = `Opens ${fmt12(today.open)} Tomorrow`;
       el.className   = 'store-status is-closed';
     }
   }
 
-  updateStoreStatus();
-  // Refresh every minute so it flips right at open/close time
-  setInterval(updateStoreStatus, 60 * 1000);
+  // ─── Render hours cards ───────────────────────────────────────────────────
+  function renderHoursCards() {
+    const store = summarizeHours(siteSettings.storeHours);
+    const deli  = summarizeHours(siteSettings.deliHours);
+    document.getElementById('storeHoursTime').textContent = store.timeStr;
+    document.getElementById('storeHoursDays').textContent = store.daysStr;
+    document.getElementById('deliHoursTime').textContent  = deli.timeStr;
+    document.getElementById('deliHoursDays').textContent  = deli.daysStr;
+  }
+
+  // ─── Load settings + events from API ─────────────────────────────────────
+  async function initSite() {
+    try {
+      const [settingsRes, eventsRes] = await Promise.all([
+        fetch('/api/settings'),
+        fetch('/api/events'),
+      ]);
+      if (settingsRes.ok) siteSettings = await settingsRes.json();
+      if (eventsRes.ok) {
+        const eData = await eventsRes.json();
+        renderEvents(eData.events || []);
+      }
+    } catch(_) { /* API unavailable — use fallback */ }
+    renderHoursCards();
+    updateStoreStatus();
+  }
+
+  // ─── Render events section ────────────────────────────────────────────────
+  function renderEvents(events) {
+    if (!events.length) return; // section stays hidden
+    const grid    = document.getElementById('eventsGrid');
+    const section = document.getElementById('events');
+    grid.innerHTML = events.map(ev => {
+      const dateStr = ev.date
+        ? new Date(ev.date + 'T12:00:00').toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' })
+        : '';
+      const imgHtml = ev.photo
+        ? `<img class="event-img" src="/images/${ev.photo}" alt="${escHtml(ev.title)}" loading="lazy"/>`
+        : `<div class="event-img-placeholder">&#10022;</div>`;
+      return `<div class="event-card">
+        ${imgHtml}
+        <div class="event-body">
+          ${dateStr ? `<div class="event-date">${dateStr}</div>` : ''}
+          <div class="event-title">${escHtml(ev.title)}</div>
+          ${ev.description ? `<div class="event-desc">${escHtml(ev.description)}</div>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+    section.style.display = '';
+  }
+
+  function escHtml(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  initSite();
+  setInterval(updateStoreStatus, 60_000);
 </script>
 </body>
 </html>
