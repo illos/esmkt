@@ -405,8 +405,11 @@
   }
 
   .card-addons-row {
+    font-size: 12px;
+    color: var(--cream-dim);
+    line-height: 1.5;
     border-top: 1px solid rgba(58,56,48,0.5);
-    padding-top: 8px;
+    padding-top: 7px;
     margin-top: 2px;
   }
 
@@ -415,34 +418,8 @@
     font-size: 10px;
     letter-spacing: 2px;
     text-transform: uppercase;
-    color: var(--cream-dim);
-    margin-bottom: 5px;
-    opacity: 0.7;
-  }
-
-  .card-addons-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-  }
-
-  .card-addons-list li {
-    font-size: 12px;
-    color: var(--cream-dim);
-    line-height: 1.4;
-    display: flex;
-    align-items: baseline;
-    gap: 6px;
-  }
-
-  .card-addons-list li::before {
-    content: '•';
-    color: rgba(201,169,110,0.35);
-    font-size: 14px;
-    flex-shrink: 0;
+    color: var(--gold);
+    margin-right: 4px;
   }
 
   /* ─── CATEGORY HEADING ─── */
@@ -595,21 +572,28 @@
       gap: 16px;
     }
 
-    /* ── Cards ── */
+    /* ── Cards: tightened for two rows per page ── */
     .menu-card {
       break-inside: avoid;
       animation: none !important;
       border-radius: 4px;
     }
 
-    /* Fix the few hardcoded dark colors inside cards */
+    /* Shorter image so two rows fit on page 1 */
     .card-img-wrap {
+      height: 120px !important;
       background: #D8D3CA !important;
     }
 
     .card-img-placeholder {
       background: linear-gradient(135deg, #E0DDD6 0%, #CCC8C0 100%) !important;
       color: rgba(122,92,40,0.25) !important;
+    }
+
+    /* Tighten card body padding */
+    .card-body {
+      padding: 10px 14px 12px !important;
+      gap: 5px !important;
     }
   }
 </style>
@@ -619,7 +603,7 @@
 <!-- Print-only header -->
 <div class="print-header">
   <span class="print-header-name">E<span>S</span>MERALDA Market</span>
-  <span class="print-header-sub">Deli Menu</span>
+  <span class="print-header-sub">Deli Menu &nbsp;&middot;&nbsp; Call to Order &nbsp;&middot;&nbsp; 775-572-3200</span>
 </div>
 
 <!-- Site Nav -->
@@ -839,8 +823,7 @@ function renderMenu() {
     // Add-ons: bulleted list
     const addonsHTML = item.addons?.length
       ? `<div class="card-addons-row">
-          <div class="card-addons-label">Options</div>
-          <ul class="card-addons-list">${item.addons.map(a => `<li>${escHtml(a)}</li>`).join('')}</ul>
+          <span class="card-addons-label">Options:</span>${item.addons.map(a => escHtml(a)).join(' &middot; ')}
         </div>` : '';
 
     const card = document.createElement('div');
