@@ -521,10 +521,10 @@
       -webkit-print-color-adjust: exact;
     }
 
-    /* ── Light parchment background ── */
+    /* ── Pure white page ── */
     html, body {
-      background: #f5f0e8 !important;
-      color: #1c1610 !important;
+      background: #fff !important;
+      color: #111 !important;
     }
 
     body::before { display: none !important; }
@@ -542,110 +542,141 @@
     .print-header {
       display: block !important;
       text-align: center;
-      padding: 22px 0 16px;
-      margin-bottom: 18px;
-      border-bottom: 3px double #1c1610;
+      padding: 24px 0 18px;
+      margin-bottom: 20px;
+      border-top: 3px solid #111;
+      border-bottom: 3px solid #111;
+      position: relative;
     }
+
+    /* Thin inner rule above and below */
+    .print-header::before,
+    .print-header::after {
+      content: '';
+      display: block;
+      border-top: 1px solid #111;
+      margin: 4px 12px;
+    }
+    .print-header::before { margin-bottom: 12px; }
+    .print-header::after  { margin-top: 12px; }
 
     .print-header-name {
       font-family: 'Oswald', sans-serif;
-      font-size: 38px;
+      font-size: 40px;
       font-weight: 700;
-      letter-spacing: 9px;
+      letter-spacing: 10px;
       text-transform: uppercase;
-      color: #1c1610;
+      color: #111;
       display: block;
       line-height: 1;
     }
 
     .print-header-sub {
       font-family: Georgia, 'Times New Roman', serif;
-      font-size: 12px;
-      letter-spacing: 6px;
+      font-size: 11px;
+      letter-spacing: 7px;
       text-transform: uppercase;
-      color: #5c4933;
+      color: #555;
       display: block;
-      margin-top: 7px;
+      margin-top: 8px;
     }
 
     /* ── Page layout ── */
     .page-wrap {
       padding: 0 16px 20px;
       max-width: 100%;
-      background: #f5f0e8 !important;
+      background: #fff !important;
     }
 
     /* ── 2-column card grid ── */
     .menu-grid {
       grid-template-columns: 1fr 1fr;
       gap: 0;
+      border: 1px solid #ddd;
     }
 
-    /* ── Cards: newspaper rows ── */
+    /* ── Cards: vertical layout, image on top ── */
     .menu-card {
       break-inside: avoid;
       animation: none !important;
-      background: transparent !important;
+      background: #fff !important;
       box-shadow: none !important;
       border: none !important;
-      border-bottom: 1px solid #c5b49a !important;
+      border-right: 1px solid #ddd !important;
+      border-bottom: 1px solid #ddd !important;
       border-radius: 0 !important;
-      flex-direction: row;
-      gap: 0;
-      min-height: unset;
-      padding: 10px 12px;
+      flex-direction: column;
+      padding: 0;
     }
 
-    /* ── Card image: small square on left ── */
+    /* Alternating row stripe: pairs of 2 cards share a row background */
+    .menu-card:nth-child(4n+3),
+    .menu-card:nth-child(4n+4) {
+      background: #f3f3f3 !important;
+    }
+
+    /* ── Card image: full-width, taller ── */
     .card-img-wrap {
-      width: 80px;
-      height: 80px;
+      width: 100%;
+      height: 160px;
       flex-shrink: 0;
-      border-radius: 2px;
+      border-radius: 0;
       overflow: hidden;
-      margin-right: 12px;
-      background: #ddd5c0 !important;
-      align-self: flex-start;
+      margin: 0;
+      background: #e8e8e8 !important;
+      position: relative;
+    }
+
+    .card-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
 
     .card-img-placeholder {
-      background: #ddd5c0 !important;
-      color: rgba(92,73,51,0.25) !important;
-      font-size: 24px;
+      background: #e8e8e8 !important;
+      color: rgba(0,0,0,0.15) !important;
+      font-size: 32px;
     }
 
-    /* ── Price badge: dark chip on thumbnail ── */
+    /* ── Price badge: bold black chip over image ── */
     .price-badge {
-      background: #1c1610 !important;
+      background: #111 !important;
       border: none !important;
-      color: #f5f0e8 !important;
-      font-size: 12px !important;
-      padding: 2px 7px !important;
-      top: 6px !important;
-      right: 6px !important;
+      color: #fff !important;
+      font-family: 'Oswald', sans-serif !important;
+      font-size: 13px !important;
+      font-weight: 600 !important;
+      letter-spacing: 1px;
+      padding: 3px 9px !important;
+      border-radius: 0 !important;
+      top: 0 !important;
+      right: 0 !important;
     }
 
     /* ── Card body text ── */
     .card-body {
-      padding: 0 !important;
-      gap: 4px !important;
+      padding: 10px 12px 12px !important;
+      gap: 5px !important;
       background: transparent !important;
     }
 
     .card-name {
       font-family: 'Oswald', sans-serif !important;
       font-size: 15px !important;
-      color: #1c1610 !important;
-      letter-spacing: 1px;
+      font-weight: 700 !important;
+      color: #111 !important;
+      letter-spacing: 2px;
+      text-transform: uppercase;
       line-height: 1.2;
     }
 
     .card-desc {
       font-family: Georgia, 'Times New Roman', serif !important;
       font-size: 11px !important;
-      color: #5c4933 !important;
+      color: #444 !important;
       font-style: italic;
-      line-height: 1.45;
+      line-height: 1.5;
     }
 
     /* ── Options ── */
@@ -653,49 +684,60 @@
 
     .card-option-name {
       font-family: 'Oswald', sans-serif !important;
-      color: #1c1610 !important;
+      color: #111 !important;
       font-size: 9px;
       letter-spacing: 2px;
+      text-transform: uppercase;
     }
 
     .card-option-choices {
       font-family: Georgia, serif !important;
-      color: #5c4933 !important;
+      color: #555 !important;
       font-size: 10px;
     }
 
     /* ── Add-ons bulleted list ── */
     .card-addons-row {
-      border-top: 1px dotted #c5b49a !important;
-      padding-top: 5px !important;
+      border-top: 1px solid #ddd !important;
+      padding-top: 6px !important;
+      margin-top: 2px !important;
     }
 
     .card-addons-label {
       font-family: 'Oswald', sans-serif !important;
-      color: #1c1610 !important;
+      color: #111 !important;
       font-size: 9px;
       letter-spacing: 2px;
+      text-transform: uppercase;
       opacity: 1 !important;
+      margin-bottom: 3px !important;
     }
 
     .card-addons-list li {
       font-family: Georgia, serif !important;
       font-size: 10px !important;
-      color: #5c4933 !important;
+      color: #555 !important;
     }
 
     .card-addons-list li::before {
-      color: #5c4933 !important;
+      color: #999 !important;
     }
 
-    /* ── Category headings: newspaper rule style ── */
+    /* ── Category headings: bold centered banner ── */
     .menu-category-heading {
-      color: #1c1610 !important;
-      font-size: 10px !important;
-      letter-spacing: 5px !important;
-      border-bottom: 2px solid #1c1610 !important;
-      padding: 4px 0 6px !important;
-      margin-top: 16px !important;
+      grid-column: 1 / -1;
+      justify-content: center !important;
+      text-align: center;
+      font-family: 'Oswald', sans-serif !important;
+      font-size: 11px !important;
+      font-weight: 700 !important;
+      letter-spacing: 6px !important;
+      color: #fff !important;
+      background: #111 !important;
+      border: none !important;
+      padding: 8px 16px !important;
+      margin-top: 0 !important;
+      gap: 0 !important;
     }
 
     .menu-category-heading::after {
