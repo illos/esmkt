@@ -14,7 +14,7 @@ the deli PC. The site is designed to be hosted on Cloudflare Pages (free tier).
 FILE STRUCTURE
 --------------------------------------------------------------------------------
 
-  index.html                  Homepage 
+  index.html                  Homepage  
   order.html                  Deli order page
   admin.html                  Admin panel (menu management)
   readme.txt                  This file
