@@ -1,0 +1,51 @@
+# ============================================================
+#  Esmeralda Market — Cloudflare Pages + Wrangler config
+# ============================================================
+#
+# SETUP INSTRUCTIONS
+# ──────────────────
+# Before deploying, complete these one-time steps in your terminal:
+#
+#  1.  npm install -g wrangler
+#  2.  wrangler login
+#
+#  3.  Create the KV namespace and paste the id below:
+#        wrangler kv namespace create "esmeralda-menu"
+#      Copy the "id" value from the output → paste into [[kv_namespaces]] below.
+#
+#  4.  Create the R2 bucket:
+#        wrangler r2 bucket create esmeralda-images
+#      (No ID needed — bucket_name is enough.)
+#
+#  5.  Set your secrets (you'll be prompted to type the value):
+#        wrangler pages secret put ADMIN_PASSWORD --project-name esmeralda-market
+#        wrangler pages secret put AUTH_SECRET     --project-name esmeralda-market
+#      For AUTH_SECRET, use a long random string (40+ chars). It never
+#      needs to be typed by hand — a password manager can generate it.
+#
+#  6.  Deploy:
+#        wrangler pages deploy . --project-name esmeralda-market
+#      On first run Cloudflare will create the project automatically.
+#      Subsequent deploys: just run the same command again.
+#
+# ============================================================
+
+name = "esmeralda-market"
+pages_build_output_dir = "."
+compatibility_date = "2024-09-23"
+
+# ── KV Namespace (stores menu JSON) ─────────────────────────
+# Paste the "id" output from:  wrangler kv namespace create "esmeralda-menu"
+[[kv_namespaces]]
+binding     = "MENU_KV"
+id          = "27fea57448dd4e98acd8d8e12f3a57aa"
+
+# ── R2 Bucket (stores uploaded photos) ──────────────────────
+[[r2_buckets]]
+binding     = "IMAGES_BUCKET"
+bucket_name = "esmeralda-images"
+
+# ── Environment variables ────────────────────────────────────
+# Secrets (ADMIN_PASSWORD, AUTH_SECRET) must be set via:
+#   wrangler pages secret put <NAME> --project-name esmeralda-market
+# Do NOT put secret values in this file — it will be in your git repo.
