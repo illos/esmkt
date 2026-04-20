@@ -228,6 +228,10 @@ function formatReceipt(order) {
 
   order.items.forEach(item => {
     r += row(truncate(item.name, W - 8), `$${item.base_price.toFixed(2)}`) + '\n';
+    // Options (no price effect — show as "Bread: White")
+    (item.options || []).forEach(opt => {
+      r += `  > ${opt.name}: ${opt.choice}\n`;
+    });
     item.addons.forEach(addon => {
       // Pull just the name without the +$ price for cleaner receipt
       const addonName = addon.replace(/\s*\+\$[\d.]+$/, '');

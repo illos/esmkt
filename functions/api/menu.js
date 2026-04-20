@@ -1,8 +1,9 @@
 /**
  * GET    /api/menu          — public, returns full menu
- * POST   /api/menu          — create item  (auth required)
- * PUT    /api/menu          — update item  (auth required)
- * DELETE /api/menu          — delete item  (auth required)
+ * POST   /api/menu          — create item   (auth required)
+ * PUT    /api/menu          — update item   (auth required)
+ * PATCH  /api/menu          — reorder items (auth required)
+ * DELETE /api/menu          — delete item   (auth required)
  *
  * Required KV binding: MENU_KV
  * Required env vars:   AUTH_SECRET (or ADMIN_PASSWORD as fallback)
@@ -10,7 +11,7 @@
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': 'Authorization, Content-Type',
 };
 
@@ -67,6 +68,18 @@ export async function onRequestPut({ request, env }) {
   data.items[idx] = updated;
   await env.MENU_KV.put('menu', JSON.stringify(data));
   return json(updated);
+}
+
+export async function onRequestPatch({ request, env }) {
+  if (!await isAuthorized(request, env)) return unauthorized();
+
+  const { items } = await request.json();
+  if (!Array.isArray(items)) return json({ error: 'items array required.' }, 400);
+
+  const data = await getMenuData(env);
+  data.items = items;
+  await env.MENU_KV.put('menu', JSON.stringify(data));
+  return json({ success: true });
 }
 
 export async function onRequestDelete({ request, env }) {

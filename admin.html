@@ -262,6 +262,19 @@
     border-bottom: 1px solid var(--charcoal-border);
     font-weight: 400;
   }
+
+  /* ─── DRAG AND DROP ─── */
+  .drag-handle {
+    cursor: grab;
+    color: rgba(184,176,160,0.3);
+    font-size: 16px;
+    padding: 0 4px;
+    user-select: none;
+    transition: color 0.2s;
+  }
+  .drag-handle:hover { color: var(--gold); }
+  tr.dragging { opacity: 0.4; }
+  tr.drag-over td { border-top: 2px solid var(--gold); }
   .menu-table td {
     padding: 14px 12px;
     border-bottom: 1px solid var(--charcoal-border);
@@ -461,6 +474,85 @@
     color: var(--cream-dim);
     margin-top: 6px;
     font-style: italic;
+  }
+
+  /* ─── OPTIONS EDITOR ─── */
+  .options-list-editor { display: flex; flex-direction: column; gap: 12px; margin-bottom: 10px; }
+  .option-block {
+    background: var(--charcoal-mid);
+    border: 1px solid var(--charcoal-border);
+    border-radius: 3px;
+    padding: 12px;
+  }
+  .option-block-header {
+    display: grid;
+    grid-template-columns: 1fr 36px;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .option-choices { display: flex; flex-direction: column; gap: 6px; padding-left: 4px; }
+  .option-choice-row {
+    display: grid;
+    grid-template-columns: 1fr 36px;
+    gap: 6px;
+    align-items: center;
+  }
+  .btn-add-choice {
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    background: none;
+    border: 1px dashed rgba(58,56,48,0.8);
+    color: rgba(184,176,160,0.5);
+    padding: 5px 10px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: border-color 0.2s, color 0.2s;
+    margin-top: 4px;
+    width: 100%;
+    font-size: 10px;
+  }
+  .btn-add-choice:hover { border-color: var(--charcoal-border); color: var(--cream-dim); }
+  .option-remove {
+    background: none;
+    border: 1px solid var(--charcoal-border);
+    color: var(--cream-dim);
+    font-size: 16px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: color 0.2s, border-color 0.2s;
+    flex-shrink: 0;
+  }
+  .option-remove:hover { color: var(--danger); border-color: var(--danger); }
+  .btn-add-option {
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    background: none;
+    border: 1px dashed var(--charcoal-border);
+    color: var(--cream-dim);
+    padding: 7px 14px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: border-color 0.2s, color 0.2s;
+    width: 100%;
+  }
+  .btn-add-option:hover { border-color: var(--gold-dark); color: var(--gold); }
+  .option-choices-label {
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(184,176,160,0.5);
+    margin-bottom: 4px;
+    font-family: 'Oswald', sans-serif;
   }
 
   /* ─── ADD-ONS EDITOR ─── */
@@ -676,6 +768,7 @@
   <table class="menu-table">
     <thead>
       <tr>
+        <th style="width:28px"></th>
         <th style="width:56px">Photo</th>
         <th>Name</th>
         <th style="width:80px">Price</th>
@@ -735,9 +828,16 @@
 
     <!-- Add-ons -->
     <div class="form-group-full">
-      <label class="form-label">Add-ons</label>
+      <label class="form-label">Add-ons <span style="font-size:10px;letter-spacing:1px;text-transform:none;color:rgba(184,176,160,0.5)">(affect price)</span></label>
       <div class="addons-list-editor" id="addonsEditor"></div>
       <button class="btn-add-addon" onclick="addAddonRow()">+ Add Add-on</button>
+    </div>
+
+    <!-- Options -->
+    <div class="form-group-full">
+      <label class="form-label">Options <span style="font-size:10px;letter-spacing:1px;text-transform:none;color:rgba(184,176,160,0.5)">(no price change — shown on receipt)</span></label>
+      <div class="options-list-editor" id="optionsEditor"></div>
+      <button class="btn-add-option" onclick="addOptionBlock()">+ Add Option</button>
     </div>
 
     <div class="form-actions">
@@ -869,23 +969,32 @@ async function loadMenu() {
 function renderTable() {
   const tbody = document.getElementById('menuTableBody');
   if (!menuItems.length) {
-    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No menu items yet. Click "+ Add Item" to get started.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No menu items yet. Click "+ Add Item" to get started.</td></tr>';
     return;
   }
 
-  tbody.innerHTML = menuItems.map(item => {
+  tbody.innerHTML = menuItems.map((item, idx) => {
     const photoCell = item.photo
       ? `<img class="item-thumb" src="/images/${item.photo}" alt="${item.name}" loading="lazy"/>`
       : `<div class="item-thumb-placeholder">&#10022;</div>`;
 
-    const addonCount = item.addons?.length || 0;
-    const addonText  = addonCount ? `${addonCount} add-on${addonCount === 1 ? '' : 's'}` : '—';
+    const addonCount  = item.addons?.length  || 0;
+    const optionCount = item.options?.length || 0;
+    const details = [
+      addonCount  ? `${addonCount} add-on${addonCount   === 1 ? '' : 's'}` : '',
+      optionCount ? `${optionCount} option${optionCount === 1 ? '' : 's'}` : '',
+    ].filter(Boolean).join(', ') || '—';
 
-    return `<tr>
+    return `<tr draggable="true" data-id="${item.id}" data-idx="${idx}"
+      ondragstart="onDragStart(event)"
+      ondragover="onDragOver(event)"
+      ondrop="onDrop(event)"
+      ondragend="onDragEnd(event)">
+      <td><span class="drag-handle" title="Drag to reorder">&#8942;&#8942;</span></td>
       <td>${photoCell}</td>
       <td class="item-name-cell">${esc(item.name)}</td>
       <td class="item-price-cell">$${Number(item.price).toFixed(2)}</td>
-      <td class="hide-sm item-addons-cell">${addonText}</td>
+      <td class="hide-sm item-addons-cell">${details}</td>
       <td>
         <div class="table-actions">
           <button class="btn-edit" onclick="openForm(${item.id})">Edit</button>
@@ -894,6 +1003,55 @@ function renderTable() {
       </td>
     </tr>`;
   }).join('');
+}
+
+// ─── DRAG AND DROP ────────────────────────────────────────────────────────────
+let dragSrcIdx = null;
+
+function onDragStart(e) {
+  dragSrcIdx = parseInt(e.currentTarget.dataset.idx);
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+}
+
+function onDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  document.querySelectorAll('#menuTableBody tr').forEach(r => r.classList.remove('drag-over'));
+  e.currentTarget.classList.add('drag-over');
+}
+
+function onDrop(e) {
+  e.preventDefault();
+  const destIdx = parseInt(e.currentTarget.dataset.idx);
+  if (dragSrcIdx === null || dragSrcIdx === destIdx) return;
+
+  // Reorder the array
+  const moved = menuItems.splice(dragSrcIdx, 1)[0];
+  menuItems.splice(destIdx, 0, moved);
+
+  renderTable();
+  saveOrder();
+}
+
+function onDragEnd(e) {
+  e.currentTarget.classList.remove('dragging');
+  document.querySelectorAll('#menuTableBody tr').forEach(r => r.classList.remove('drag-over'));
+  dragSrcIdx = null;
+}
+
+async function saveOrder() {
+  try {
+    const res = await apiFetch('/api/menu', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items: menuItems }),
+    });
+    if (!res.ok) throw new Error('Failed to save order');
+    showToast('Order saved.');
+  } catch (e) {
+    showToast('Could not save order.', true);
+  }
 }
 
 // ─── ITEM FORM ─────────────────────────────────────────────────────────────────
@@ -924,6 +1082,11 @@ function openForm(itemId) {
   const editor = document.getElementById('addonsEditor');
   editor.innerHTML = '';
   (editingItem?.addons || []).forEach(a => addAddonRow(a));
+
+  // Options
+  const optEditor = document.getElementById('optionsEditor');
+  optEditor.innerHTML = '';
+  (editingItem?.options || []).forEach(o => addOptionBlock(o));
 
   showPage('pageForm');
 }
@@ -999,6 +1162,53 @@ function collectAddons() {
   return addons;
 }
 
+// ─── OPTIONS EDITOR ──────────────────────────────────────────────────────────
+// Option data structure: { name: "Bread", choices: ["Roll", "White", "Wheat"] }
+
+function addOptionBlock(existing) {
+  const editor = document.getElementById('optionsEditor');
+  const block  = document.createElement('div');
+  block.className = 'option-block';
+
+  const name    = existing?.name    || '';
+  const choices = existing?.choices || [];
+
+  block.innerHTML = `
+    <div class="option-block-header">
+      <input class="form-input" type="text" placeholder="Option name (e.g. Bread)" value="${esc(name)}" data-option-name/>
+      <button class="option-remove" onclick="this.closest('.option-block').remove()" title="Remove option">&#215;</button>
+    </div>
+    <div class="option-choices-label">Choices</div>
+    <div class="option-choices"></div>
+    <button class="btn-add-choice" onclick="addChoiceRow(this.previousElementSibling.previousElementSibling)">+ Add Choice</button>`;
+
+  editor.appendChild(block);
+
+  const choicesContainer = block.querySelector('.option-choices');
+  choices.forEach(c => addChoiceRow(choicesContainer, c));
+}
+
+function addChoiceRow(container, value) {
+  const row = document.createElement('div');
+  row.className = 'option-choice-row';
+  row.innerHTML = `
+    <input class="form-input" type="text" placeholder="e.g. White Bread" value="${esc(value || '')}" data-choice/>
+    <button class="option-remove" onclick="this.parentElement.remove()" title="Remove choice">&#215;</button>`;
+  container.appendChild(row);
+}
+
+function collectOptions() {
+  const blocks  = document.querySelectorAll('#optionsEditor .option-block');
+  const options = [];
+  blocks.forEach(block => {
+    const name    = block.querySelector('[data-option-name]').value.trim();
+    const choices = [...block.querySelectorAll('[data-choice]')]
+      .map(i => i.value.trim()).filter(Boolean);
+    if (name && choices.length) options.push({ name, choices });
+  });
+  return options;
+}
+
 // ─── SAVE ─────────────────────────────────────────────────────────────────────
 async function saveItem() {
   const name  = document.getElementById('fName').value.trim();
@@ -1032,6 +1242,7 @@ async function saveItem() {
       name, price, description: desc,
       photo: photoFilename,
       addons: collectAddons(),
+      options: collectOptions(),
     };
     if (editingItem) item.id = editingItem.id;
 
