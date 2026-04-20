@@ -432,7 +432,7 @@
   .events { background: var(--charcoal-mid); }
   .events-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    grid-template-columns: 1fr 1fr;
     gap: 20px;
   }
   .event-card {
@@ -440,27 +440,28 @@
     border: 1px solid var(--charcoal-border);
     border-radius: 4px;
     overflow: hidden;
-    display: flex; flex-direction: column;
+    display: grid;
+    grid-template-columns: 200px 1fr;
     transition: border-color 0.2s, transform 0.2s;
     position: relative;
   }
   .event-card:hover { border-color: var(--gold-dark); transform: translateY(-2px); }
   .event-card::before {
     content: '';
-    position: absolute; top: 0; left: 0; right: 0; height: 2px;
-    background: linear-gradient(to right, var(--gold-dark), var(--gold), var(--gold-dark));
+    position: absolute; top: 0; left: 0; bottom: 0; width: 2px;
+    background: linear-gradient(to bottom, var(--gold-dark), var(--gold), var(--gold-dark));
   }
   .event-img {
-    width: 100%; height: 180px; object-fit: cover;
-    display: block; background: var(--charcoal-mid);
+    width: 100%; height: 100%; min-height: 160px;
+    object-fit: cover; display: block; background: var(--charcoal-mid);
   }
   .event-img-placeholder {
-    width: 100%; height: 80px; display: flex;
+    width: 100%; min-height: 160px; display: flex;
     align-items: center; justify-content: center;
-    color: rgba(201,169,110,0.2); font-size: 32px;
+    color: rgba(201,169,110,0.15); font-size: 40px;
     background: var(--charcoal-mid);
   }
-  .event-body { padding: 20px 22px; flex: 1; display: flex; flex-direction: column; gap: 8px; }
+  .event-body { padding: 22px 24px; display: flex; flex-direction: column; gap: 8px; justify-content: center; }
   .event-date {
     font-family: 'Oswald', sans-serif; font-size: 10px;
     letter-spacing: 4px; text-transform: uppercase; color: var(--gold);
@@ -471,7 +472,15 @@
     font-weight: 600; line-height: 1.2;
   }
   .event-desc { font-size: 13px; color: var(--cream-dim); line-height: 1.6; }
-  @media (max-width: 600px) { .events-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 780px) {
+    .events-grid { grid-template-columns: 1fr; }
+    .event-card { grid-template-columns: 160px 1fr; }
+  }
+  @media (max-width: 500px) {
+    .event-card { grid-template-columns: 1fr; }
+    .event-img  { min-height: 180px; }
+    .event-card::before { top: 0; left: 0; right: 0; bottom: auto; width: auto; height: 2px; }
+  }
 
   /* ─── SERVICES ─── */
   .services { background: var(--charcoal); }
