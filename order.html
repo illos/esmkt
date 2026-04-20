@@ -795,6 +795,35 @@
     text-transform: uppercase;
     color: var(--gold);
   }
+  .closed-hours-schedule {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 0;
+    border: 1px solid var(--charcoal-border);
+    border-radius: 3px;
+    overflow: hidden;
+    min-width: 240px;
+    text-align: left;
+  }
+  .closed-hours-schedule-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 24px;
+    padding: 7px 18px;
+    border-bottom: 1px solid rgba(58,56,48,0.5);
+    font-family: 'Oswald', sans-serif;
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .closed-hours-schedule-row:last-child { border-bottom: none; }
+  .closed-hours-schedule-row .sch-day  { color: var(--cream-dim); }
+  .closed-hours-schedule-row .sch-time { color: var(--gold); }
+  .closed-hours-schedule-row.sch-closed .sch-time { color: rgba(184,176,160,0.35); }
+  .closed-hours-schedule-row.sch-today .sch-day,
+  .closed-hours-schedule-row.sch-today .sch-time  { color: var(--gold); font-weight: 600; }
+
   .closed-hours-divider {
     width: 1px;
     background: var(--charcoal-border);
@@ -941,11 +970,12 @@
     <div class="closed-icon">&#128336;</div>
     <div class="closed-title">Deli is Closed</div>
     <div class="closed-sub">Stop by during deli hours to order fresh &mdash; or call ahead.</div>
-    <div class="closed-hours">
-      <div class="closed-hours-item">9:00 AM &ndash; 3:00 PM</div>
+    <div class="closed-hours" id="closedHoursSimple">
+      <div class="closed-hours-item" id="closedHoursTime">9:00 AM &ndash; 3:00 PM</div>
       <div class="closed-hours-divider"></div>
-      <div class="closed-hours-item">Monday &ndash; Saturday</div>
+      <div class="closed-hours-item" id="closedHoursDays">Monday &ndash; Saturday</div>
     </div>
+    <div class="closed-hours-schedule" id="closedHoursSchedule" style="display:none"></div>
   </div>
 
   <!-- MENU SECTION (always visible) -->
@@ -1103,6 +1133,66 @@ async function initMenu() {
 }
 
 // ─── DELI HOURS CHECK ────────────────────────────────────────────────────────
+function fmt12(t) {
+  if (!t) return '—';
+  const [h, m] = t.split(':').map(Number);
+  const ampm = h < 12 ? 'AM' : 'PM';
+  const h12  = h % 12 || 12;
+  return `${h12}:${String(m).padStart(2,'0')} ${ampm}`;
+}
+
+function deliHoursVary() {
+  const open = deliHours.filter(h => !h.closed);
+  if (!open.length) return false;
+  const first = `${open[0].open}|${open[0].close}`;
+  return open.some(h => `${h.open}|${h.close}` !== first);
+}
+
+function summarizeDeliDays() {
+  const open   = deliHours.filter(h => !h.closed);
+  const closed = deliHours.filter(h => h.closed);
+  if (!closed.length) return 'Open Every Day';
+  if (closed.length === 1) return `Closed ${closed[0].day}`;
+  if (!open.length) return 'Closed Every Day';
+  return `${open[0].day} \u2013 ${open[open.length - 1].day}`;
+}
+
+function renderBannerHours() {
+  const simpleEl   = document.getElementById('closedHoursSimple');
+  const schedEl    = document.getElementById('closedHoursSchedule');
+  const openDays   = deliHours.filter(h => !h.closed);
+
+  if (!openDays.length) {
+    document.getElementById('closedHoursTime').textContent = 'Closed';
+    document.getElementById('closedHoursDays').textContent = 'All Days';
+    simpleEl.style.display = ''; schedEl.style.display = 'none';
+    return;
+  }
+
+  if (deliHoursVary()) {
+    simpleEl.style.display = 'none';
+    schedEl.style.display  = '';
+    const now      = new Date();
+    const todayIdx = now.getDay() === 0 ? 6 : now.getDay() - 1;
+    schedEl.innerHTML = deliHours.map((h, i) => {
+      const timeStr = h.closed ? 'Closed' : `${fmt12(h.open)} \u2013 ${fmt12(h.close)}`;
+      const cls = [
+        i === todayIdx ? 'sch-today' : '',
+        h.closed ? 'sch-closed' : '',
+      ].filter(Boolean).join(' ');
+      return `<div class="closed-hours-schedule-row${cls ? ' '+cls : ''}">
+        <span class="sch-day">${h.day}</span>
+        <span class="sch-time">${timeStr}</span>
+      </div>`;
+    }).join('');
+  } else {
+    schedEl.style.display  = 'none';
+    simpleEl.style.display = '';
+    document.getElementById('closedHoursTime').textContent = `${fmt12(openDays[0].open)} \u2013 ${fmt12(openDays[0].close)}`;
+    document.getElementById('closedHoursDays').textContent = summarizeDeliDays();
+  }
+}
+
 function checkDeliHours() {
   const today = getTodayDeliHours();
   const now   = new Date();
@@ -1111,6 +1201,7 @@ function checkDeliHours() {
   if (today && !today.closed && today.open && today.close) {
     isOpen = mins >= toMins(today.open) && mins < toMins(today.close);
   }
+  renderBannerHours();
   document.getElementById('deliClosedBanner').classList.toggle('visible', !isOpen);
   document.getElementById('deliOpenContent').style.display = isOpen ? 'block' : 'none';
 }

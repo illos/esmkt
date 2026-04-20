@@ -3,8 +3,6 @@
   HWY 264 MM8, Dyer, NV 89010  |  775-572-3200
 ================================================================================
 
-v106
-
 PROJECT OVERVIEW
 ----------------
 A website for Esmeralda Market: a public-facing homepage, a deli ordering page,
@@ -16,7 +14,7 @@ the deli PC. The site is designed to be hosted on Cloudflare Pages (free tier).
 FILE STRUCTURE
 --------------------------------------------------------------------------------
 
-  index.html                  Homepage    
+  index.html                  Homepage
   order.html                  Deli order page
   admin.html                  Admin panel (menu management)
   readme.txt                  This file
@@ -129,68 +127,79 @@ WHAT'S BEEN BUILT
 
 
 --------------------------------------------------------------------------------
-CLOUDFLARE PAGES SETUP
+CLOUDFLARE PAGES SETUP (using Wrangler CLI)
 --------------------------------------------------------------------------------
 
 This site uses Cloudflare Pages for hosting plus two Cloudflare services for
-the backend: KV (menu data) and R2 (uploaded photos).
+the backend: KV (menu data) and R2 (uploaded photos). Everything is configured
+through the Wrangler command-line tool — no dashboard needed.
 
-STEP 1 — Deploy to Cloudflare Pages
-  1. Push all files to a GitHub (or GitLab) repository.
-  2. Log into dash.cloudflare.com → Pages → Create a project.
-  3. Connect your GitHub repo. No build command needed (it's all static).
-     Set the output directory to: / (root).
-  4. Click Save and Deploy. Cloudflare will give you a .pages.dev URL.
+PREREQUISITES
+  - Node.js installed (https://nodejs.org — choose the LTS version)
+  - A free Cloudflare account (https://cloudflare.com)
 
-STEP 2 — Create a KV Namespace (menu storage)
-  1. In the Cloudflare dashboard, go to Workers & Pages → KV.
-  2. Click "Create a namespace". Name it something like: esmeralda-menu
-  3. Go to your Pages project → Settings → Functions → KV namespace bindings.
-  4. Add a binding:
-       Variable name:  MENU_KV
-       KV namespace:   esmeralda-menu  (select from dropdown)
-  5. Save.
+STEP 1 — Install Wrangler and log in
+  Open a terminal (Command Prompt or PowerShell on Windows) and run:
 
-STEP 3 — Create an R2 Bucket (photo storage)
-  1. In the Cloudflare dashboard, go to R2.
-  2. Click "Create bucket". Name it something like: esmeralda-images
-  3. Go to your Pages project → Settings → Functions → R2 bucket bindings.
-  4. Add a binding:
-       Variable name:  IMAGES_BUCKET
-       R2 bucket:      esmeralda-images  (select from dropdown)
-  5. Save.
+    npm install -g wrangler
+    wrangler login
 
-STEP 4 — Set Environment Variables (secrets)
-  1. Go to your Pages project → Settings → Environment variables.
-  2. Add two variables (mark both as "Encrypted"):
+  This opens a browser window. Authorize Wrangler with your Cloudflare account.
 
-       ADMIN_PASSWORD   — the password you'll use to log into admin.html
-                          (choose something secure, e.g. a random word + number)
+STEP 2 — Create the KV namespace (menu storage)
+  Run:
+    wrangler kv namespace create "esmeralda-menu"
 
-       AUTH_SECRET      — a long random string used to sign login tokens
-                          (generate one at: https://randomkeygen.com or any
-                          password manager — it never needs to be typed by hand)
+  The output will look like:
+    { binding = "esmeralda-menu", id = "abc123def456..." }
 
-  3. Save.
+  Copy that long id value and paste it into wrangler.toml where it says:
+    id = "PASTE_KV_NAMESPACE_ID_HERE"
 
-STEP 5 — Redeploy
-  After adding bindings and environment variables, go to your Pages project
-  and trigger a new deployment (or just push any small commit). The new
-  Functions will pick up the KV, R2, and env var bindings automatically.
+STEP 3 — Create the R2 bucket (photo storage)
+  Run:
+    wrangler r2 bucket create esmeralda-images
 
-STEP 6 — Test the admin panel
-  1. Visit https://your-site.pages.dev/admin.html
-  2. Log in with the ADMIN_PASSWORD you set.
-  3. Try adding a menu item and uploading a photo.
-  4. Visit the order page — the item should appear.
+  No ID needed — the bucket name in wrangler.toml is enough.
 
-NOTES:
-  - The functions/ folder must be at the root of your repo alongside index.html.
-  - Function file paths map directly to URL routes:
-      functions/api/auth.js     → /api/auth
-      functions/api/menu.js     → /api/menu
-      functions/api/upload.js   → /api/upload
-      functions/images/[filename].js → /images/*
+STEP 4 — Set your secrets
+  Run these two commands. Wrangler will prompt you to type the value for each:
+
+    wrangler pages secret put ADMIN_PASSWORD --project-name esmeralda-market
+    wrangler pages secret put AUTH_SECRET     --project-name esmeralda-market
+
+  ADMIN_PASSWORD — the password you'll use on admin.html (pick something secure)
+  AUTH_SECRET    — a long random string (40+ chars). Generate one at
+                   https://randomkeygen.com or use any password manager.
+                   You'll never need to type it again.
+
+  IMPORTANT: Never put these values in wrangler.toml — that file goes in your
+  git repo and would be publicly visible.
+
+STEP 5 — Deploy
+  From the root folder of the project (where wrangler.toml lives), run:
+
+    wrangler pages deploy . --project-name esmeralda-market
+
+  On the first run, Cloudflare creates the Pages project automatically and
+  gives you a URL like:  https://esmeralda-market.pages.dev
+
+  For future updates, just run the same command again.
+
+STEP 6 — Test
+  1. Visit https://esmeralda-market.pages.dev/admin.html
+  2. Log in with your ADMIN_PASSWORD.
+  3. Add a menu item and upload a photo.
+  4. Visit /order.html — the item should appear.
+
+NOTES
+  - wrangler.toml must be at the root of your project (next to index.html).
+  - The functions/ folder must also be at the root. Cloudflare maps file paths
+    directly to URL routes:
+      functions/api/auth.js          → /api/auth
+      functions/api/menu.js          → /api/menu
+      functions/api/upload.js        → /api/upload
+      functions/images/[filename].js → /images/:filename
   - Cloudflare's free tier includes 100,000 KV reads/day and 1 GB R2 storage,
     which is more than enough for a small market deli.
 
@@ -294,12 +303,12 @@ The print-server/ folder never goes online — it's PC-only.
 
 
 --------------------------------------------------------------------------------
-CONTACT / PROJECT NOTES
+CONTACT / PROJECT NOTES...
 --------------------------------------------------------------------------------
 
 Market:   Esmeralda Market
 Address:  HWY 264, Mile Marker 8, Dyer, NV 89010
 Phone:    775-572-3200
-Maps:     https://maps.app.goo.gl/dhU5oMRYwXpTUhmY9
+Maps:     https://maps.app.goo.gl/dhU5oMRYwXpTUhmY9 
 
 ================================================================================
