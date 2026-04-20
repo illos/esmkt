@@ -521,15 +521,28 @@
       -webkit-print-color-adjust: exact;
     }
 
-    /* ── Pure white page ── */
-    html, body {
-      background: #fff !important;
-      color: #111 !important;
+    /* ── Flip to light theme by overriding CSS variables ── */
+    :root {
+      --gold:           #7A5C28;
+      --gold-light:     #9A7A40;
+      --gold-dark:      #C9A96E;
+      --charcoal:       #F5F3EF;
+      --charcoal-mid:   #EDEAE4;
+      --charcoal-card:  #FFFFFF;
+      --charcoal-border:#D8D3CA;
+      --cream:          #1A1A18;
+      --cream-dim:      #6A6460;
     }
 
+    body {
+      background-color: var(--charcoal) !important;
+      color: var(--cream) !important;
+    }
+
+    /* Kill the SVG texture overlay */
     body::before { display: none !important; }
 
-    /* ── Hide all site chrome ── */
+    /* ── Hide site chrome ── */
     .site-nav,
     .btn-print-menu,
     .site-footer,
@@ -538,219 +551,74 @@
       display: none !important;
     }
 
-    /* ── Print-only masthead ── */
+    /* ── Print-only header ── */
     .print-header {
       display: block !important;
       text-align: center;
-      padding: 24px 0 18px;
-      margin-bottom: 20px;
-      border-top: 3px solid #111;
-      border-bottom: 3px solid #111;
-      position: relative;
+      padding: 20px 0 16px;
+      margin-bottom: 24px;
+      border-bottom: 1px solid var(--gold-dark);
     }
-
-    /* Thin inner rule above and below */
-    .print-header::before,
-    .print-header::after {
-      content: '';
-      display: block;
-      border-top: 1px solid #111;
-      margin: 4px 12px;
-    }
-    .print-header::before { margin-bottom: 12px; }
-    .print-header::after  { margin-top: 12px; }
 
     .print-header-name {
       font-family: 'Oswald', sans-serif;
-      font-size: 40px;
+      font-size: 34px;
       font-weight: 700;
-      letter-spacing: 10px;
+      letter-spacing: 8px;
       text-transform: uppercase;
-      color: #111;
+      color: var(--cream);
       display: block;
       line-height: 1;
     }
 
+    .print-header-name span { color: var(--gold); }
+
     .print-header-sub {
-      font-family: Georgia, 'Times New Roman', serif;
+      font-family: 'Oswald', sans-serif;
       font-size: 11px;
-      letter-spacing: 7px;
+      letter-spacing: 5px;
       text-transform: uppercase;
-      color: #555;
+      color: var(--gold);
       display: block;
-      margin-top: 8px;
+      margin-top: 6px;
     }
 
     /* ── Page layout ── */
     .page-wrap {
       padding: 0 16px 20px;
       max-width: 100%;
-      background: #fff !important;
     }
 
-    /* ── 2-column card grid ── */
+    /* ── 2-column grid ── */
     .menu-grid {
       grid-template-columns: 1fr 1fr;
-      gap: 0;
-      border: 1px solid #ddd;
+      gap: 16px;
     }
 
-    /* ── Cards: vertical layout, image on top ── */
+    /* ── Cards ── */
     .menu-card {
       break-inside: avoid;
       animation: none !important;
-      background: #fff !important;
-      box-shadow: none !important;
-      border: none !important;
-      border-right: 1px solid #ddd !important;
-      border-bottom: 1px solid #ddd !important;
-      border-radius: 0 !important;
-      flex-direction: column;
-      padding: 0;
+      border-radius: 4px;
     }
 
-    /* Alternating row stripe: pairs of 2 cards share a row background */
-    .menu-card:nth-child(4n+3),
-    .menu-card:nth-child(4n+4) {
-      background: #f3f3f3 !important;
-    }
-
-    /* ── Card image: full-width, taller ── */
+    /* Fix the few hardcoded dark colors inside cards */
     .card-img-wrap {
-      width: 100%;
-      height: 160px;
-      flex-shrink: 0;
-      border-radius: 0;
-      overflow: hidden;
-      margin: 0;
-      background: #e8e8e8 !important;
-      position: relative;
-    }
-
-    .card-img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
+      background: #D8D3CA !important;
     }
 
     .card-img-placeholder {
-      background: #e8e8e8 !important;
-      color: rgba(0,0,0,0.15) !important;
-      font-size: 32px;
-    }
-
-    /* ── Price badge: bold black chip over image ── */
-    .price-badge {
-      background: #111 !important;
-      border: none !important;
-      color: #fff !important;
-      font-family: 'Oswald', sans-serif !important;
-      font-size: 13px !important;
-      font-weight: 600 !important;
-      letter-spacing: 1px;
-      padding: 3px 9px !important;
-      border-radius: 0 !important;
-      top: 0 !important;
-      right: 0 !important;
-    }
-
-    /* ── Card body text ── */
-    .card-body {
-      padding: 10px 12px 12px !important;
-      gap: 5px !important;
-      background: transparent !important;
-    }
-
-    .card-name {
-      font-family: 'Oswald', sans-serif !important;
-      font-size: 15px !important;
-      font-weight: 700 !important;
-      color: #111 !important;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      line-height: 1.2;
-    }
-
-    .card-desc {
-      font-family: Georgia, 'Times New Roman', serif !important;
-      font-size: 11px !important;
-      color: #444 !important;
-      font-style: italic;
-      line-height: 1.5;
-    }
-
-    /* ── Options ── */
-    .card-options-list { gap: 2px; }
-
-    .card-option-name {
-      font-family: 'Oswald', sans-serif !important;
-      color: #111 !important;
-      font-size: 9px;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-    }
-
-    .card-option-choices {
-      font-family: Georgia, serif !important;
-      color: #555 !important;
-      font-size: 10px;
-    }
-
-    /* ── Add-ons bulleted list ── */
-    .card-addons-row {
-      border-top: 1px solid #ddd !important;
-      padding-top: 6px !important;
-      margin-top: 2px !important;
-    }
-
-    .card-addons-label {
-      font-family: 'Oswald', sans-serif !important;
-      color: #111 !important;
-      font-size: 9px;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      opacity: 1 !important;
-      margin-bottom: 3px !important;
-    }
-
-    .card-addons-list li {
-      font-family: Georgia, serif !important;
-      font-size: 10px !important;
-      color: #555 !important;
-    }
-
-    .card-addons-list li::before {
-      color: #999 !important;
-    }
-
-    /* ── Category headings: bold centered banner ── */
-    .menu-category-heading {
-      grid-column: 1 / -1;
-      justify-content: center !important;
-      text-align: center;
-      font-family: 'Oswald', sans-serif !important;
-      font-size: 11px !important;
-      font-weight: 700 !important;
-      letter-spacing: 6px !important;
-      color: #fff !important;
-      background: #111 !important;
-      border: none !important;
-      padding: 8px 16px !important;
-      margin-top: 0 !important;
-      gap: 0 !important;
-    }
-
-    .menu-category-heading::after {
-      display: none !important;
+      background: linear-gradient(135deg, #E0DDD6 0%, #CCC8C0 100%) !important;
+      color: rgba(122,92,40,0.25) !important;
     }
   }
 </style>
 </head>
 <body>
 
-<!-- Print-only masthead -->
+<!-- Print-only header -->
 <div class="print-header">
-  <span class="print-header-name">Esmeralda Market</span>
+  <span class="print-header-name">E<span>S</span>MERALDA Market</span>
   <span class="print-header-sub">Deli Menu</span>
 </div>
 
