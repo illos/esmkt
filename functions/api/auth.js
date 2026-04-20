@@ -6,7 +6,7 @@
  *   ADMIN_PASSWORD  — the password the admin enters
  *   AUTH_SECRET     — random secret used to sign tokens (generate any long random string)
  */
-
+ 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
