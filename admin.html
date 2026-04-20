@@ -794,13 +794,25 @@
   .hours-closed-wrap input[type="checkbox"] { accent-color: var(--gold); width: 14px; height: 14px; cursor: pointer; }
 
   /* ─── EVENTS ─── */
-  .event-list { display: flex; flex-direction: column; gap: 12px; }
+  .event-list { display: flex; flex-direction: column; gap: 0; }
   .event-list-item {
     background: var(--charcoal-card); border: 1px solid var(--charcoal-border);
-    border-radius: 4px; padding: 14px 16px;
-    display: grid; grid-template-columns: 1fr auto;
-    align-items: center; gap: 16px;
+    border-radius: 0; border-top: none; padding: 12px 14px;
+    display: grid; grid-template-columns: 20px 1fr auto;
+    align-items: center; gap: 14px; transition: background 0.15s;
+    cursor: default; user-select: none;
   }
+  .event-list-item:first-child { border-radius: 4px 4px 0 0; border-top: 1px solid var(--charcoal-border); }
+  .event-list-item:last-child  { border-radius: 0 0 4px 4px; }
+  .event-list-item:only-child  { border-radius: 4px; }
+  .event-list-item:hover { background: rgba(255,255,255,0.03); }
+  .event-list-item.event-dragging { opacity: 0.35; }
+  .event-list-item.event-drag-over { border-top: 2px solid var(--gold); background: rgba(201,169,110,0.04); }
+  .event-drag-handle {
+    cursor: grab; color: rgba(184,176,160,0.25); font-size: 16px;
+    user-select: none; transition: color 0.2s; text-align: center;
+  }
+  .event-list-item:hover .event-drag-handle { color: rgba(184,176,160,0.55); }
   .event-list-meta {
     font-family: 'Oswald', sans-serif; font-size: 10px;
     letter-spacing: 3px; text-transform: uppercase; color: var(--gold);
@@ -1850,9 +1862,14 @@ function renderEventList() {
     container.innerHTML = '<div class="empty-state">No events yet. Click "+ Add Event" to create one.</div>';
     return;
   }
-  container.innerHTML = `<div class="event-list">${events.map(ev => {
+  container.innerHTML = `<div class="event-list">${events.map((ev, idx) => {
     const dateStr = ev.date ? new Date(ev.date + 'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
-    return `<div class="event-list-item">
+    return `<div class="event-list-item" draggable="true" data-event-id="${ev.id}" data-event-idx="${idx}"
+      ondragstart="onEventDragStart(event,${idx})"
+      ondragover="onEventDragOver(event,${idx})"
+      ondrop="onEventDrop(event,${idx})"
+      ondragend="onEventDragEnd(event)">
+      <span class="event-drag-handle" title="Drag to reorder">&#8942;&#8942;</span>
       <div>
         <div class="event-list-meta">${dateStr}</div>
         <div class="event-list-title">${esc(ev.title)}</div>
@@ -1864,6 +1881,48 @@ function renderEventList() {
       </div>
     </div>`;
   }).join('')}</div>`;
+}
+
+// ─── EVENTS DRAG AND DROP ─────────────────────────────────────────────────────
+let evDragSrcIdx = null;
+
+function onEventDragStart(e, idx) {
+  evDragSrcIdx = idx;
+  e.currentTarget.classList.add('event-dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', 'event');
+}
+function onEventDragOver(e, idx) {
+  if (evDragSrcIdx === null) return;
+  e.preventDefault();
+  document.querySelectorAll('.event-list-item').forEach(el => el.classList.remove('event-drag-over'));
+  e.currentTarget.classList.add('event-drag-over');
+}
+function onEventDrop(e, destIdx) {
+  e.preventDefault();
+  if (evDragSrcIdx === null || evDragSrcIdx === destIdx) return;
+  const [moved] = events.splice(evDragSrcIdx, 1);
+  events.splice(destIdx, 0, moved);
+  renderEventList();
+  saveEventOrder();
+}
+function onEventDragEnd(e) {
+  document.querySelectorAll('.event-list-item').forEach(el => {
+    el.classList.remove('event-dragging', 'event-drag-over');
+  });
+  evDragSrcIdx = null;
+}
+
+async function saveEventOrder() {
+  try {
+    const res = await apiFetch('/api/events', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ events }),
+    });
+    if (!res.ok) throw new Error('Save failed');
+    showToast('Order saved.');
+  } catch(e) { showToast('Could not save order.', true); }
 }
 
 function openEventForm(eventId) {

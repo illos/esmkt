@@ -403,6 +403,31 @@
     text-transform: uppercase;
   }
 
+  /* ─── HOURS SCHEDULE TABLE (per-day view) ─── */
+  .hours-schedule {
+    display: flex; flex-direction: column; gap: 0;
+    font-size: 13px;
+  }
+  .hours-schedule-row {
+    display: flex; justify-content: space-between;
+    align-items: baseline; gap: 12px;
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(58,56,48,0.5);
+  }
+  .hours-schedule-row:last-child { border-bottom: none; }
+  .hours-schedule-day {
+    font-family: 'Oswald', sans-serif; font-size: 11px;
+    letter-spacing: 2px; text-transform: uppercase;
+    color: var(--cream-dim); min-width: 34px; flex-shrink: 0;
+  }
+  .hours-schedule-time {
+    color: var(--cream); font-family: 'Oswald', sans-serif;
+    font-size: 13px; letter-spacing: 0.5px; text-align: right;
+  }
+  .hours-schedule-row.is-today .hours-schedule-day,
+  .hours-schedule-row.is-today .hours-schedule-time { color: var(--gold); }
+  .hours-schedule-row.is-closed .hours-schedule-time { color: rgba(184,176,160,0.4); }
+
   /* ─── EVENTS ─── */
   .events { background: var(--charcoal-mid); }
   .events-grid {
@@ -618,12 +643,14 @@
         <div class="hours-card-name">Esmeralda Market</div>
         <div class="hours-time" id="storeHoursTime">8:30 AM &ndash; 7:30 PM</div>
         <div class="hours-days" id="storeHoursDays">Open Every Day</div>
+        <div class="hours-schedule" id="storeHoursSchedule" style="display:none"></div>
       </div>
       <div class="hours-card">
         <div class="hours-card-type">Hot Food &middot; Made Fresh Daily</div>
         <div class="hours-card-name">Deli Counter</div>
         <div class="hours-time" id="deliHoursTime">9:00 AM &ndash; 3:00 PM</div>
         <div class="hours-days" id="deliHoursDays">Monday &ndash; Saturday</div>
+        <div class="hours-schedule" id="deliHoursSchedule" style="display:none"></div>
       </div>
     </div>
   </div>
@@ -765,33 +792,61 @@
     return hoursArr[idx] || null;
   }
 
-  function summarizeHours(hoursArr) {
-    // Returns { timeStr, daysStr } for display in the hours card
-    const open  = hoursArr.filter(h => !h.closed);
+  function hoursVary(hoursArr) {
+    const open = hoursArr.filter(h => !h.closed);
+    if (!open.length) return false;
+    const first = `${open[0].open}|${open[0].close}`;
+    return open.some(h => `${h.open}|${h.close}` !== first);
+  }
+
+  function summarizeDays(hoursArr) {
+    const open   = hoursArr.filter(h => !h.closed);
     const closed = hoursArr.filter(h => h.closed);
-    if (!open.length) return { timeStr: 'Closed', daysStr: 'All Days' };
+    if (!closed.length) return 'Open Every Day';
+    if (closed.length === 1) return `Closed ${closed[0].day}`;
+    const openDays = open.map(h => h.day);
+    if (!openDays.length) return 'Closed Every Day';
+    return `${openDays[0]} \u2013 ${openDays[openDays.length-1]}`;
+  }
 
-    // Check if all open days have same time
-    const times = [...new Set(open.map(h => `${h.open}–${h.close}`))];
-    const timeStr = times.length === 1
-      ? `${fmt12(open[0].open)} \u2013 ${fmt12(open[0].close)}`
-      : `Varies`;
+  function renderHoursCard(hoursArr, timeId, daysId, scheduleId) {
+    const timeEl  = document.getElementById(timeId);
+    const daysEl  = document.getElementById(daysId);
+    const schedEl = document.getElementById(scheduleId);
+    const open    = hoursArr.filter(h => !h.closed);
 
-    let daysStr;
-    if (!closed.length) {
-      daysStr = 'Open Every Day';
-    } else if (closed.length === 1) {
-      daysStr = `Closed ${closed[0].day}`;
-    } else {
-      // Find contiguous ranges of open days
-      const openDays = open.map(h => h.day);
-      if (openDays.length >= 5) {
-        daysStr = `${openDays[0]} \u2013 ${openDays[openDays.length-1]}`;
-      } else {
-        daysStr = openDays.join(', ');
-      }
+    if (!open.length) {
+      // All days closed
+      timeEl.textContent = 'Closed'; daysEl.textContent = 'All Days';
+      timeEl.style.display = ''; daysEl.style.display = '';
+      schedEl.style.display = 'none';
+      return;
     }
-    return { timeStr, daysStr };
+
+    if (hoursVary(hoursArr)) {
+      // Mixed times — show per-day table
+      timeEl.style.display = 'none'; daysEl.style.display = 'none';
+      schedEl.style.display = '';
+      const now = new Date();
+      const todayIdx = now.getDay() === 0 ? 6 : now.getDay() - 1;
+      schedEl.innerHTML = hoursArr.map((h, i) => {
+        const timeStr = h.closed ? 'Closed' : `${fmt12(h.open)} \u2013 ${fmt12(h.close)}`;
+        const classes = [
+          i === todayIdx ? 'is-today' : '',
+          h.closed ? 'is-closed' : '',
+        ].filter(Boolean).join(' ');
+        return `<div class="hours-schedule-row${classes ? ' '+classes : ''}">
+          <span class="hours-schedule-day">${h.day}</span>
+          <span class="hours-schedule-time">${timeStr}</span>
+        </div>`;
+      }).join('');
+    } else {
+      // All open days have same time — simple display
+      timeEl.textContent = `${fmt12(open[0].open)} \u2013 ${fmt12(open[0].close)}`;
+      daysEl.textContent = summarizeDays(hoursArr);
+      timeEl.style.display = ''; daysEl.style.display = '';
+      schedEl.style.display = 'none';
+    }
   }
 
   // ─── Update store open/closed pill ────────────────────────────────────────
@@ -821,12 +876,8 @@
 
   // ─── Render hours cards ───────────────────────────────────────────────────
   function renderHoursCards() {
-    const store = summarizeHours(siteSettings.storeHours);
-    const deli  = summarizeHours(siteSettings.deliHours);
-    document.getElementById('storeHoursTime').textContent = store.timeStr;
-    document.getElementById('storeHoursDays').textContent = store.daysStr;
-    document.getElementById('deliHoursTime').textContent  = deli.timeStr;
-    document.getElementById('deliHoursDays').textContent  = deli.daysStr;
+    renderHoursCard(siteSettings.storeHours, 'storeHoursTime', 'storeHoursDays', 'storeHoursSchedule');
+    renderHoursCard(siteSettings.deliHours,  'deliHoursTime',  'deliHoursDays',  'deliHoursSchedule');
   }
 
   // ─── Load settings + events from API ─────────────────────────────────────

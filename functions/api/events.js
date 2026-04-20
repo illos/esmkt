@@ -15,7 +15,7 @@
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': 'Authorization, Content-Type',
 };
 
@@ -49,6 +49,16 @@ export async function onRequestPut({ request, env }) {
   data.events[idx] = event;
   await env.MENU_KV.put('events', JSON.stringify(data));
   return json({ event });
+}
+
+export async function onRequestPatch({ request, env }) {
+  if (!await isAuthorized(request, env)) return unauthorized();
+  const { events } = await request.json();
+  if (!Array.isArray(events)) return json({ error: 'events array required' }, 400);
+  const data = await getEventsData(env);
+  data.events = events;
+  await env.MENU_KV.put('events', JSON.stringify(data));
+  return json({ success: true });
 }
 
 export async function onRequestDelete({ request, env }) {
