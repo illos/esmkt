@@ -1,0 +1,17 @@
+{
+  "name": "esmeralda-print-server",
+  "version": "1.0.0",
+  "description": "Local print server for the Esmeralda Market deli order page.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "list-printers": "node server.js --list-printers"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

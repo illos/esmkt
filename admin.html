@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Esmeralda Market — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --gold: #C9A96E;
+    --gold-light: #E2C99A;
+    --gold-dark: #8B6B3A;
+    --charcoal: #1A1A1A;
+    --charcoal-mid: #242424;
+    --charcoal-card: #2C2B28;
+    --charcoal-border: #3A3830;
+    --cream: #F0EBE0;
+    --cream-dim: #B8B0A0;
+    --danger: #C0392B;
+    --danger-dark: #922B21;
+    --success: #1E8449;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background-color: var(--charcoal);
+    color: var(--cream);
+    font-family: 'Source Sans 3', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cpath d='M50,200 Q100,150 150,200 Q200,250 250,200 Q300,150 350,200' fill='none' stroke='%23ffffff' stroke-width='0.3' opacity='0.04'/%3E%3Cpath d='M0,180 Q60,130 120,180 Q180,230 240,180 Q300,130 360,180 Q420,230 480,180' fill='none' stroke='%23ffffff' stroke-width='0.3' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ─── NAV ─── */
+  .site-nav {
+    position: relative;
+    z-index: 10;
+    background: rgba(26,26,26,0.97);
+    border-bottom: 1px solid var(--charcoal-border);
+    height: 58px;
+    padding: 0 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .nav-logo {
+    font-family: 'Oswald', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 5px;
+    color: var(--cream);
+    text-transform: uppercase;
+    text-decoration: none;
+  }
+  .nav-logo span { color: var(--gold); }
+  .nav-label {
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold);
+  }
+  .nav-logout {
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--cream-dim);
+    background: none;
+    border: 1px solid var(--charcoal-border);
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+    display: none;
+  }
+  .nav-logout:hover { color: var(--danger); border-color: var(--danger); }
+  .nav-logout.visible { display: block; }
+
+  /* ─── PAGES ─── */
+  .page {
+    position: relative;
+    z-index: 1;
+    display: none;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 40px 16px 80px;
+  }
+  .page.active { display: block; }
+
+  /* ─── LOGIN PAGE ─── */
+  .login-wrap {
+    max-width: 380px;
+    margin: 60px auto 0;
+    text-align: center;
+  }
+  .login-logo {
+    font-family: 'Oswald', sans-serif;
+    font-size: 42px;
+    font-weight: 700;
+    letter-spacing: 6px;
+    color: var(--cream);
+    text-shadow: 2px 2px 0 rgba(0,0,0,0.5);
+  }
+  .login-logo span { color: var(--gold); }
+  .login-sub {
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-top: 6px;
+  }
+  .login-divider {
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--gold-dark), transparent);
+    margin: 24px 0;
+  }
+  .login-card {
+    background: var(--charcoal-card);
+    border: 1px solid var(--charcoal-border);
+    border-radius: 4px;
+    padding: 32px 28px;
+  }
+  .login-title {
+    font-family: 'Oswald', sans-serif;
+    font-size: 13px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--cream-dim);
+    margin-bottom: 20px;
+  }
+  .form-group { margin-bottom: 16px; text-align: left; }
+  .form-label {
+    display: block;
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--cream-dim);
+    margin-bottom: 6px;
+  }
+  .form-input {
+    width: 100%;
+    background: var(--charcoal-mid);
+    border: 1px solid var(--charcoal-border);
+    color: var(--cream);
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 15px;
+    padding: 10px 14px;
+    border-radius: 2px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-input:focus { border-color: var(--gold-dark); }
+  .form-input.error { border-color: var(--danger); }
+  .form-textarea {
+    width: 100%;
+    background: var(--charcoal-mid);
+    border: 1px solid var(--charcoal-border);
+    color: var(--cream);
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 15px;
+    padding: 10px 14px;
+    border-radius: 2px;
+    outline: none;
+    resize: vertical;
+    min-height: 90px;
+    transition: border-color 0.2s;
+  }
+  .form-textarea:focus { border-color: var(--gold-dark); }
+
+  .btn-primary {
+    width: 100%;
+    background: var(--gold);
+    color: var(--charcoal);
+    font-family: 'Oswald', sans-serif;
+    font-size: 13px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    border: none;
+    padding: 13px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: background 0.2s;
+    margin-top: 4px;
+  }
+  .btn-primary:hover { background: var(--gold-light); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .login-error {
+    background: rgba(192,57,43,0.15);
+    border: 1px solid var(--danger);
+    color: #E74C3C;
+    font-size: 13px;
+    padding: 10px 14px;
+    border-radius: 2px;
+    margin-bottom: 14px;
+    display: none;
+  }
+  .login-error.visible { display: block; }
+
+  /* ─── SECTION TITLE ─── */
+  .section-title {
+    font-family: 'Oswald', sans-serif;
+    font-size: 13px;
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    color: var(--gold);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: var(--charcoal-border); }
+
+  /* ─── MENU LIST PAGE ─── */
+  .list-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .btn-add-item {
+    background: var(--gold);
+    color: var(--charcoal);
+    font-family: 'Oswald', sans-serif;
+    font-size: 12px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: background 0.2s;
+    white-space: nowrap;
+  }
+  .btn-add-item:hover { background: var(--gold-light); }
+
+  .menu-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .menu-table th {
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--cream-dim);
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--charcoal-border);
+    font-weight: 400;
+  }
+  .menu-table td {
+    padding: 14px 12px;
+    border-bottom: 1px solid var(--charcoal-border);
+    vertical-align: middle;
+    font-size: 14px;
+  }
+  .menu-table tr:last-child td { border-bottom: none; }
+  .menu-table tbody tr { transition: background 0.15s; }
+  .menu-table tbody tr:hover { background: var(--charcoal-card); }
+
+  .item-thumb {
+    width: 48px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 2px;
+    border: 1px solid var(--charcoal-border);
+    display: block;
+    background: var(--charcoal-mid);
+  }
+  .item-thumb-placeholder {
+    width: 48px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--charcoal-mid);
+    border: 1px solid var(--charcoal-border);
+    border-radius: 2px;
+    color: rgba(201,169,110,0.3);
+    font-size: 18px;
+  }
+
+  .item-name-cell { font-weight: 600; }
+  .item-price-cell {
+    color: var(--gold);
+    font-family: 'Oswald', sans-serif;
+    font-size: 15px;
+    white-space: nowrap;
+  }
+  .item-addons-cell {
+    font-size: 12px;
+    color: var(--cream-dim);
+  }
+
+  .table-actions { display: flex; gap: 8px; }
+  .btn-edit {
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    background: none;
+    border: 1px solid var(--charcoal-border);
+    color: var(--cream-dim);
+    padding: 5px 12px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: border-color 0.2s, color 0.2s;
+    white-space: nowrap;
+  }
+  .btn-edit:hover { border-color: var(--gold-dark); color: var(--gold); }
+  .btn-delete {
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    background: none;
+    border: 1px solid var(--charcoal-border);
+    color: var(--cream-dim);
+    padding: 5px 12px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: border-color 0.2s, color 0.2s;
+    white-space: nowrap;
+  }
+  .btn-delete:hover { border-color: var(--danger); color: var(--danger); }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--cream-dim);
+    font-size: 14px;
+    letter-spacing: 1px;
+    font-style: italic;
+  }
+
+  /* ─── ITEM FORM PAGE ─── */
+  .form-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--cream-dim);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    margin-bottom: 24px;
+    transition: color 0.2s;
+  }
+  .form-back:hover { color: var(--gold); }
+
+  .form-card {
+    background: var(--charcoal-card);
+    border: 1px solid var(--charcoal-border);
+    border-radius: 4px;
+    padding: 28px;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  @media (max-width: 540px) { .form-row { grid-template-columns: 1fr; } }
+
+  .form-group-full { margin-bottom: 16px; }
+
+  /* ─── IMAGE UPLOAD ─── */
+  .image-upload-area {
+    border: 2px dashed var(--charcoal-border);
+    border-radius: 3px;
+    padding: 0;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .image-upload-area:hover,
+  .image-upload-area.drag-over { border-color: var(--gold-dark); }
+  .image-upload-area input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+  }
+  .upload-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 28px;
+    text-align: center;
+  }
+  .upload-icon { font-size: 28px; opacity: 0.4; }
+  .upload-label {
+    font-family: 'Oswald', sans-serif;
+    font-size: 12px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--cream-dim);
+  }
+  .upload-hint { font-size: 12px; color: rgba(184,176,160,0.5); }
+
+  .image-preview-wrap {
+    display: none;
+    position: relative;
+  }
+  .image-preview-wrap.has-image { display: block; }
+  .image-preview {
+    width: 100%;
+    max-height: 220px;
+    object-fit: cover;
+    display: block;
+    border-radius: 2px;
+  }
+  .image-preview-remove {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(26,26,26,0.85);
+    border: 1px solid var(--charcoal-border);
+    color: var(--cream-dim);
+    font-size: 18px;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 2px;
+    line-height: 1;
+    transition: color 0.2s;
+    z-index: 3;
+  }
+  .image-preview-remove:hover { color: var(--danger); }
+
+  .current-image-note {
+    font-size: 12px;
+    color: var(--cream-dim);
+    margin-top: 6px;
+    font-style: italic;
+  }
+
+  /* ─── ADD-ONS EDITOR ─── */
+  .addons-list-editor { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+  .addon-row {
+    display: grid;
+    grid-template-columns: 1fr 100px 36px;
+    gap: 8px;
+    align-items: center;
+  }
+  @media (max-width: 480px) { .addon-row { grid-template-columns: 1fr 80px 36px; } }
+  .addon-remove {
+    background: none;
+    border: 1px solid var(--charcoal-border);
+    color: var(--cream-dim);
+    font-size: 16px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: color 0.2s, border-color 0.2s;
+    flex-shrink: 0;
+  }
+  .addon-remove:hover { color: var(--danger); border-color: var(--danger); }
+  .btn-add-addon {
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    background: none;
+    border: 1px dashed var(--charcoal-border);
+    color: var(--cream-dim);
+    padding: 7px 14px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: border-color 0.2s, color 0.2s;
+    width: 100%;
+  }
+  .btn-add-addon:hover { border-color: var(--gold-dark); color: var(--gold); }
+
+  /* ─── FORM ACTIONS ─── */
+  .form-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+  }
+  .btn-save {
+    background: var(--gold);
+    color: var(--charcoal);
+    font-family: 'Oswald', sans-serif;
+    font-size: 13px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    border: none;
+    padding: 12px 28px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: background 0.2s;
+  }
+  .btn-save:hover { background: var(--gold-light); }
+  .btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-cancel {
+    background: none;
+    border: 1px solid var(--charcoal-border);
+    color: var(--cream-dim);
+    font-family: 'Oswald', sans-serif;
+    font-size: 13px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    padding: 12px 24px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .btn-cancel:hover { border-color: var(--gold-dark); color: var(--gold); }
+
+  /* ─── TOAST ─── */
+  .toast {
+    position: fixed;
+    top: 20px; right: 20px;
+    background: var(--charcoal-card);
+    border: 1px solid var(--gold-dark);
+    color: var(--cream);
+    font-family: 'Oswald', sans-serif;
+    font-size: 13px;
+    letter-spacing: 1px;
+    padding: 12px 20px;
+    border-radius: 2px;
+    z-index: 1000;
+    transform: translateX(120%);
+    transition: transform 0.3s;
+  }
+  .toast.show { transform: translateX(0); }
+  .toast.error { border-color: var(--danger); }
+
+  /* ─── CONFIRM MODAL ─── */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 500;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.visible { display: flex; }
+  .modal-box {
+    background: var(--charcoal-card);
+    border: 1px solid var(--charcoal-border);
+    border-radius: 4px;
+    padding: 32px 28px;
+    max-width: 380px;
+    width: 90%;
+    text-align: center;
+  }
+  .modal-title {
+    font-family: 'Oswald', sans-serif;
+    font-size: 18px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--cream);
+    margin-bottom: 10px;
+  }
+  .modal-body { font-size: 14px; color: var(--cream-dim); margin-bottom: 24px; }
+  .modal-actions { display: flex; gap: 12px; justify-content: center; }
+  .btn-confirm-delete {
+    background: var(--danger);
+    color: white;
+    font-family: 'Oswald', sans-serif;
+    font-size: 12px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    border: none;
+    padding: 10px 24px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: background 0.2s;
+  }
+  .btn-confirm-delete:hover { background: var(--danger-dark); }
+  .btn-confirm-cancel {
+    background: none;
+    border: 1px solid var(--charcoal-border);
+    color: var(--cream-dim);
+    font-family: 'Oswald', sans-serif;
+    font-size: 12px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 2px;
+  }
+
+  /* ─── SPINNER ─── */
+  .spinner {
+    display: inline-block;
+    width: 16px; height: 16px;
+    border: 2px solid rgba(201,169,110,0.3);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+    margin-right: 8px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-row td {
+    text-align: center;
+    padding: 40px;
+    color: var(--cream-dim);
+    font-style: italic;
+    font-size: 14px;
+  }
+</style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="site-nav">
+  <a href="index.html" class="nav-logo">E<span>S</span>MERALDA</a>
+  <span class="nav-label" id="navLabel">Admin</span>
+  <button class="nav-logout" id="navLogout" onclick="logout()">Sign Out</button>
+</nav>
+
+<!-- ─── LOGIN PAGE ─── -->
+<div class="page active" id="pageLogin">
+  <div class="login-wrap">
+    <div class="login-logo">E<span>S</span>MERALDA</div>
+    <div class="login-sub">Admin Panel</div>
+    <div class="login-divider"></div>
+    <div class="login-card">
+      <div class="login-title">Sign In</div>
+      <div class="login-error" id="loginError"></div>
+      <div class="form-group">
+        <label class="form-label" for="loginPassword">Password</label>
+        <input class="form-input" type="password" id="loginPassword" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/>
+      </div>
+      <button class="btn-primary" id="loginBtn" onclick="doLogin()">Sign In</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── MENU LIST PAGE ─── -->
+<div class="page" id="pageList">
+  <div class="list-header">
+    <span class="section-title" style="margin:0;flex:1">Menu Items</span>
+    <button class="btn-add-item" onclick="openForm(null)">+ Add Item</button>
+  </div>
+
+  <table class="menu-table">
+    <thead>
+      <tr>
+        <th style="width:56px">Photo</th>
+        <th>Name</th>
+        <th style="width:80px">Price</th>
+        <th class="hide-sm">Add-ons</th>
+        <th style="width:130px">Actions</th>
+      </tr>
+    </thead>
+    <tbody id="menuTableBody">
+      <tr class="loading-row">
+        <td colspan="5"><span class="spinner"></span> Loading menu…</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ─── ITEM FORM PAGE ─── -->
+<div class="page" id="pageForm">
+  <button class="form-back" onclick="showList()">&#8592; Back to Menu</button>
+
+  <div class="section-title" id="formTitle">Add Menu Item</div>
+
+  <div class="form-card">
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="fName">Item Name *</label>
+        <input class="form-input" type="text" id="fName" placeholder="e.g. Classic Deli Sub"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="fPrice">Price *</label>
+        <input class="form-input" type="number" id="fPrice" placeholder="0.00" step="0.01" min="0"/>
+      </div>
+    </div>
+
+    <div class="form-group-full">
+      <label class="form-label" for="fDesc">Description</label>
+      <textarea class="form-textarea" id="fDesc" placeholder="Short description of the item…"></textarea>
+    </div>
+
+    <!-- Image Upload -->
+    <div class="form-group-full">
+      <label class="form-label">Photo</label>
+      <div class="image-upload-area" id="uploadArea">
+        <input type="file" id="photoFile" accept="image/jpeg,image/png,image/webp,image/gif"
+          onchange="handlePhotoSelect(this)"/>
+        <div class="upload-placeholder" id="uploadPlaceholder">
+          <span class="upload-icon">&#128247;</span>
+          <span class="upload-label">Click or drag to upload</span>
+          <span class="upload-hint">JPEG, PNG, WebP or GIF &middot; Max 5 MB</span>
+        </div>
+        <div class="image-preview-wrap" id="previewWrap">
+          <img class="image-preview" id="imagePreview" src="" alt="Preview"/>
+          <button class="image-preview-remove" onclick="clearPhoto(event)" title="Remove photo">&#215;</button>
+        </div>
+      </div>
+      <div class="current-image-note" id="currentImageNote"></div>
+    </div>
+
+    <!-- Add-ons -->
+    <div class="form-group-full">
+      <label class="form-label">Add-ons</label>
+      <div class="addons-list-editor" id="addonsEditor"></div>
+      <button class="btn-add-addon" onclick="addAddonRow()">+ Add Add-on</button>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn-save" id="saveBtn" onclick="saveItem()">Save Item</button>
+      <button class="btn-cancel" onclick="showList()">Cancel</button>
+      <span id="savingIndicator" style="display:none;align-items:center;color:var(--cream-dim);font-size:13px">
+        <span class="spinner"></span> Saving…
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Delete Modal -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal-box">
+    <div class="modal-title">Delete Item?</div>
+    <div class="modal-body" id="deleteModalBody">This cannot be undone.</div>
+    <div class="modal-actions">
+      <button class="btn-confirm-delete" onclick="confirmDelete()">Delete</button>
+      <button class="btn-confirm-cancel" onclick="closeDeleteModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let authToken = sessionStorage.getItem('esm_admin_token') || null;
+let menuItems = [];
+let editingItem = null;   // null = new item, object = existing
+let pendingDeleteId = null;
+let newPhotoFile = null;  // File object if user picked a new photo
+let clearExistingPhoto = false; // true if user removed existing photo
+
+// ─── BOOT ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  if (authToken) {
+    showList();
+  }
+  // Drag-over styling for upload area
+  const area = document.getElementById('uploadArea');
+  area.addEventListener('dragover', e => { e.preventDefault(); area.classList.add('drag-over'); });
+  area.addEventListener('dragleave', () => area.classList.remove('drag-over'));
+  area.addEventListener('drop', e => {
+    e.preventDefault();
+    area.classList.remove('drag-over');
+    const f = e.dataTransfer?.files?.[0];
+    if (f) applyPhotoFile(f);
+  });
+});
+
+// ─── AUTH ─────────────────────────────────────────────────────────────────────
+async function doLogin() {
+  const pw  = document.getElementById('loginPassword').value;
+  const btn = document.getElementById('loginBtn');
+  const err = document.getElementById('loginError');
+
+  if (!pw) { showLoginError('Please enter a password.'); return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Signing in…';
+  err.classList.remove('visible');
+
+  try {
+    const res  = await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pw }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Login failed.');
+    authToken = data.token;
+    sessionStorage.setItem('esm_admin_token', authToken);
+    document.getElementById('loginPassword').value = '';
+    showList();
+  } catch (e) {
+    showLoginError(e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Sign In';
+  }
+}
+
+function showLoginError(msg) {
+  const el = document.getElementById('loginError');
+  el.textContent = msg;
+  el.classList.add('visible');
+}
+
+function logout() {
+  authToken = null;
+  sessionStorage.removeItem('esm_admin_token');
+  showPage('pageLogin');
+  document.getElementById('navLogout').classList.remove('visible');
+}
+
+// ─── PAGE ROUTING ─────────────────────────────────────────────────────────────
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+async function showList() {
+  showPage('pageList');
+  document.getElementById('navLogout').classList.add('visible');
+  await loadMenu();
+}
+
+// ─── MENU API ─────────────────────────────────────────────────────────────────
+async function loadMenu() {
+  const tbody = document.getElementById('menuTableBody');
+  tbody.innerHTML = '<tr class="loading-row"><td colspan="5"><span class="spinner"></span> Loading…</td></tr>';
+
+  try {
+    const res  = await apiFetch('/api/menu');
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Could not load menu.');
+    menuItems = data.items || [];
+    renderTable();
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="5" style="padding:24px;color:var(--danger);font-size:13px">Error: ${e.message}</td></tr>`;
+    if (e.message.includes('401') || e.message.includes('Unauthorized')) {
+      logout();
+    }
+  }
+}
+
+function renderTable() {
+  const tbody = document.getElementById('menuTableBody');
+  if (!menuItems.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">No menu items yet. Click "+ Add Item" to get started.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = menuItems.map(item => {
+    const photoCell = item.photo
+      ? `<img class="item-thumb" src="/images/${item.photo}" alt="${item.name}" loading="lazy"/>`
+      : `<div class="item-thumb-placeholder">&#10022;</div>`;
+
+    const addonCount = item.addons?.length || 0;
+    const addonText  = addonCount ? `${addonCount} add-on${addonCount === 1 ? '' : 's'}` : '—';
+
+    return `<tr>
+      <td>${photoCell}</td>
+      <td class="item-name-cell">${esc(item.name)}</td>
+      <td class="item-price-cell">$${Number(item.price).toFixed(2)}</td>
+      <td class="hide-sm item-addons-cell">${addonText}</td>
+      <td>
+        <div class="table-actions">
+          <button class="btn-edit" onclick="openForm(${item.id})">Edit</button>
+          <button class="btn-delete" onclick="promptDelete(${item.id}, '${esc(item.name)}')">Delete</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── ITEM FORM ─────────────────────────────────────────────────────────────────
+function openForm(itemId) {
+  editingItem = itemId ? menuItems.find(m => m.id === itemId) || null : null;
+  newPhotoFile = null;
+  clearExistingPhoto = false;
+
+  document.getElementById('formTitle').textContent = editingItem ? 'Edit Menu Item' : 'Add Menu Item';
+  document.getElementById('fName').value    = editingItem?.name        || '';
+  document.getElementById('fPrice').value   = editingItem?.price != null ? editingItem.price : '';
+  document.getElementById('fDesc').value    = editingItem?.description  || '';
+
+  // Photo state
+  resetPhotoUI();
+  const note = document.getElementById('currentImageNote');
+  if (editingItem?.photo) {
+    // Show current image in preview
+    document.getElementById('imagePreview').src = `/images/${editingItem.photo}`;
+    document.getElementById('previewWrap').classList.add('has-image');
+    document.getElementById('uploadPlaceholder').style.display = 'none';
+    note.textContent = 'Current photo shown above. Upload a new one to replace it, or click × to remove.';
+  } else {
+    note.textContent = '';
+  }
+
+  // Add-ons
+  const editor = document.getElementById('addonsEditor');
+  editor.innerHTML = '';
+  (editingItem?.addons || []).forEach(a => addAddonRow(a));
+
+  showPage('pageForm');
+}
+
+function resetPhotoUI() {
+  document.getElementById('photoFile').value = '';
+  document.getElementById('imagePreview').src = '';
+  document.getElementById('previewWrap').classList.remove('has-image');
+  document.getElementById('uploadPlaceholder').style.display = '';
+}
+
+function handlePhotoSelect(input) {
+  const f = input.files?.[0];
+  if (f) applyPhotoFile(f);
+}
+
+function applyPhotoFile(file) {
+  if (!file.type.startsWith('image/')) { showToast('Please select an image file.', true); return; }
+  if (file.size > 5 * 1024 * 1024)    { showToast('Image must be under 5 MB.', true);   return; }
+  newPhotoFile = file;
+  clearExistingPhoto = false;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('imagePreview').src = e.target.result;
+    document.getElementById('previewWrap').classList.add('has-image');
+    document.getElementById('uploadPlaceholder').style.display = 'none';
+    document.getElementById('currentImageNote').textContent = `Ready to upload: ${file.name}`;
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearPhoto(e) {
+  e.stopPropagation();
+  e.preventDefault();
+  newPhotoFile = null;
+  clearExistingPhoto = true;
+  resetPhotoUI();
+  document.getElementById('currentImageNote').textContent = '';
+}
+
+// ─── ADD-ONS EDITOR ───────────────────────────────────────────────────────────
+// Existing format: "Avocado +$1.50"
+function addAddonRow(existingValue) {
+  const editor = document.getElementById('addonsEditor');
+
+  // Parse existing "Name +$Price" string
+  let addonName = '', addonPrice = '';
+  if (existingValue) {
+    const m = String(existingValue).match(/^(.+?)\s*\+\$(\d+(?:\.\d+)?)$/);
+    if (m) { addonName = m[1].trim(); addonPrice = m[2]; }
+    else     { addonName = existingValue; }
+  }
+
+  const row = document.createElement('div');
+  row.className = 'addon-row';
+  row.innerHTML = `
+    <input class="form-input" type="text" placeholder="Add-on name (e.g. Avocado)" value="${esc(addonName)}" data-addon-name/>
+    <input class="form-input" type="number" placeholder="+$0.00" step="0.01" min="0" value="${addonPrice}" data-addon-price style="padding-left:10px"/>
+    <button class="addon-remove" onclick="this.parentElement.remove()" title="Remove">&#215;</button>`;
+  editor.appendChild(row);
+}
+
+function collectAddons() {
+  const rows = document.querySelectorAll('#addonsEditor .addon-row');
+  const addons = [];
+  rows.forEach(row => {
+    const name  = row.querySelector('[data-addon-name]').value.trim();
+    const price = parseFloat(row.querySelector('[data-addon-price]').value) || 0;
+    if (name) {
+      addons.push(`${name} +$${price % 1 === 0 ? price : price.toFixed(2)}`);
+    }
+  });
+  return addons;
+}
+
+// ─── SAVE ─────────────────────────────────────────────────────────────────────
+async function saveItem() {
+  const name  = document.getElementById('fName').value.trim();
+  const price = parseFloat(document.getElementById('fPrice').value);
+  const desc  = document.getElementById('fDesc').value.trim();
+
+  if (!name)          { showToast('Item name is required.', true); return; }
+  if (isNaN(price))   { showToast('A valid price is required.', true); return; }
+
+  const saveBtn = document.getElementById('saveBtn');
+  const indicator = document.getElementById('savingIndicator');
+  saveBtn.disabled = true;
+  indicator.style.display = 'flex';
+
+  try {
+    // 1. Upload photo if a new one was selected
+    let photoFilename = editingItem?.photo || null;
+    if (clearExistingPhoto) photoFilename = null;
+    if (newPhotoFile) {
+      const fd = new FormData();
+      fd.append('file', newPhotoFile);
+      fd.append('itemName', name);
+      const upRes = await apiFetch('/api/upload', { method: 'POST', body: fd });
+      const upData = await upRes.json();
+      if (!upRes.ok) throw new Error(upData.error || 'Photo upload failed.');
+      photoFilename = upData.filename;
+    }
+
+    // 2. Build item object
+    const item = {
+      name, price, description: desc,
+      photo: photoFilename,
+      addons: collectAddons(),
+    };
+    if (editingItem) item.id = editingItem.id;
+
+    // 3. Create or update
+    const method = editingItem ? 'PUT' : 'POST';
+    const res    = await apiFetch('/api/menu', {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(item),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Save failed.');
+
+    showToast(editingItem ? 'Item updated.' : 'Item added.');
+    await showList();
+  } catch (e) {
+    showToast(e.message, true);
+  } finally {
+    saveBtn.disabled = false;
+    indicator.style.display = 'none';
+  }
+}
+
+// ─── DELETE ───────────────────────────────────────────────────────────────────
+function promptDelete(id, name) {
+  pendingDeleteId = id;
+  document.getElementById('deleteModalBody').textContent = `Delete "${name}"? This cannot be undone.`;
+  document.getElementById('deleteModal').classList.add('visible');
+}
+
+function closeDeleteModal() {
+  pendingDeleteId = null;
+  document.getElementById('deleteModal').classList.remove('visible');
+}
+
+async function confirmDelete() {
+  if (!pendingDeleteId) return;
+  const id = pendingDeleteId;
+  closeDeleteModal();
+
+  try {
+    const res  = await apiFetch('/api/menu', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Delete failed.');
+    showToast('Item deleted.');
+    await loadMenu();
+  } catch (e) {
+    showToast(e.message, true);
+  }
+}
+
+// ─── API HELPER ───────────────────────────────────────────────────────────────
+function apiFetch(url, options = {}) {
+  const headers = options.headers || {};
+  if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+  // Don't set Content-Type for FormData — browser sets it with boundary
+  return fetch(url, { ...options, headers });
+}
+
+// ─── UTILS ────────────────────────────────────────────────────────────────────
+function esc(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+let toastTimer;
+function showToast(msg, isError) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.toggle('error', !!isError);
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>

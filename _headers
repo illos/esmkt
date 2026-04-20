@@ -1,0 +1,14 @@
+# Cloudflare Pages — HTTP headers
+
+# Prevent search engines from indexing the admin panel
+/admin.html
+  X-Robots-Tag: noindex, nofollow
+  Cache-Control: no-cache, no-store, must-revalidate
+
+# Images served from R2 are immutable (filename includes timestamp)
+/images/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# API routes
+/api/*
+  Cache-Control: no-store
