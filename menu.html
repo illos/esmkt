@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Esmeralda Deli &mdash; Menu</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --gold: #C9A96E;
+    --gold-light: #E2C99A;
+    --gold-dark: #8B6B3A;
+    --charcoal: #1A1A1A;
+    --charcoal-mid: #242424;
+    --charcoal-card: #2C2B28;
+    --charcoal-border: #3A3830;
+    --cream: #F0EBE0;
+    --cream-dim: #B8B0A0;
+    --danger: #C0392B;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background-color: var(--charcoal);
+    color: var(--cream);
+    font-family: 'Source Sans 3', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cpath d='M50,200 Q100,150 150,200 Q200,250 250,200 Q300,150 350,200' fill='none' stroke='%23ffffff' stroke-width='0.3' opacity='0.04'/%3E%3Cpath d='M0,180 Q60,130 120,180 Q180,230 240,180 Q300,130 360,180 Q420,230 480,180' fill='none' stroke='%23ffffff' stroke-width='0.3' opacity='0.04'/%3E%3Cpath d='M20,220 Q80,170 140,220 Q200,270 260,220 Q320,170 380,220' fill='none' stroke='%23ffffff' stroke-width='0.3' opacity='0.04'/%3E%3Cpath d='M0,160 Q70,110 140,160 Q210,210 280,160 Q350,110 420,160' fill='none' stroke='%23ffffff' stroke-width='0.3' opacity='0.04'/%3E%3Cpath d='M30,240 Q90,190 150,240 Q210,290 270,240 Q330,190 390,240' fill='none' stroke='%23ffffff' stroke-width='0.3' opacity='0.04'/%3E%3Cpath d='M100,100 Q160,60 220,100 Q280,140 340,100 Q400,60 460,100' fill='none' stroke='%23ffffff' stroke-width='0.3' opacity='0.04'/%3E%3Cpath d='M0,300 Q80,260 160,300 Q240,340 320,300 Q400,260 480,300' fill='none' stroke='%23ffffff' stroke-width='0.3' opacity='0.04'/%3E%3Cpath d='M60,330 Q130,290 200,330 Q270,370 340,330 Q410,290 480,330' fill='none' stroke='%23ffffff' stroke-width='0.3' opacity='0.04'/%3E%3Cpath d='M0,350 Q100,320 200,350 Q300,380 400,350' fill='none' stroke='%23ffffff' stroke-width='0.3' opacity='0.04'/%3E%3Cpath d='M150,50 Q200,20 250,50 Q300,80 350,50' fill='none' stroke='%23ffffff' stroke-width='0.3' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ─── SITE NAV ─── */
+  .site-nav {
+    position: relative;
+    z-index: 10;
+    background: rgba(26,26,26,0.97);
+    border-bottom: 1px solid var(--charcoal-border);
+    height: 58px;
+    padding: 0 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .nav-back {
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--cream-dim);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: color 0.2s;
+  }
+  .nav-back:hover { color: var(--gold); }
+
+  .nav-logo {
+    font-family: 'Oswald', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 5px;
+    color: var(--cream);
+    text-transform: uppercase;
+    text-decoration: none;
+  }
+  .nav-logo span { color: var(--gold); }
+
+  .nav-phone {
+    font-family: 'Oswald', sans-serif;
+    font-size: 12px;
+    letter-spacing: 2px;
+    color: var(--cream-dim);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .nav-phone:hover { color: var(--gold); }
+
+  /* ─── PAGE ─── */
+  .page-wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 16px 80px;
+  }
+
+  /* ─── DELI HERO ─── */
+  .deli-hero {
+    margin: 28px 0 36px;
+    background: var(--charcoal-card);
+    border: 1px solid var(--charcoal-border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .deli-hero-top {
+    background: linear-gradient(135deg, var(--charcoal-mid) 0%, var(--charcoal-card) 100%);
+    border-bottom: 1px solid var(--charcoal-border);
+    padding: 24px 28px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .deli-hero-brand {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .hero-tagline {
+    font-family: 'Oswald', sans-serif;
+    font-size: 10px;
+    letter-spacing: 4px;
+    color: var(--gold);
+    text-transform: uppercase;
+  }
+
+  .hero-title {
+    font-family: 'Oswald', sans-serif;
+    font-size: clamp(26px, 5vw, 40px);
+    font-weight: 700;
+    letter-spacing: 4px;
+    color: var(--cream);
+    text-transform: uppercase;
+    line-height: 1;
+    text-shadow: 1px 1px 0 rgba(0,0,0,0.4);
+  }
+  .hero-title span { color: var(--gold); }
+
+  .hero-sub {
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--cream-dim);
+    text-transform: uppercase;
+    border: 1px solid var(--charcoal-border);
+    display: inline-block;
+    padding: 2px 12px;
+    margin-top: 4px;
+  }
+
+  .deli-hero-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+  }
+
+  .btn-print-menu {
+    background: transparent;
+    border: 1px solid var(--gold-dark);
+    color: var(--gold);
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 9px 20px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+    white-space: nowrap;
+  }
+  .btn-print-menu:hover {
+    background: var(--gold);
+    color: var(--charcoal);
+    border-color: var(--gold);
+  }
+
+  /* ─── HOURS + CALL STRIP ─── */
+  .deli-hero-bottom {
+    display: flex;
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+
+  .hero-hours-block {
+    flex: 1;
+    min-width: 200px;
+    padding: 16px 24px;
+    border-right: 1px solid var(--charcoal-border);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .hero-hours-label {
+    font-family: 'Oswald', sans-serif;
+    font-size: 9px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 2px;
+  }
+
+  .hero-hours-time {
+    font-family: 'Oswald', sans-serif;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--cream);
+    letter-spacing: 1px;
+  }
+
+  .hero-hours-days {
+    font-size: 12px;
+    color: var(--cream-dim);
+    letter-spacing: 1px;
+  }
+
+  /* Per-day schedule (when hours vary) */
+  .hero-hours-schedule {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .hero-sch-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    padding: 3px 0;
+    font-family: 'Oswald', sans-serif;
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .hero-sch-row .sch-day  { color: var(--cream-dim); }
+  .hero-sch-row .sch-time { color: var(--gold); }
+  .hero-sch-row.sch-closed .sch-time { color: rgba(184,176,160,0.35); }
+  .hero-sch-row.sch-today .sch-day,
+  .hero-sch-row.sch-today .sch-time  { color: var(--gold); font-weight: 600; }
+  .hero-sch-row.sch-today .sch-day::after { content: ' ◂'; font-size: 10px; opacity: 0.7; }
+
+  /* ─── CALL BLOCK ─── */
+  .hero-call-block {
+    padding: 16px 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    min-width: 180px;
+  }
+
+  .hero-call-cta {
+    font-family: 'Oswald', sans-serif;
+    font-size: 9px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--gold);
+  }
+
+  .hero-call-number {
+    font-family: 'Oswald', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--cream);
+    letter-spacing: 2px;
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .hero-call-number:hover { color: var(--gold); }
+
+  .hero-call-note {
+    font-size: 12px;
+    color: var(--cream-dim);
+    font-style: italic;
+  }
+
+  /* ─── SECTION TITLE ─── */
+  .section-title {
+    font-family: 'Oswald', sans-serif;
+    font-size: 13px;
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    color: var(--gold);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 32px 0 20px;
+  }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: var(--charcoal-border); }
+
+  /* ─── MENU GRID ─── */
+  .menu-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+
+  /* ─── MENU CARD ─── */
+  .menu-card {
+    background: var(--charcoal-card);
+    border: 1px solid var(--charcoal-border);
+    border-radius: 4px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .card-img-wrap {
+    position: relative;
+    height: 180px;
+    background: #1A1A1A;
+    overflow: hidden;
+  }
+
+  .card-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .card-img-placeholder {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #2C2B28 0%, #1A1A1A 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(201,169,110,0.2);
+    font-family: 'Oswald', sans-serif;
+    font-size: 42px;
+  }
+
+  .price-badge {
+    position: absolute;
+    top: 10px; right: 10px;
+    background: var(--charcoal);
+    border: 1px solid var(--gold-dark);
+    color: var(--gold);
+    font-family: 'Oswald', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    padding: 2px 10px;
+    border-radius: 2px;
+    z-index: 3;
+  }
+
+  .card-body {
+    padding: 14px 16px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .card-name {
+    font-family: 'Oswald', sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--cream);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    line-height: 1.2;
+  }
+
+  .card-desc {
+    font-size: 13px;
+    color: var(--cream-dim);
+    line-height: 1.5;
+    font-style: italic;
+  }
+
+  /* ─── OPTIONS + ADDONS TEXT DISPLAY ─── */
+  .card-options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .card-option-row {
+    font-size: 12px;
+    color: var(--cream-dim);
+    line-height: 1.4;
+  }
+
+  .card-option-name {
+    font-family: 'Oswald', sans-serif;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-right: 4px;
+  }
+
+  .card-option-choices {
+    color: var(--cream-dim);
+  }
+
+  .card-addons-row {
+    font-size: 12px;
+    color: var(--cream-dim);
+    line-height: 1.5;
+    border-top: 1px solid rgba(58,56,48,0.5);
+    padding-top: 7px;
+    margin-top: 2px;
+  }
+
+  .card-addons-label {
+    font-family: 'Oswald', sans-serif;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-right: 4px;
+  }
+
+  /* ─── CATEGORY HEADING ─── */
+  .menu-category-heading {
+    grid-column: 1 / -1;
+    font-family: 'Oswald', sans-serif;
+    font-size: 13px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--gold);
+    padding: 8px 0 10px;
+    margin-top: 12px;
+    border-bottom: 1px solid var(--charcoal-border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .menu-category-heading:first-child { margin-top: 0; }
+  .menu-category-heading::after { content: ''; flex: 1; height: 1px; background: var(--charcoal-border); }
+
+  /* ─── LOADING ─── */
+  .menu-loading {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 60px 20px;
+    font-family: 'Oswald', sans-serif;
+    font-size: 13px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--cream-dim);
+  }
+
+  /* ─── FOOTER ─── */
+  .site-footer {
+    margin-top: 48px;
+    padding-top: 20px;
+    border-top: 1px solid var(--charcoal-border);
+    text-align: center;
+  }
+  .footer-text {
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: rgba(184,176,160,0.4);
+    text-transform: uppercase;
+  }
+
+  /* ─── ANIMATIONS ─── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .menu-card { animation: fadeUp 0.4s ease both; }
+  .menu-card:nth-child(1) { animation-delay: 0.05s; }
+  .menu-card:nth-child(2) { animation-delay: 0.10s; }
+  .menu-card:nth-child(3) { animation-delay: 0.15s; }
+  .menu-card:nth-child(4) { animation-delay: 0.20s; }
+  .menu-card:nth-child(5) { animation-delay: 0.25s; }
+  .menu-card:nth-child(6) { animation-delay: 0.30s; }
+  .menu-card:nth-child(7) { animation-delay: 0.35s; }
+  .menu-card:nth-child(8) { animation-delay: 0.40s; }
+
+  @media (max-width: 600px) {
+    .menu-grid { grid-template-columns: 1fr; }
+    .nav-phone { display: none; }
+    .deli-hero-top { flex-direction: column; align-items: flex-start; gap: 16px; }
+    .deli-hero-actions { align-items: flex-start; }
+    .hero-hours-block { border-right: none; border-bottom: 1px solid var(--charcoal-border); }
+  }
+
+  /* ─── PRINT STYLES ─────────────────────────────────────────────────────── */
+  .print-header { display: none; }
+
+  @media print {
+    /* Force dark colors to carry through to PDF */
+    * {
+      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact;
+    }
+
+    /* Hide interactive / nav chrome */
+    .site-nav,
+    .btn-print-menu,
+    body::before,
+    .site-footer {
+      display: none !important;
+    }
+
+    /* Show print-only header */
+    .print-header {
+      display: block !important;
+      font-family: 'Oswald', sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      color: var(--cream);
+      text-align: center;
+      padding: 18px 0 8px;
+      border-bottom: 2px solid var(--gold-dark);
+      margin-bottom: 20px;
+    }
+    .print-header span { color: var(--gold); }
+
+    body {
+      background-color: var(--charcoal) !important;
+      color: var(--cream) !important;
+    }
+
+    .page-wrap {
+      padding: 0 12px 20px;
+      max-width: 100%;
+    }
+
+    /* Shrink hero */
+    .deli-hero {
+      margin: 0 0 20px;
+    }
+
+    /* 2-column card grid on print */
+    .menu-grid {
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .menu-card {
+      break-inside: avoid;
+      animation: none !important;
+    }
+
+    .card-img-wrap {
+      height: 130px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- Print-only header -->
+<div class="print-header">E<span>S</span>MERALDA Market Deli</div>
+
+<!-- Site Nav -->
+<nav class="site-nav">
+  <a href="index.html" class="nav-back">&#8592; Esmeralda Market</a>
+  <a href="index.html" class="nav-logo">E<span>S</span>MERALDA</a>
+  <a href="tel:7755723200" class="nav-phone">775-572-3200</a>
+</nav>
+
+<div class="page-wrap">
+
+  <!-- DELI HERO -->
+  <div class="deli-hero">
+    <div class="deli-hero-top">
+      <div class="deli-hero-brand">
+        <span class="hero-tagline">Battle Born &middot; NV Strong</span>
+        <div class="hero-title">E<span>S</span>MERALDA</div>
+        <div class="hero-sub">Deli Menu</div>
+      </div>
+      <div class="deli-hero-actions">
+        <button class="btn-print-menu" onclick="window.print()">&#9113;&nbsp; Print Menu</button>
+      </div>
+    </div>
+    <div class="deli-hero-bottom">
+      <div class="hero-hours-block">
+        <div class="hero-hours-label">Deli Hours</div>
+        <div class="hero-hours-time" id="heroHoursTime">9:00 AM &ndash; 3:00 PM</div>
+        <div class="hero-hours-days" id="heroHoursDays">Monday &ndash; Saturday</div>
+        <div class="hero-hours-schedule" id="heroHoursSchedule" style="display:none"></div>
+      </div>
+      <div class="hero-call-block">
+        <div class="hero-call-cta">Call to Order</div>
+        <a href="tel:7755723200" class="hero-call-number">775-572-3200</a>
+        <div class="hero-call-note">Fresh made &mdash; pickup ready in minutes</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MENU SECTION -->
+  <p class="section-title">Deli Menu</p>
+  <div class="menu-grid" id="menuGrid">
+    <div class="menu-loading">Loading menu&hellip;</div>
+  </div>
+
+  <footer class="site-footer">
+    <p class="footer-text">&copy; <span id="footerYear"></span> Esmeralda Market &middot; HWY 264 MM8, Dyer, NV 89010 &middot; 775-572-3200</p>
+  </footer>
+</div>
+
+<script>
+// ─── FALLBACK DATA ────────────────────────────────────────────────────────────
+const MENU_FALLBACK = [
+  { id:1, name:'Classic Deli Sub',   price:9.50,  photo:null, description:'Stacked high on a fresh hoagie roll with your choice of meats, crisp lettuce, tomato, and our house mustard.',
+    options:[{name:'Bread',choices:['Hoagie Roll','Sourdough','Wheat']}],
+    addons:['Avocado +$1','Bacon +$1.50','Extra Cheese +$0.75','Jalapeños +$0.50','Double Meat +$2'] },
+  { id:2, name:'BLT on Sourdough',   price:8.00,  photo:null, description:'Crispy applewood bacon, heirloom tomato, and romaine on thick-cut grilled sourdough.',
+    addons:['Avocado +$1','Fried Egg +$1','Extra Bacon +$1.50','Hot Sauce +$0'] },
+  { id:3, name:'Green Chile Burger', price:11.00, photo:null, description:'1/3 lb hand-formed patty smothered in roasted Hatch green chile and pepper jack cheese.',
+    addons:['Extra Patty +$3','Bacon +$1.50','Mushrooms +$0.75','Caramelized Onions +$0.75','Extra Chile +$0.50'] },
+  { id:4, name:'Breakfast Burrito',  price:8.50,  photo:null, description:'Scrambled eggs, potato, cheese, and salsa wrapped in a grilled flour tortilla. Fuel for the trail.',
+    addons:['Bacon +$1.50','Sausage +$1.50','Avocado +$1','Extra Salsa +$0','Green Chile +$0.75'] },
+  { id:5, name:'Turkey & Swiss',     price:9.00,  photo:null, description:'Sliced turkey breast, Swiss cheese, honey mustard, and crunchy pickles on a toasted roll.',
+    addons:['Avocado +$1','Bacon +$1.50','Extra Turkey +$2','Sprouts +$0.50'] },
+  { id:6, name:'Hot Dog',            price:4.50,  photo:null, description:'All-beef frank on a steamed bun. Simple, honest, good.',
+    addons:['Chili +$1','Cheese Sauce +$0.75','Jalapeños +$0.50','Mustard & Relish +$0','Onions +$0'] },
+  { id:7, name:'Grilled Cheese',     price:6.50,  photo:null, description:'Two kinds of melted cheese on buttered sourdough, griddled golden brown.',
+    addons:['Tomato +$0.50','Bacon +$1.50','Jalapeños +$0.50'] },
+  { id:8, name:'Green Salad',        price:7.00,  photo:null, description:'Fresh greens, cucumber, cherry tomatoes, and your choice of dressing.',
+    addons:['Grilled Chicken +$3','Avocado +$1','Extra Dressing +$0','Croutons +$0.50'] },
+];
+
+let MENU = [];
+let MENU_CATEGORIES = [];
+
+// Fallback deli hours (Mon–Sat 9am–3pm, Sun closed)
+const DAYS_ARR = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+let deliHours = DAYS_ARR.map((d,i) => ({
+  day: d,
+  open:   i < 6 ? '09:00' : null,
+  close:  i < 6 ? '15:00' : null,
+  closed: i === 6,
+}));
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+function fmt(n) { return '$' + Number(n).toFixed(2); }
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmt12(t) {
+  if (!t) return '—';
+  const [h, m] = t.split(':').map(Number);
+  const ampm = h < 12 ? 'AM' : 'PM';
+  const h12  = h % 12 || 12;
+  return `${h12}:${String(m).padStart(2,'0')} ${ampm}`;
+}
+
+function deliHoursVary() {
+  const open = deliHours.filter(h => !h.closed);
+  if (!open.length) return false;
+  const first = `${open[0].open}|${open[0].close}`;
+  return open.some(h => `${h.open}|${h.close}` !== first);
+}
+
+function summarizeDeliDays() {
+  const open   = deliHours.filter(h => !h.closed);
+  const closed = deliHours.filter(h => h.closed);
+  if (!closed.length) return 'Open Every Day';
+  if (closed.length === 1) return `Closed ${closed[0].day}`;
+  if (!open.length) return 'Closed Every Day';
+  return `${open[0].day} \u2013 ${open[open.length - 1].day}`;
+}
+
+// ─── RENDER HERO HOURS ────────────────────────────────────────────────────────
+function renderHeroHours() {
+  const timeEl  = document.getElementById('heroHoursTime');
+  const daysEl  = document.getElementById('heroHoursDays');
+  const schedEl = document.getElementById('heroHoursSchedule');
+  const openDays = deliHours.filter(h => !h.closed);
+  const jsDay   = new Date().getDay();
+  const todayIdx = jsDay === 0 ? 6 : jsDay - 1;
+
+  if (!openDays.length) {
+    timeEl.textContent  = 'Closed';
+    daysEl.textContent  = 'All Days';
+    timeEl.style.display = '';
+    daysEl.style.display = '';
+    schedEl.style.display = 'none';
+    return;
+  }
+
+  if (deliHoursVary()) {
+    timeEl.style.display = 'none';
+    daysEl.style.display = 'none';
+    schedEl.style.display = '';
+    schedEl.innerHTML = deliHours.map((h, i) => {
+      const timeStr = h.closed ? 'Closed' : `${fmt12(h.open)} \u2013 ${fmt12(h.close)}`;
+      const cls = [
+        i === todayIdx ? 'sch-today' : '',
+        h.closed       ? 'sch-closed' : '',
+      ].filter(Boolean).join(' ');
+      return `<div class="hero-sch-row${cls ? ' '+cls : ''}">
+        <span class="sch-day">${h.day}</span>
+        <span class="sch-time">${timeStr}</span>
+      </div>`;
+    }).join('');
+  } else {
+    timeEl.style.display  = '';
+    daysEl.style.display  = '';
+    schedEl.style.display = 'none';
+    timeEl.textContent = `${fmt12(openDays[0].open)} \u2013 ${fmt12(openDays[0].close)}`;
+    daysEl.textContent = summarizeDeliDays();
+  }
+}
+
+// ─── BOOT ────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  document.getElementById('footerYear').textContent = new Date().getFullYear();
+  await initMenu();
+});
+
+// ─── LOAD DATA FROM API ───────────────────────────────────────────────────────
+async function initMenu() {
+  try {
+    const [menuRes, settingsRes] = await Promise.all([
+      fetch('/api/menu'),
+      fetch('/api/settings'),
+    ]);
+    if (menuRes.ok) {
+      const data = await menuRes.json();
+      MENU = data.items || [];
+      MENU_CATEGORIES = data.categories || [];
+    } else {
+      MENU = MENU_FALLBACK;
+    }
+    if (settingsRes.ok) {
+      const sData = await settingsRes.json();
+      if (Array.isArray(sData.deliHours) && sData.deliHours.length === 7) {
+        deliHours = sData.deliHours;
+      }
+    }
+  } catch (_) {
+    MENU = MENU_FALLBACK;
+  }
+  renderHeroHours();
+  renderMenu();
+}
+
+// ─── RENDER MENU ─────────────────────────────────────────────────────────────
+function renderMenu() {
+  const grid = document.getElementById('menuGrid');
+  grid.innerHTML = '';
+  if (!MENU.length) {
+    grid.innerHTML = '<div class="menu-loading">No menu items available.</div>';
+    return;
+  }
+
+  const cats      = MENU_CATEGORIES.filter(c => c.id !== 0 || c.itemIds?.length);
+  const sortedCats = [...cats.filter(c => c.id !== 0), ...cats.filter(c => c.id === 0)];
+  const placedIds  = new Set();
+
+  function renderCard(item) {
+    // Photo or placeholder
+    const imgHTML = item.photo
+      ? `<img class="card-img" src="/images/${escHtml(item.photo)}" alt="${escHtml(item.name)}" loading="lazy"/>`
+      : `<div class="card-img-placeholder">&#10022;</div>`;
+
+    // Options: "Bread: Roll · White · Wheat"
+    const optionsHTML = item.options?.length
+      ? `<div class="card-options-list">${item.options.map(opt =>
+          `<div class="card-option-row">
+            <span class="card-option-name">${escHtml(opt.name)}:</span>
+            <span class="card-option-choices">${opt.choices.map(c => escHtml(c)).join(' &middot; ')}</span>
+          </div>`
+        ).join('')}</div>` : '';
+
+    // Add-ons: compact inline "Avocado +$1 · Bacon +$1.50"
+    const addonsHTML = item.addons?.length
+      ? `<div class="card-addons-row">
+          <span class="card-addons-label">Add-ons:</span>${item.addons.map(a => escHtml(a)).join(' &middot; ')}
+        </div>` : '';
+
+    const card = document.createElement('div');
+    card.className = 'menu-card';
+    card.innerHTML = `
+      <div class="card-img-wrap">
+        ${imgHTML}
+        <div class="price-badge">${fmt(item.price)}</div>
+      </div>
+      <div class="card-body">
+        <div class="card-name">${escHtml(item.name)}</div>
+        ${item.description ? `<div class="card-desc">${escHtml(item.description)}</div>` : ''}
+        ${optionsHTML}
+        ${addonsHTML}
+      </div>`;
+    return card;
+  }
+
+  if (sortedCats.length > 1 || (sortedCats.length === 1 && sortedCats[0].id !== 0)) {
+    sortedCats.forEach(cat => {
+      const catItems = (cat.itemIds || []).map(id => MENU.find(i => i.id === id)).filter(Boolean);
+      if (!catItems.length) return;
+      const heading = document.createElement('div');
+      heading.className = 'menu-category-heading';
+      heading.textContent = cat.name;
+      grid.appendChild(heading);
+      catItems.forEach(item => { grid.appendChild(renderCard(item)); placedIds.add(item.id); });
+    });
+    MENU.filter(i => !placedIds.has(i.id)).forEach(item => grid.appendChild(renderCard(item)));
+  } else {
+    MENU.forEach(item => grid.appendChild(renderCard(item)));
+  }
+}
+</script>
+</body>
+</html>
