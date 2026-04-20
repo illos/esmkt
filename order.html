@@ -847,6 +847,24 @@
     color: var(--cream-dim);
   }
 
+  /* ─── CATEGORY HEADINGS IN MENU ─── */
+  .menu-category-heading {
+    grid-column: 1 / -1;
+    font-family: 'Oswald', sans-serif;
+    font-size: 13px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--gold);
+    padding: 8px 0 10px;
+    margin-top: 12px;
+    border-bottom: 1px solid var(--charcoal-border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .menu-category-heading:first-child { margin-top: 0; }
+  .menu-category-heading::after { content: ''; flex: 1; height: 1px; background: var(--charcoal-border); }
+
   .req { color: var(--gold); font-size: 12px; }
 
   @media (max-width: 600px) {
@@ -1019,6 +1037,7 @@ const MENU_FALLBACK = [
 ];
 
 let MENU = [];
+let MENU_CATEGORIES = [];
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
 function parseAddonPrice(label) {
@@ -1049,6 +1068,7 @@ async function initMenu() {
     if (!res.ok) throw new Error('API error');
     const data = await res.json();
     MENU = data.items || [];
+    MENU_CATEGORIES = data.categories || [];
   } catch (_) {
     // Fall back to hardcoded data when running locally or API is unavailable
     MENU = MENU_FALLBACK;
@@ -1128,17 +1148,20 @@ function renderMenu() {
   grid.innerHTML = '';
   if (!MENU.length) { grid.innerHTML = '<div class="menu-loading">No menu items.</div>'; return; }
 
-  MENU.forEach(item => {
-    const card = document.createElement('div');
-    card.className = 'menu-card';
-    card.id = `card-${item.id}`;
+  // Build ordered list of items per category
+  const cats = MENU_CATEGORIES.filter(c => c.id !== 0 || c.itemIds?.length);
+  const sortedCats = [...cats.filter(c => c.id !== 0), ...cats.filter(c => c.id === 0)];
+  const placedIds = new Set();
 
+  function renderItemCard(item) {
+    const defaultSet = new Set(item.defaultAddons || []);
     const addonsHTML = item.addons?.length ? `
       <details class="addon-dropdown">
         <summary class="addon-summary">Add-ons <span class="addon-arrow">&#9662;</span></summary>
-        <ul class="addons-list">${item.addons.map(a =>
-          `<li class="addon-item"><label><input type="checkbox" onchange="syncAddon(this)"/><span>${a}</span></label></li>`
-        ).join('')}</ul>
+        <ul class="addons-list">${item.addons.map(a => {
+          const isDefault = defaultSet.has(a);
+          return `<li class="addon-item${isDefault?' checked':''}" data-default="${isDefault}"><label><input type="checkbox"${isDefault?' checked':''} onchange="syncAddon(this)"/><span>${a}</span></label></li>`;
+        }).join('')}</ul>
       </details>` : '';
 
     const optionsHTML = item.options?.length ? `
@@ -1155,6 +1178,9 @@ function renderMenu() {
       ? `<div class="slide active"><img src="/images/${item.photo}" alt="${item.name}" loading="lazy"/></div>`
       : `<div class="slide active"><div class="slide-placeholder">&#10022;</div></div>`;
 
+    const card = document.createElement('div');
+    card.className = 'menu-card';
+    card.id = `card-${item.id}`;
     card.innerHTML = `
       <div class="card-slideshow" id="slideshow-${item.id}">
         ${slideContent}
@@ -1167,9 +1193,26 @@ function renderMenu() {
         ${addonsHTML}
         <button class="btn-add" onclick="addToCart(${item.id})">Add to Order</button>
       </div>`;
+    return card;
+  }
 
-    grid.appendChild(card);
-  });
+  if (sortedCats.length > 1 || (sortedCats.length === 1 && sortedCats[0].id !== 0)) {
+    // Render with category headings
+    sortedCats.forEach(cat => {
+      const catItems = (cat.itemIds || []).map(id => MENU.find(i => i.id === id)).filter(Boolean);
+      if (!catItems.length) return;
+      const heading = document.createElement('div');
+      heading.className = 'menu-category-heading';
+      heading.textContent = cat.name;
+      grid.appendChild(heading);
+      catItems.forEach(item => { grid.appendChild(renderItemCard(item)); placedIds.add(item.id); });
+    });
+    // Any items not in any category
+    MENU.filter(i => !placedIds.has(i.id)).forEach(item => grid.appendChild(renderItemCard(item)));
+  } else {
+    // No categories — just flat list
+    MENU.forEach(item => grid.appendChild(renderItemCard(item)));
+  }
 }
 
 // ─── ADDONS ──────────────────────────────────────────────────────────────────
@@ -1200,10 +1243,12 @@ function addToCart(itemId) {
   btn.classList.add('added');
   setTimeout(() => { btn.textContent = 'Add to Order'; btn.classList.remove('added'); }, 1500);
 
-  card.querySelectorAll('.addon-item.checked').forEach(el => {
-    el.classList.remove('checked');
+  // Reset addons to their default state
+  card.querySelectorAll('.addon-item').forEach(el => {
+    const isDef = el.dataset.default === 'true';
+    el.classList.toggle('checked', isDef);
     const cb = el.querySelector('input[type="checkbox"]');
-    if (cb) cb.checked = false;
+    if (cb) cb.checked = isDef;
   });
 }
 

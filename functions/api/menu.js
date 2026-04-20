@@ -1,12 +1,17 @@
 /**
- * GET    /api/menu          — public, returns full menu
+ * GET    /api/menu          — public, returns { items, categories }
  * POST   /api/menu          — create item   (auth required)
  * PUT    /api/menu          — update item   (auth required)
- * PATCH  /api/menu          — reorder items (auth required)
+ * PATCH  /api/menu          — save full state: items + categories (auth required)
  * DELETE /api/menu          — delete item   (auth required)
  *
  * Required KV binding: MENU_KV
  * Required env vars:   AUTH_SECRET (or ADMIN_PASSWORD as fallback)
+ *
+ * Categories data structure:
+ *   categories: [{ id: number, name: string, itemIds: number[] }]
+ *   Category id=0 is the reserved "Uncategorized" bucket.
+ *   Items deleted from a category move to id=0.
  */
 
 const CORS = {
@@ -17,16 +22,22 @@ const CORS = {
 
 // Default menu seeded into KV on first request
 const SEED = {
-  nextId: 9,
+  nextId:    9,
+  nextCatId: 3,
+  categories: [
+    { id: 1, name: 'Sandwiches',      itemIds: [1, 2, 5, 7] },
+    { id: 2, name: 'Mains & Sides',   itemIds: [3, 4, 6, 8] },
+    { id: 0, name: 'Uncategorized',   itemIds: [] },
+  ],
   items: [
-    { id:1, name:'Classic Deli Sub',   price:9.50,  photo:null, description:'Stacked high on a fresh hoagie roll with your choice of meats, crisp lettuce, tomato, and our house mustard.', addons:['Avocado +$1','Bacon +$1.50','Extra Cheese +$0.75','Jalapeños +$0.50','Double Meat +$2'] },
-    { id:2, name:'BLT on Sourdough',   price:8.00,  photo:null, description:'Crispy applewood bacon, heirloom tomato, and romaine on thick-cut grilled sourdough.', addons:['Avocado +$1','Fried Egg +$1','Extra Bacon +$1.50','Hot Sauce +$0'] },
-    { id:3, name:'Green Chile Burger', price:11.00, photo:null, description:'1/3 lb hand-formed patty smothered in roasted Hatch green chile and pepper jack cheese.', addons:['Extra Patty +$3','Bacon +$1.50','Mushrooms +$0.75','Caramelized Onions +$0.75','Extra Chile +$0.50'] },
-    { id:4, name:'Breakfast Burrito',  price:8.50,  photo:null, description:'Scrambled eggs, potato, cheese, and salsa wrapped in a grilled flour tortilla. Fuel for the trail.', addons:['Bacon +$1.50','Sausage +$1.50','Avocado +$1','Extra Salsa +$0','Green Chile +$0.75'] },
-    { id:5, name:'Turkey & Swiss',     price:9.00,  photo:null, description:'Sliced turkey breast, Swiss cheese, honey mustard, and crunchy pickles on a toasted roll.', addons:['Avocado +$1','Bacon +$1.50','Extra Turkey +$2','Sprouts +$0.50'] },
-    { id:6, name:'Hot Dog',            price:4.50,  photo:null, description:'All-beef frank on a steamed bun. Simple, honest, good.', addons:['Chili +$1','Cheese Sauce +$0.75','Jalapeños +$0.50','Mustard & Relish +$0','Onions +$0'] },
-    { id:7, name:'Grilled Cheese',     price:6.50,  photo:null, description:'Two kinds of melted cheese on buttered sourdough, griddled golden brown.', addons:['Tomato +$0.50','Bacon +$1.50','Jalapeños +$0.50'] },
-    { id:8, name:'Green Salad',        price:7.00,  photo:null, description:'Fresh greens, cucumber, cherry tomatoes, and your choice of dressing.', addons:['Grilled Chicken +$3','Avocado +$1','Extra Dressing +$0','Croutons +$0.50'] },
+    { id:1, name:'Classic Deli Sub',   price:9.50,  photo:null, description:'Stacked high on a fresh hoagie roll with your choice of meats, crisp lettuce, tomato, and our house mustard.', addons:['Avocado +$1','Bacon +$1.50','Extra Cheese +$0.75','Jalapeños +$0.50','Double Meat +$2'], defaultAddons:[], options:[] },
+    { id:2, name:'BLT on Sourdough',   price:8.00,  photo:null, description:'Crispy applewood bacon, heirloom tomato, and romaine on thick-cut grilled sourdough.', addons:['Avocado +$1','Fried Egg +$1','Extra Bacon +$1.50','Hot Sauce +$0'], defaultAddons:[], options:[] },
+    { id:3, name:'Green Chile Burger', price:11.00, photo:null, description:'1/3 lb hand-formed patty smothered in roasted Hatch green chile and pepper jack cheese.', addons:['Extra Patty +$3','Bacon +$1.50','Mushrooms +$0.75','Caramelized Onions +$0.75','Extra Chile +$0.50'], defaultAddons:[], options:[] },
+    { id:4, name:'Breakfast Burrito',  price:8.50,  photo:null, description:'Scrambled eggs, potato, cheese, and salsa wrapped in a grilled flour tortilla. Fuel for the trail.', addons:['Bacon +$1.50','Sausage +$1.50','Avocado +$1','Extra Salsa +$0','Green Chile +$0.75'], defaultAddons:[], options:[] },
+    { id:5, name:'Turkey & Swiss',     price:9.00,  photo:null, description:'Sliced turkey breast, Swiss cheese, honey mustard, and crunchy pickles on a toasted roll.', addons:['Avocado +$1','Bacon +$1.50','Extra Turkey +$2','Sprouts +$0.50'], defaultAddons:[], options:[] },
+    { id:6, name:'Hot Dog',            price:4.50,  photo:null, description:'All-beef frank on a steamed bun. Simple, honest, good.', addons:['Chili +$1','Cheese Sauce +$0.75','Jalapeños +$0.50','Mustard & Relish +$0','Onions +$0'], defaultAddons:[], options:[] },
+    { id:7, name:'Grilled Cheese',     price:6.50,  photo:null, description:'Two kinds of melted cheese on buttered sourdough, griddled golden brown.', addons:['Tomato +$0.50','Bacon +$1.50','Jalapeños +$0.50'], defaultAddons:[], options:[] },
+    { id:8, name:'Green Salad',        price:7.00,  photo:null, description:'Fresh greens, cucumber, cherry tomatoes, and your choice of dressing.', addons:['Grilled Chicken +$3','Avocado +$1','Extra Dressing +$0','Croutons +$0.50'], defaultAddons:[], options:[] },
   ],
 };
 
@@ -38,46 +49,68 @@ export async function onRequestOptions() {
 
 export async function onRequestGet({ env }) {
   const data = await getMenuData(env);
-  return json({ items: data.items });
+  return json({ items: data.items, categories: data.categories });
 }
 
 export async function onRequestPost({ request, env }) {
   if (!await isAuthorized(request, env)) return unauthorized();
 
-  const item = await request.json();
+  const { item, categoryId } = await request.json();
   const data = await getMenuData(env);
 
-  item.id = data.nextId++;
-  item.photo = item.photo || null;
-  item.addons = item.addons || [];
+  item.id           = data.nextId++;
+  item.photo        = item.photo        || null;
+  item.addons       = item.addons       || [];
+  item.defaultAddons = item.defaultAddons || [];
+  item.options      = item.options      || [];
   data.items.push(item);
 
+  // Add item to the requested category, or Uncategorized
+  const targetCatId = categoryId != null ? Number(categoryId) : 0;
+  const cat = data.categories.find(c => c.id === targetCatId)
+           || data.categories.find(c => c.id === 0);
+  if (cat) cat.itemIds.push(item.id);
+
   await env.MENU_KV.put('menu', JSON.stringify(data));
-  return json(item, 201);
+  return json({ item, categories: data.categories }, 201);
 }
 
 export async function onRequestPut({ request, env }) {
   if (!await isAuthorized(request, env)) return unauthorized();
 
-  const updated = await request.json();
-  const data    = await getMenuData(env);
-  const idx     = data.items.findIndex(i => i.id === updated.id);
+  const { item: updated, categoryId } = await request.json();
+  const data = await getMenuData(env);
+  const idx  = data.items.findIndex(i => i.id === updated.id);
 
   if (idx === -1) return json({ error: 'Item not found.' }, 404);
 
   data.items[idx] = updated;
+
+  // Move to a different category if requested
+  if (categoryId != null) {
+    const newCatId = Number(categoryId);
+    // Remove from current category
+    data.categories.forEach(c => { c.itemIds = c.itemIds.filter(id => id !== updated.id); });
+    // Add to new category
+    const cat = data.categories.find(c => c.id === newCatId)
+             || data.categories.find(c => c.id === 0);
+    if (cat && !cat.itemIds.includes(updated.id)) cat.itemIds.push(updated.id);
+  }
+
   await env.MENU_KV.put('menu', JSON.stringify(data));
-  return json(updated);
+  return json({ item: updated, categories: data.categories });
 }
 
 export async function onRequestPatch({ request, env }) {
+  // Saves the full menu state: items array + categories array
   if (!await isAuthorized(request, env)) return unauthorized();
 
-  const { items } = await request.json();
-  if (!Array.isArray(items)) return json({ error: 'items array required.' }, 400);
-
+  const body = await request.json();
   const data = await getMenuData(env);
-  data.items = items;
+
+  if (Array.isArray(body.items))      data.items      = body.items;
+  if (Array.isArray(body.categories)) data.categories = body.categories;
+
   await env.MENU_KV.put('menu', JSON.stringify(data));
   return json({ success: true });
 }
@@ -87,11 +120,14 @@ export async function onRequestDelete({ request, env }) {
 
   const { id } = await request.json();
   const data   = await getMenuData(env);
+  const itemId = Number(id);
   const before = data.items.length;
 
-  data.items = data.items.filter(i => i.id !== Number(id));
-
+  data.items = data.items.filter(i => i.id !== itemId);
   if (data.items.length === before) return json({ error: 'Item not found.' }, 404);
+
+  // Remove item from all categories
+  data.categories.forEach(c => { c.itemIds = c.itemIds.filter(i => i !== itemId); });
 
   await env.MENU_KV.put('menu', JSON.stringify(data));
   return json({ success: true });
@@ -105,7 +141,35 @@ async function getMenuData(env) {
     await env.MENU_KV.put('menu', JSON.stringify(SEED));
     return JSON.parse(JSON.stringify(SEED));
   }
-  return JSON.parse(raw);
+  const data = JSON.parse(raw);
+
+  // ── Migration: add categories if missing (old data) ──────────────────────
+  if (!data.categories) {
+    data.nextCatId  = 2;
+    data.categories = [
+      { id: 1, name: 'Menu', itemIds: data.items.map(i => i.id) },
+      { id: 0, name: 'Uncategorized', itemIds: [] },
+    ];
+  }
+
+  // ── Ensure Uncategorized category always exists ───────────────────────────
+  if (!data.categories.find(c => c.id === 0)) {
+    data.categories.push({ id: 0, name: 'Uncategorized', itemIds: [] });
+  }
+
+  // ── Ensure nextCatId exists ───────────────────────────────────────────────
+  if (!data.nextCatId) {
+    data.nextCatId = Math.max(...data.categories.map(c => c.id), 1) + 1;
+  }
+
+  // ── Ensure items have new fields ──────────────────────────────────────────
+  data.items = data.items.map(item => ({
+    defaultAddons: [],
+    options: [],
+    ...item,
+  }));
+
+  return data;
 }
 
 async function isAuthorized(request, env) {
@@ -116,13 +180,11 @@ async function isAuthorized(request, env) {
   const [ts, providedHmac] = token.split(':');
   if (!ts || !providedHmac) return false;
 
-  // Reject tokens older than 8 hours
   if (Date.now() - parseInt(ts) > 8 * 60 * 60 * 1000) return false;
 
   const secret = env.AUTH_SECRET || env.ADMIN_PASSWORD;
   const expectedHmac = await hmac(ts, secret);
 
-  // Constant-time comparison
   if (expectedHmac.length !== providedHmac.length) return false;
   let diff = 0;
   for (let i = 0; i < expectedHmac.length; i++) {

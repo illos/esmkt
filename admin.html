@@ -559,11 +559,22 @@
   .addons-list-editor { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
   .addon-row {
     display: grid;
-    grid-template-columns: 1fr 100px 36px;
+    grid-template-columns: 1fr 90px auto 36px;
     gap: 8px;
     align-items: center;
   }
-  @media (max-width: 480px) { .addon-row { grid-template-columns: 1fr 80px 36px; } }
+  @media (max-width: 480px) { .addon-row { grid-template-columns: 1fr 70px auto 36px; } }
+  .addon-default-wrap {
+    display: flex; align-items: center; gap: 5px;
+    white-space: nowrap; cursor: pointer;
+  }
+  .addon-default-wrap input[type="checkbox"] {
+    accent-color: var(--gold); width: 14px; height: 14px; cursor: pointer; flex-shrink: 0;
+  }
+  .addon-default-label-text {
+    font-family: 'Oswald', sans-serif; font-size: 10px; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--cream-dim); cursor: pointer;
+  }
   .addon-remove {
     background: none;
     border: 1px solid var(--charcoal-border);
@@ -729,6 +740,89 @@
     font-style: italic;
     font-size: 14px;
   }
+
+  /* ─── CATEGORY BLOCKS ─── */
+  .category-block {
+    margin-bottom: 18px;
+    border: 1px solid var(--charcoal-border);
+    border-radius: 4px;
+    background: var(--charcoal-card);
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .category-block.cat-drag-over { border-color: var(--gold-dark); background: rgba(201,169,110,0.04); }
+  .category-block.cat-dragging  { opacity: 0.35; }
+  .cat-uncategorized > .category-header { opacity: 0.65; }
+  .category-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; border-bottom: 1px solid var(--charcoal-border);
+    min-height: 44px;
+  }
+  .cat-drag-handle {
+    cursor: grab; color: rgba(184,176,160,0.3); font-size: 16px;
+    padding: 0 2px; user-select: none; transition: color 0.2s; flex-shrink: 0;
+  }
+  .cat-drag-handle:hover { color: var(--gold); }
+  .cat-name-input {
+    background: transparent; border: none;
+    border-bottom: 1px dashed transparent;
+    color: var(--gold); font-family: 'Oswald', sans-serif;
+    font-size: 12px; letter-spacing: 3px; text-transform: uppercase;
+    padding: 2px 4px; outline: none; cursor: text;
+    transition: border-color 0.2s; flex: 1; min-width: 0;
+  }
+  .cat-name-input:hover { border-bottom-color: rgba(201,169,110,0.3); }
+  .cat-name-input:focus { border-bottom-color: var(--gold-dark); }
+  .cat-name-text {
+    font-family: 'Oswald', sans-serif; font-size: 12px;
+    letter-spacing: 3px; text-transform: uppercase; color: var(--gold); flex: 1;
+  }
+  .cat-item-count {
+    font-family: 'Oswald', sans-serif; font-size: 10px;
+    letter-spacing: 2px; color: rgba(184,176,160,0.4); white-space: nowrap;
+  }
+  .btn-delete-cat {
+    background: none; border: none; color: rgba(184,176,160,0.25);
+    font-size: 18px; width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; border-radius: 2px; transition: color 0.2s;
+    flex-shrink: 0; line-height: 1;
+  }
+  .btn-delete-cat:hover { color: var(--danger); }
+
+  /* ─── ITEM ROWS (div-based) ─── */
+  .item-row {
+    display: grid;
+    grid-template-columns: 20px 52px 1fr 72px 1fr 148px;
+    align-items: center; gap: 10px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--charcoal-border);
+    transition: background 0.15s; cursor: default; user-select: none;
+  }
+  .item-row:last-child { border-bottom: none; }
+  .item-row:hover { background: rgba(255,255,255,0.03); }
+  .item-row.item-dragging { opacity: 0.35; }
+  .item-row.item-drag-over { border-top: 2px solid var(--gold); background: rgba(201,169,110,0.04); }
+  @media (max-width: 600px) {
+    .item-row { grid-template-columns: 20px 44px 1fr 64px 120px; }
+    .item-meta-cell { display: none; }
+  }
+  .item-drag-handle {
+    cursor: grab; color: rgba(184,176,160,0.25); font-size: 16px;
+    user-select: none; transition: color 0.2s; text-align: center;
+  }
+  .item-row:hover .item-drag-handle { color: rgba(184,176,160,0.55); }
+  .item-meta-cell { font-size: 12px; color: var(--cream-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .category-items { min-height: 8px; }
+  .category-empty-zone {
+    padding: 18px 14px; text-align: center;
+    font-size: 12px; color: rgba(184,176,160,0.3);
+    letter-spacing: 1px; font-style: italic; transition: background 0.15s, color 0.15s;
+  }
+  .category-empty-zone.drop-active,
+  .category-items.drop-active .category-empty-zone {
+    background: rgba(201,169,110,0.06); color: rgba(201,169,110,0.5);
+  }
+  .category-items.drop-active { background: rgba(201,169,110,0.03); }
 </style>
 </head>
 <body>
@@ -762,26 +856,12 @@
 <div class="page" id="pageList">
   <div class="list-header">
     <span class="section-title" style="margin:0;flex:1">Menu Items</span>
+    <button class="btn-add-item" style="background:none;border:1px solid var(--charcoal-border);color:var(--cream-dim);margin-right:8px" onclick="addCategory()">+ Category</button>
     <button class="btn-add-item" onclick="openForm(null)">+ Add Item</button>
   </div>
-
-  <table class="menu-table">
-    <thead>
-      <tr>
-        <th style="width:28px"></th>
-        <th style="width:56px">Photo</th>
-        <th>Name</th>
-        <th style="width:80px">Price</th>
-        <th class="hide-sm">Add-ons</th>
-        <th style="width:130px">Actions</th>
-      </tr>
-    </thead>
-    <tbody id="menuTableBody">
-      <tr class="loading-row">
-        <td colspan="5"><span class="spinner"></span> Loading menu…</td>
-      </tr>
-    </tbody>
-  </table>
+  <div id="categoryContainer">
+    <div style="padding:40px;text-align:center;color:var(--cream-dim);font-style:italic"><span class="spinner"></span> Loading…</div>
+  </div>
 </div>
 
 <!-- ─── ITEM FORM PAGE ─── -->
@@ -805,6 +885,11 @@
     <div class="form-group-full">
       <label class="form-label" for="fDesc">Description</label>
       <textarea class="form-textarea" id="fDesc" placeholder="Short description of the item…"></textarea>
+    </div>
+
+    <div class="form-group-full">
+      <label class="form-label" for="fCategory">Category</label>
+      <select class="form-input" id="fCategory" style="cursor:pointer"></select>
     </div>
 
     <!-- Image Upload -->
@@ -850,13 +935,13 @@
   </div>
 </div>
 
-<!-- Confirm Delete Modal -->
+<!-- Confirm Modal -->
 <div class="modal-overlay" id="deleteModal">
   <div class="modal-box">
-    <div class="modal-title">Delete Item?</div>
+    <div class="modal-title" id="deleteModalTitle">Delete?</div>
     <div class="modal-body" id="deleteModalBody">This cannot be undone.</div>
     <div class="modal-actions">
-      <button class="btn-confirm-delete" onclick="confirmDelete()">Delete</button>
+      <button class="btn-confirm-delete" onclick="confirmDelete()">Confirm</button>
       <button class="btn-confirm-cancel" onclick="closeDeleteModal()">Cancel</button>
     </div>
   </div>
@@ -868,10 +953,11 @@
 // ─── STATE ────────────────────────────────────────────────────────────────────
 let authToken = sessionStorage.getItem('esm_admin_token') || null;
 let menuItems = [];
-let editingItem = null;   // null = new item, object = existing
-let pendingDeleteId = null;
-let newPhotoFile = null;  // File object if user picked a new photo
-let clearExistingPhoto = false; // true if user removed existing photo
+let menuCategories = [];
+let editingItem = null;
+let pendingDeleteAction = null;
+let newPhotoFile = null;
+let clearExistingPhoto = false;
 
 // ─── BOOT ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
@@ -949,109 +1035,246 @@ async function showList() {
 
 // ─── MENU API ─────────────────────────────────────────────────────────────────
 async function loadMenu() {
-  const tbody = document.getElementById('menuTableBody');
-  tbody.innerHTML = '<tr class="loading-row"><td colspan="5"><span class="spinner"></span> Loading…</td></tr>';
-
+  const container = document.getElementById('categoryContainer');
+  container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--cream-dim);font-style:italic"><span class="spinner"></span> Loading…</div>';
   try {
     const res  = await apiFetch('/api/menu');
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Could not load menu.');
-    menuItems = data.items || [];
-    renderTable();
+    menuItems      = data.items      || [];
+    menuCategories = data.categories || [];
+    renderCategories();
   } catch (e) {
-    tbody.innerHTML = `<tr><td colspan="5" style="padding:24px;color:var(--danger);font-size:13px">Error: ${e.message}</td></tr>`;
-    if (e.message.includes('401') || e.message.includes('Unauthorized')) {
-      logout();
-    }
+    container.innerHTML = `<div style="padding:24px;color:var(--danger);font-size:13px">Error: ${e.message}</div>`;
+    if (e.message.includes('401') || e.message.includes('Unauthorized')) logout();
   }
 }
 
-function renderTable() {
-  const tbody = document.getElementById('menuTableBody');
-  if (!menuItems.length) {
-    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No menu items yet. Click "+ Add Item" to get started.</td></tr>';
+// ─── RENDER CATEGORIES ────────────────────────────────────────────────────────
+function renderCategories() {
+  const container = document.getElementById('categoryContainer');
+  if (!menuCategories.length) {
+    container.innerHTML = '<div class="empty-state">No categories. Click "+ Category" to add one.</div>';
     return;
   }
 
-  tbody.innerHTML = menuItems.map((item, idx) => {
-    const photoCell = item.photo
-      ? `<img class="item-thumb" src="/images/${item.photo}" alt="${item.name}" loading="lazy"/>`
-      : `<div class="item-thumb-placeholder">&#10022;</div>`;
+  // Non-uncategorized first, then Uncategorized (id=0) last
+  const sorted = [
+    ...menuCategories.filter(c => c.id !== 0),
+    menuCategories.find(c => c.id === 0),
+  ].filter(Boolean);
 
-    const addonCount  = item.addons?.length  || 0;
-    const optionCount = item.options?.length || 0;
-    const details = [
-      addonCount  ? `${addonCount} add-on${addonCount   === 1 ? '' : 's'}` : '',
-      optionCount ? `${optionCount} option${optionCount === 1 ? '' : 's'}` : '',
-    ].filter(Boolean).join(', ') || '—';
-
-    return `<tr draggable="true" data-id="${item.id}" data-idx="${idx}"
-      ondragstart="onDragStart(event)"
-      ondragover="onDragOver(event)"
-      ondrop="onDrop(event)"
-      ondragend="onDragEnd(event)">
-      <td><span class="drag-handle" title="Drag to reorder">&#8942;&#8942;</span></td>
-      <td>${photoCell}</td>
-      <td class="item-name-cell">${esc(item.name)}</td>
-      <td class="item-price-cell">$${Number(item.price).toFixed(2)}</td>
-      <td class="hide-sm item-addons-cell">${details}</td>
-      <td>
-        <div class="table-actions">
-          <button class="btn-edit" onclick="openForm(${item.id})">Edit</button>
-          <button class="btn-delete" onclick="promptDelete(${item.id}, '${esc(item.name)}')">Delete</button>
-        </div>
-      </td>
-    </tr>`;
-  }).join('');
+  container.innerHTML = sorted.map(cat => renderCategoryBlock(cat)).join('');
 }
 
-// ─── DRAG AND DROP ────────────────────────────────────────────────────────────
-let dragSrcIdx = null;
+function renderCategoryBlock(cat) {
+  const isUncat = cat.id === 0;
+  const items   = (cat.itemIds || []).map(id => menuItems.find(i => i.id === id)).filter(Boolean);
+  const count   = items.length;
 
-function onDragStart(e) {
-  dragSrcIdx = parseInt(e.currentTarget.dataset.idx);
-  e.currentTarget.classList.add('dragging');
+  const headerHandle = isUncat
+    ? ''
+    : `<span class="cat-drag-handle" draggable="true"
+         ondragstart="onCatDragStart(event,${cat.id})"
+         title="Drag to reorder">&#8942;&#8942;</span>`;
+
+  const headerName = isUncat
+    ? `<span class="cat-name-text">Uncategorized</span>`
+    : `<input class="cat-name-input" type="text" value="${esc(cat.name)}"
+         data-cat-id="${cat.id}" data-orig="${esc(cat.name)}"
+         onblur="saveCatName(this,${cat.id})"
+         onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){this.value=this.dataset.orig;this.blur();}"/>`;
+
+  const deleteBtn = isUncat ? '' : `<button class="btn-delete-cat" onclick="promptDeleteCat(${cat.id})" title="Delete category">&#215;</button>`;
+
+  const itemsHtml = count
+    ? items.map(item => renderItemRow(item, cat.id)).join('')
+    : `<div class="category-empty-zone" data-cat-id="${cat.id}">Drop items here</div>`;
+
+  return `<div class="category-block${isUncat ? ' cat-uncategorized' : ''}" data-cat-id="${cat.id}"
+    ondragover="onCatBlockDragOver(event,${cat.id})"
+    ondrop="onCatBlockDrop(event,${cat.id})"
+    ondragend="onCatDragEnd(event)">
+    <div class="category-header">
+      ${headerHandle}
+      ${headerName}
+      <span class="cat-item-count">${count} item${count!==1?'s':''}</span>
+      ${deleteBtn}
+    </div>
+    <div class="category-items" data-cat-id="${cat.id}"
+      ondragover="onCatItemsDragOver(event,${cat.id})"
+      ondrop="onCatItemsDrop(event,${cat.id})">
+      ${itemsHtml}
+    </div>
+  </div>`;
+}
+
+function renderItemRow(item, catId) {
+  const photoHtml = item.photo
+    ? `<img class="item-thumb" src="/images/${item.photo}" alt="" loading="lazy"/>`
+    : `<div class="item-thumb-placeholder">&#10022;</div>`;
+  const ac = item.addons?.length  || 0;
+  const oc = item.options?.length || 0;
+  const meta = [ac ? `${ac} add-on${ac===1?'':'s'}` : '', oc ? `${oc} option${oc===1?'':'s'}` : ''].filter(Boolean).join(', ') || '—';
+  return `<div class="item-row" draggable="true" data-item-id="${item.id}" data-cat-id="${catId}"
+    ondragstart="onItemDragStart(event,${item.id},${catId})"
+    ondragover="onItemDragOver(event,${item.id},${catId})"
+    ondrop="onItemDrop(event,${item.id},${catId})"
+    ondragend="onItemDragEnd(event)">
+    <span class="item-drag-handle">&#8942;&#8942;</span>
+    <div>${photoHtml}</div>
+    <div class="item-name-cell">${esc(item.name)}</div>
+    <div class="item-price-cell">$${Number(item.price).toFixed(2)}</div>
+    <div class="item-meta-cell">${meta}</div>
+    <div class="table-actions">
+      <button class="btn-edit" onclick="openForm(${item.id})">Edit</button>
+      <button class="btn-delete" onclick="promptDeleteItem(${item.id},'${esc(item.name)}')">Delete</button>
+    </div>
+  </div>`;
+}
+
+// ─── DRAG: ITEMS ──────────────────────────────────────────────────────────────
+let dragType = null, dragItemId = null, dragSrcCatId = null, dragCatId = null;
+
+function onItemDragStart(e, itemId, catId) {
+  dragType = 'item'; dragItemId = itemId; dragSrcCatId = catId;
+  e.currentTarget.classList.add('item-dragging');
   e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain','item');
+}
+function onItemDragOver(e, targetItemId, targetCatId) {
+  if (dragType !== 'item') return;
+  e.preventDefault(); e.stopPropagation();
+  clearItemDragOver(); clearCatDragOver();
+  e.currentTarget.classList.add('item-drag-over');
+}
+function onItemDrop(e, targetItemId, targetCatId) {
+  if (dragType !== 'item') return;
+  e.preventDefault(); e.stopPropagation();
+  if (dragItemId === targetItemId) return;
+  moveItem(dragItemId, dragSrcCatId, targetCatId, targetItemId);
+}
+function onItemDragEnd(e) {
+  clearItemDragOver(); clearCatDragOver();
+  document.querySelectorAll('.item-dragging').forEach(el => el.classList.remove('item-dragging'));
+  dragType = null;
 }
 
-function onDragOver(e) {
+// Drop on category items zone (empty area / end of list)
+function onCatItemsDragOver(e, catId) {
+  if (dragType !== 'item') return;
   e.preventDefault();
-  e.dataTransfer.dropEffect = 'move';
-  document.querySelectorAll('#menuTableBody tr').forEach(r => r.classList.remove('drag-over'));
-  e.currentTarget.classList.add('drag-over');
+  clearItemDragOver(); clearCatDragOver();
+  const zone = e.currentTarget.querySelector('.category-empty-zone');
+  if (zone) zone.classList.add('drop-active');
+  else e.currentTarget.classList.add('drop-active');
 }
-
-function onDrop(e) {
+function onCatItemsDrop(e, catId) {
+  if (dragType !== 'item') return;
   e.preventDefault();
-  const destIdx = parseInt(e.currentTarget.dataset.idx);
-  if (dragSrcIdx === null || dragSrcIdx === destIdx) return;
-
-  // Reorder the array
-  const moved = menuItems.splice(dragSrcIdx, 1)[0];
-  menuItems.splice(destIdx, 0, moved);
-
-  renderTable();
-  saveOrder();
+  moveItem(dragItemId, dragSrcCatId, catId, null);
 }
 
-function onDragEnd(e) {
-  e.currentTarget.classList.remove('dragging');
-  document.querySelectorAll('#menuTableBody tr').forEach(r => r.classList.remove('drag-over'));
-  dragSrcIdx = null;
+// Move item in category data, then re-render
+function moveItem(itemId, srcCatId, dstCatId, beforeItemId) {
+  const srcCat = menuCategories.find(c => c.id === srcCatId);
+  const dstCat = menuCategories.find(c => c.id === dstCatId);
+  if (!srcCat || !dstCat) return;
+  // Remove from source
+  srcCat.itemIds = srcCat.itemIds.filter(id => id !== itemId);
+  // Insert into dest
+  if (beforeItemId != null) {
+    const idx = dstCat.itemIds.indexOf(beforeItemId);
+    if (idx === -1) dstCat.itemIds.push(itemId);
+    else dstCat.itemIds.splice(idx, 0, itemId);
+  } else {
+    if (!dstCat.itemIds.includes(itemId)) dstCat.itemIds.push(itemId);
+  }
+  renderCategories();
+  saveFullState();
 }
 
-async function saveOrder() {
+// ─── DRAG: CATEGORIES ─────────────────────────────────────────────────────────
+function onCatDragStart(e, catId) {
+  dragType = 'cat'; dragCatId = catId;
+  e.currentTarget.closest('.category-block')?.classList.add('cat-dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain','cat');
+  e.stopPropagation();
+}
+function onCatBlockDragOver(e, targetCatId) {
+  if (dragType !== 'cat' || targetCatId === dragCatId) return;
+  e.preventDefault();
+  clearCatDragOver();
+  e.currentTarget.classList.add('cat-drag-over');
+}
+function onCatBlockDrop(e, targetCatId) {
+  if (dragType !== 'cat') return;
+  e.preventDefault();
+  if (dragCatId === targetCatId) return;
+  const srcIdx = menuCategories.findIndex(c => c.id === dragCatId);
+  const tgtIdx = menuCategories.findIndex(c => c.id === targetCatId);
+  if (srcIdx === -1 || tgtIdx === -1) return;
+  const [moved] = menuCategories.splice(srcIdx, 1);
+  menuCategories.splice(tgtIdx, 0, moved);
+  renderCategories();
+  saveFullState();
+}
+function onCatDragEnd(e) {
+  clearCatDragOver();
+  document.querySelectorAll('.cat-dragging').forEach(el => el.classList.remove('cat-dragging'));
+  dragType = null;
+}
+
+function clearItemDragOver() { document.querySelectorAll('.item-drag-over').forEach(el => el.classList.remove('item-drag-over')); }
+function clearCatDragOver()  { document.querySelectorAll('.cat-drag-over,.drop-active').forEach(el => el.classList.remove('cat-drag-over','drop-active')); }
+
+// ─── CATEGORY MANAGEMENT ──────────────────────────────────────────────────────
+function addCategory() {
+  const newId = Math.max(...menuCategories.map(c => c.id), 0) + 1;
+  const newCat = { id: newId, name: 'New Category', itemIds: [] };
+  const uncatIdx = menuCategories.findIndex(c => c.id === 0);
+  if (uncatIdx !== -1) menuCategories.splice(uncatIdx, 0, newCat);
+  else menuCategories.push(newCat);
+  renderCategories();
+  saveFullState();
+  setTimeout(() => {
+    const inp = document.querySelector(`.cat-name-input[data-cat-id="${newId}"]`);
+    if (inp) { inp.select(); inp.focus(); }
+  }, 40);
+}
+
+function saveCatName(input, catId) {
+  const name = input.value.trim();
+  if (!name) { input.value = input.dataset.orig; return; }
+  const cat = menuCategories.find(c => c.id === catId);
+  if (cat && cat.name !== name) { cat.name = name; input.dataset.orig = name; saveFullState(); }
+}
+
+function promptDeleteCat(catId) {
+  const cat      = menuCategories.find(c => c.id === catId);
+  const n        = cat?.itemIds.length || 0;
+  const body     = n ? `Delete "${cat.name}"? ${n} item${n===1?'':'s'} will move to Uncategorized.`
+                     : `Delete "${cat.name}"? This cannot be undone.`;
+  showConfirmModal('Delete Category?', body, () => {
+    const uncat = menuCategories.find(c => c.id === 0);
+    if (uncat) cat.itemIds.forEach(id => { if (!uncat.itemIds.includes(id)) uncat.itemIds.push(id); });
+    menuCategories = menuCategories.filter(c => c.id !== catId);
+    renderCategories();
+    saveFullState();
+  });
+}
+
+async function saveFullState() {
   try {
     const res = await apiFetch('/api/menu', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ items: menuItems }),
+      body: JSON.stringify({ items: menuItems, categories: menuCategories }),
     });
-    if (!res.ok) throw new Error('Failed to save order');
-    showToast('Order saved.');
-  } catch (e) {
-    showToast('Could not save order.', true);
-  }
+    if (!res.ok) throw new Error('Save failed');
+    showToast('Saved.');
+  } catch (e) { showToast('Could not save.', true); }
 }
 
 // ─── ITEM FORM ─────────────────────────────────────────────────────────────────
@@ -1061,15 +1284,34 @@ function openForm(itemId) {
   clearExistingPhoto = false;
 
   document.getElementById('formTitle').textContent = editingItem ? 'Edit Menu Item' : 'Add Menu Item';
-  document.getElementById('fName').value    = editingItem?.name        || '';
-  document.getElementById('fPrice').value   = editingItem?.price != null ? editingItem.price : '';
-  document.getElementById('fDesc').value    = editingItem?.description  || '';
+  document.getElementById('fName').value  = editingItem?.name        || '';
+  document.getElementById('fPrice').value = editingItem?.price != null ? editingItem.price : '';
+  document.getElementById('fDesc').value  = editingItem?.description  || '';
+
+  // Category selector
+  const catSel = document.getElementById('fCategory');
+  catSel.innerHTML = menuCategories
+    .filter(c => c.id !== 0 || !menuCategories.some(x => x.id !== 0))
+    .map(c => `<option value="${c.id}">${esc(c.name)}</option>`)
+    .join('');
+  // Always include Uncategorized as option
+  if (!catSel.querySelector('option[value="0"]')) {
+    catSel.innerHTML += '<option value="0">Uncategorized</option>';
+  }
+  if (editingItem) {
+    const curCat = menuCategories.find(c => c.itemIds?.includes(editingItem.id));
+    if (curCat) catSel.value = curCat.id;
+  } else {
+    // Default to first non-uncategorized category
+    const first = menuCategories.find(c => c.id !== 0);
+    if (first) catSel.value = first.id;
+    else catSel.value = 0;
+  }
 
   // Photo state
   resetPhotoUI();
   const note = document.getElementById('currentImageNote');
   if (editingItem?.photo) {
-    // Show current image in preview
     document.getElementById('imagePreview').src = `/images/${editingItem.photo}`;
     document.getElementById('previewWrap').classList.add('has-image');
     document.getElementById('uploadPlaceholder').style.display = 'none';
@@ -1078,10 +1320,11 @@ function openForm(itemId) {
     note.textContent = '';
   }
 
-  // Add-ons
+  // Add-ons (with default checkbox state)
   const editor = document.getElementById('addonsEditor');
   editor.innerHTML = '';
-  (editingItem?.addons || []).forEach(a => addAddonRow(a));
+  const defaultSet = new Set(editingItem?.defaultAddons || []);
+  (editingItem?.addons || []).forEach(a => addAddonRow(a, defaultSet.has(a)));
 
   // Options
   const optEditor = document.getElementById('optionsEditor');
@@ -1128,38 +1371,42 @@ function clearPhoto(e) {
 }
 
 // ─── ADD-ONS EDITOR ───────────────────────────────────────────────────────────
-// Existing format: "Avocado +$1.50"
-function addAddonRow(existingValue) {
+function addAddonRow(existingValue, isDefault) {
   const editor = document.getElementById('addonsEditor');
-
-  // Parse existing "Name +$Price" string
   let addonName = '', addonPrice = '';
   if (existingValue) {
     const m = String(existingValue).match(/^(.+?)\s*\+\$(\d+(?:\.\d+)?)$/);
     if (m) { addonName = m[1].trim(); addonPrice = m[2]; }
-    else     { addonName = existingValue; }
+    else    { addonName = existingValue; }
   }
-
+  const chk = isDefault ? 'checked' : '';
   const row = document.createElement('div');
   row.className = 'addon-row';
   row.innerHTML = `
     <input class="form-input" type="text" placeholder="Add-on name (e.g. Avocado)" value="${esc(addonName)}" data-addon-name/>
     <input class="form-input" type="number" placeholder="+$0.00" step="0.01" min="0" value="${addonPrice}" data-addon-price style="padding-left:10px"/>
+    <label class="addon-default-wrap" title="Pre-selected for customers by default">
+      <input type="checkbox" data-addon-is-default ${chk}/>
+      <span class="addon-default-label-text">Default</span>
+    </label>
     <button class="addon-remove" onclick="this.parentElement.remove()" title="Remove">&#215;</button>`;
   editor.appendChild(row);
 }
 
 function collectAddons() {
   const rows = document.querySelectorAll('#addonsEditor .addon-row');
-  const addons = [];
+  const addons = [], defaultAddons = [];
   rows.forEach(row => {
-    const name  = row.querySelector('[data-addon-name]').value.trim();
-    const price = parseFloat(row.querySelector('[data-addon-price]').value) || 0;
+    const name      = row.querySelector('[data-addon-name]').value.trim();
+    const price     = parseFloat(row.querySelector('[data-addon-price]').value) || 0;
+    const isDef     = row.querySelector('[data-addon-is-default]').checked;
     if (name) {
-      addons.push(`${name} +$${price % 1 === 0 ? price : price.toFixed(2)}`);
+      const str = `${name} +$${price % 1 === 0 ? price : price.toFixed(2)}`;
+      addons.push(str);
+      if (isDef) defaultAddons.push(str);
     }
   });
-  return addons;
+  return { addons, defaultAddons };
 }
 
 // ─── OPTIONS EDITOR ──────────────────────────────────────────────────────────
@@ -1238,10 +1485,12 @@ async function saveItem() {
     }
 
     // 2. Build item object
+    const { addons, defaultAddons } = collectAddons();
+    const categoryId = parseInt(document.getElementById('fCategory').value) || 0;
     const item = {
       name, price, description: desc,
       photo: photoFilename,
-      addons: collectAddons(),
+      addons, defaultAddons,
       options: collectOptions(),
     };
     if (editingItem) item.id = editingItem.id;
@@ -1251,13 +1500,24 @@ async function saveItem() {
     const res    = await apiFetch('/api/menu', {
       method,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(item),
+      body: JSON.stringify({ item, categoryId }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Save failed.');
+    // Update local state from server response
+    if (data.item) {
+      if (editingItem) {
+        const idx = menuItems.findIndex(m => m.id === data.item.id);
+        if (idx !== -1) menuItems[idx] = data.item; else menuItems.push(data.item);
+      } else {
+        menuItems.push(data.item);
+      }
+    }
+    if (data.categories) menuCategories = data.categories;
 
     showToast(editingItem ? 'Item updated.' : 'Item added.');
-    await showList();
+    renderCategories();
+    showPage('pageList');
   } catch (e) {
     showToast(e.message, true);
   } finally {
@@ -1267,35 +1527,39 @@ async function saveItem() {
 }
 
 // ─── DELETE ───────────────────────────────────────────────────────────────────
-function promptDelete(id, name) {
-  pendingDeleteId = id;
-  document.getElementById('deleteModalBody').textContent = `Delete "${name}"? This cannot be undone.`;
+function showConfirmModal(title, body, onConfirm) {
+  document.getElementById('deleteModalTitle').textContent = title;
+  document.getElementById('deleteModalBody').textContent  = body;
+  pendingDeleteAction = onConfirm;
   document.getElementById('deleteModal').classList.add('visible');
 }
 
 function closeDeleteModal() {
-  pendingDeleteId = null;
+  pendingDeleteAction = null;
   document.getElementById('deleteModal').classList.remove('visible');
 }
 
-async function confirmDelete() {
-  if (!pendingDeleteId) return;
-  const id = pendingDeleteId;
+function confirmDelete() {
+  if (pendingDeleteAction) pendingDeleteAction();
   closeDeleteModal();
+}
 
-  try {
-    const res  = await apiFetch('/api/menu', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Delete failed.');
-    showToast('Item deleted.');
-    await loadMenu();
-  } catch (e) {
-    showToast(e.message, true);
-  }
+function promptDeleteItem(id, name) {
+  showConfirmModal('Delete Item?', `Delete "${name}"? This cannot be undone.`, async () => {
+    try {
+      const res  = await apiFetch('/api/menu', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Delete failed.');
+      menuItems      = menuItems.filter(i => i.id !== id);
+      menuCategories.forEach(c => { c.itemIds = (c.itemIds || []).filter(x => x !== id); });
+      showToast('Item deleted.');
+      renderCategories();
+    } catch (e) { showToast(e.message, true); }
+  });
 }
 
 // ─── API HELPER ───────────────────────────────────────────────────────────────
