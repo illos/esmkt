@@ -422,6 +422,10 @@
     margin-right: 4px;
   }
 
+  /* ─── CATEGORY ANCHOR (heading + first row, kept together on print) ─── */
+  /* On screen: invisible passthrough so children slot into the outer grid */
+  .cat-anchor { display: contents; }
+
   /* ─── CATEGORY HEADING ─── */
   .menu-category-heading {
     grid-column: 1 / -1;
@@ -570,6 +574,20 @@
     .menu-grid {
       grid-template-columns: 1fr 1fr;
       gap: 16px;
+    }
+
+    /* ── Category anchor: becomes real grid block, refuses to break ── */
+    .cat-anchor {
+      display: grid !important;
+      grid-column: 1 / -1;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      break-inside: avoid;
+    }
+
+    /* Heading inside anchor still spans both columns */
+    .cat-anchor .menu-category-heading {
+      grid-column: 1 / -1;
     }
 
     /* ── Cards: tightened for two rows per page ── */
@@ -846,11 +864,25 @@ function renderMenu() {
     sortedCats.forEach(cat => {
       const catItems = (cat.itemIds || []).map(id => MENU.find(i => i.id === id)).filter(Boolean);
       if (!catItems.length) return;
+
+      // Wrap heading + first 2 cards (one row) in .cat-anchor so they can't
+      // be split across pages in print. display:contents on screen makes the
+      // wrapper invisible — children slot into the outer grid as normal.
+      const anchor = document.createElement('div');
+      anchor.className = 'cat-anchor';
+
       const heading = document.createElement('div');
       heading.className = 'menu-category-heading';
       heading.textContent = cat.name;
-      grid.appendChild(heading);
-      catItems.forEach(item => { grid.appendChild(renderCard(item)); placedIds.add(item.id); });
+      anchor.appendChild(heading);
+
+      // First row (up to 2 cards) goes inside the anchor
+      const firstRow = catItems.slice(0, 2);
+      firstRow.forEach(item => { anchor.appendChild(renderCard(item)); placedIds.add(item.id); });
+      grid.appendChild(anchor);
+
+      // Remaining cards go directly into the outer grid
+      catItems.slice(2).forEach(item => { grid.appendChild(renderCard(item)); placedIds.add(item.id); });
     });
     MENU.filter(i => !placedIds.has(i.id)).forEach(item => grid.appendChild(renderCard(item)));
   } else {
