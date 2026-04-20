@@ -307,57 +307,51 @@
     font-style: italic;
   }
 
-  /* Addons */
-  .addon-dropdown { border: 1px solid var(--charcoal-border); border-radius: 2px; overflow: hidden; }
-
-  .addon-summary {
+  /* Options (add-ons) — always-visible bulleted list */
+  .addon-list-wrap { margin-top: 10px; }
+  .addon-list-label {
     font-family: 'Oswald', sans-serif;
-    font-size: 11px;
+    font-size: 10px;
     letter-spacing: 3px;
     text-transform: uppercase;
-    color: var(--gold);
-    padding: 8px 10px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    list-style: none;
-    user-select: none;
-    background: rgba(0,0,0,0.15);
+    color: var(--cream-dim);
+    margin-bottom: 6px;
+    opacity: 0.7;
   }
-  .addon-summary::-webkit-details-marker { display: none; }
-  .addon-arrow { font-size: 14px; transition: transform 0.2s; }
-  details[open] .addon-arrow { transform: rotate(180deg); }
-  details[open] .addon-summary { border-bottom: 1px solid var(--charcoal-border); }
-
-  .addon-dropdown .addons-list {
-    padding: 8px;
+  .addons-list {
     display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
+    flex-direction: column;
+    gap: 4px;
     list-style: none;
+    padding: 0;
   }
-
   .addon-item {
-    border: 1px solid var(--charcoal-border);
     border-radius: 2px;
-    transition: border-color 0.15s, background 0.15s;
+    transition: background 0.15s;
   }
   .addon-item label {
     display: flex;
     align-items: center;
-    gap: 5px;
-    padding: 4px 8px;
+    gap: 7px;
+    padding: 3px 0;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 13px;
     color: var(--cream-dim);
     user-select: none;
   }
-  .addon-item:hover { border-color: var(--gold-dark); }
+  .addon-item label::before {
+    content: '•';
+    color: rgba(201,169,110,0.3);
+    font-size: 16px;
+    line-height: 1;
+    flex-shrink: 0;
+    margin-right: 2px;
+  }
   .addon-item:hover label { color: var(--cream); }
+  .addon-item:hover label::before { color: var(--gold); }
   .addon-item input[type="checkbox"] { width: 13px; height: 13px; accent-color: var(--gold); cursor: pointer; }
-  .addon-item.checked { border-color: var(--gold); background: rgba(201,169,110,0.08); }
   .addon-item.checked label { color: var(--gold-light); }
+  .addon-item.checked label::before { color: var(--gold); }
 
   .btn-add {
     margin-top: auto;
@@ -1255,25 +1249,22 @@ function renderMenu() {
   function renderItemCard(item) {
     const defaultSet = new Set(item.defaultAddons || []);
     const addonsHTML = item.addons?.length ? `
-      <details class="addon-dropdown">
-        <summary class="addon-summary">Options <span class="addon-arrow">&#9662;</span></summary>
+      <div class="addon-list-wrap">
+        <div class="addon-list-label">Options</div>
         <ul class="addons-list">${item.addons.map(a => {
           const isDefault = defaultSet.has(a);
           return `<li class="addon-item${isDefault?' checked':''}" data-default="${isDefault}"><label><input type="checkbox"${isDefault?' checked':''} onchange="syncAddon(this)"/><span>${a}</span></label></li>`;
         }).join('')}</ul>
-      </details>` : '';
+      </div>` : '';
 
     const optionsHTML = item.options?.length ? `
-      <div class="item-options">
-        <div class="addon-summary" style="pointer-events:none;border-bottom:1px solid var(--charcoal-border);padding:8px 12px;font-size:13px;letter-spacing:1px">Choices</div>
-        <div style="padding:10px 12px;display:flex;flex-direction:column;gap:10px">${item.options.map(opt => `
-          <div class="option-select-group">
-            <label class="option-select-label">${opt.name}</label>
-            <select class="option-select" data-option-name="${opt.name}">
-              ${opt.choices.map(c => `<option value="${c}">${c}</option>`).join('')}
-            </select>
-          </div>`).join('')}
-        </div>
+      <div class="item-options">${item.options.map(opt => `
+        <div class="option-select-group">
+          <label class="option-select-label">${opt.name}</label>
+          <select class="option-select" data-option-name="${opt.name}">
+            ${opt.choices.map(c => `<option value="${c}">${c}</option>`).join('')}
+          </select>
+        </div>`).join('')}
       </div>` : '';
 
     const slideContent = item.photo
