@@ -180,10 +180,14 @@
       const imgHtml = ev.photo
         ? `<img class="event-img" src="/images/${ev.photo}" alt="${escHtml(ev.title)}" loading="lazy"/>`
         : `<div class="event-img-placeholder">&#10022;</div>`;
+      const ctaHtml = (ev.ctaText && ev.ctaLink)
+        ? `<a class="event-cta-btn" href="${escHtml(ev.ctaLink)}" target="_blank" rel="noopener noreferrer">${escHtml(ev.ctaText)} &rarr;</a>`
+        : '';
       const body = `<div class="event-body">
           ${dateStr ? `<div class="event-date">${dateStr}</div>` : ''}
           <div class="event-title">${escHtml(ev.title)}</div>
           ${ev.description ? `<div class="event-desc">${escHtml(ev.description)}</div>` : ''}
+          ${ctaHtml}
         </div>`;
       if (idx === 0) {
         // Featured: text left, image right, full image visible

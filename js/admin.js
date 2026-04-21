@@ -93,7 +93,7 @@ function switchTab(tab) {
 async function showList() {
   document.getElementById('navLogout').classList.add('visible');
   document.getElementById('adminTabs').classList.add('visible');
-  switchTab('menu');
+  switchTab('settings');
 }
 
 // ─── ORDERING UI HELPER ───────────────────────────────────────────────────────
@@ -1024,9 +1024,12 @@ function openEventForm(eventId) {
   editingEvent = eventId ? events.find(e => e.id === eventId) || null : null;
   newEventPhotoFile = null; clearEventPhoto_flag = false;
   document.getElementById('eventFormTitle').textContent = editingEvent ? 'Edit Event' : 'Add Event';
-  document.getElementById('efTitle').value = editingEvent?.title       || '';
-  document.getElementById('efDate').value  = editingEvent?.date        || '';
-  document.getElementById('efDesc').value  = editingEvent?.description || '';
+  const todayStr = new Date().toISOString().slice(0, 10);
+  document.getElementById('efTitle').value   = editingEvent?.title       || '';
+  document.getElementById('efDate').value    = editingEvent?.date        || todayStr;
+  document.getElementById('efDesc').value    = editingEvent?.description || '';
+  document.getElementById('efCtaText').value = editingEvent?.ctaText     || '';
+  document.getElementById('efCtaLink').value = editingEvent?.ctaLink     || '';
   resetEventPhotoUI();
   const note = document.getElementById('eventCurrentImageNote');
   if (editingEvent?.photo) {
@@ -1069,9 +1072,11 @@ function clearEventPhoto(e) {
 }
 
 async function saveEvent() {
-  const title = document.getElementById('efTitle').value.trim();
-  const date  = document.getElementById('efDate').value;
-  const desc  = document.getElementById('efDesc').value.trim();
+  const title   = document.getElementById('efTitle').value.trim();
+  const date    = document.getElementById('efDate').value;
+  const desc    = document.getElementById('efDesc').value.trim();
+  const ctaText = document.getElementById('efCtaText').value.trim();
+  const ctaLink = document.getElementById('efCtaLink').value.trim();
   if (!title) { showToast('Event title is required.', true); return; }
   if (!date)  { showToast('Please select a date.', true);   return; }
   const saveBtn = document.getElementById('saveEventBtn');
@@ -1089,7 +1094,8 @@ async function saveEvent() {
       if (!upRes.ok) throw new Error(upData.error || 'Photo upload failed.');
       photoFilename = upData.filename;
     }
-    const event = { title, date, description: desc, photo: photoFilename };
+    const event = { title, date, description: desc, photo: photoFilename,
+                    ctaText: ctaText || null, ctaLink: ctaLink || null };
     if (editingEvent) event.id = editingEvent.id;
     const method = editingEvent ? 'PUT' : 'POST';
     const res    = await apiFetch('/api/events', {
@@ -1101,7 +1107,7 @@ async function saveEvent() {
     if (editingEvent) {
       const idx = events.findIndex(e => e.id === data.event.id);
       if (idx !== -1) events[idx] = data.event; else events.push(data.event);
-    } else { events.push(data.event); }
+    } else { events.unshift(data.event); }
     showToast(editingEvent ? 'Event updated.' : 'Event added.');
     renderEventList();
     showPage('pageEvents');
