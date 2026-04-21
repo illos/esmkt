@@ -339,14 +339,37 @@
   }
 
   .hero-v2-right {
-    min-height: 60vw;
+    min-height: 80vw;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
 
-  .hv2-store-pop { display: none; }
+  /* Store pop: centered, 80% wide, static flow on mobile */
+  .hv2-store-pop {
+    position: relative;
+    bottom: auto;
+    left: auto;
+    width: 80%;
+    margin: 16px auto 0;
+    z-index: 3;
+  }
 
+  /* Quick links: centered, 80% wide, static flow on mobile */
   .hv2-links-panel {
-    width: 200px;
-    right: 12px;
+    position: relative;
+    top: auto;
+    right: auto;
+    transform: none;
+    width: 80%;
+    margin: 16px auto 20px;
+  }
+
+  /* Photo fills the right column behind both */
+  .hv2-photo {
+    position: absolute;
+    inset: 0;
+    background-attachment: scroll; /* fixed doesn't work well on mobile */
   }
 
   .hv2-link {
@@ -376,7 +399,18 @@
   isolation: isolate;
 }
 
-.hours-card::before,
+.hours-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url('assets/black-topo.svg');
+  background-size: 300px;
+  background-repeat: repeat;
+  opacity: 0.12;
+  pointer-events: none;
+  z-index: -1;
+}
+
 .service-item::before {
   content: '';
   position: absolute;
@@ -419,19 +453,6 @@
   background: linear-gradient(100deg, rgba(100,60,200,0.70) 0%, rgba(70,30,150,0.35) 45%, rgba(12,6,28,1) 78%) !important;
 }
 
-.see-you-banner:hover .see-you-cta {
-  letter-spacing: 3px;
-}
-
-.see-you-cta {
-  font-family: 'Oswald', sans-serif;
-  font-size: 13px;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: rgba(200,180,255,0.85);
-  transition: letter-spacing 0.2s;
-  white-space: nowrap;
-}
 
 /* ── Service cards — bigger, no hover lift ── */
 .service-item {
@@ -666,6 +687,13 @@
 
       <div class="service-item">
         <div class="service-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+        </div>
+        <div class="service-label">Fresh Coffee</div>
+      </div>
+
+      <div class="service-item">
+        <div class="service-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l1 4H5V3z"/><path d="M5 7v13a1 1 0 001 1h9a1 1 0 001-1V7"/><path d="M17 9h2a2 2 0 010 4h-2"/></svg>
         </div>
         <div class="service-label">Beer &amp; Liquor</div>
@@ -713,7 +741,7 @@
       <span class="service-banner-title">See You Soon</span>
       <span class="service-banner-sub">HWY 264 Mile Marker 8 &nbsp;&middot;&nbsp; Dyer, NV 89010</span>
     </div>
-    <span class="service-banner-star see-you-cta">Get Directions &nbsp;&rarr;</span>
+    <a href="https://maps.app.goo.gl/dhU5oMRYwXpTUhmY9" target="_blank" rel="noopener noreferrer" class="banner-menu-btn" onclick="event.stopPropagation()">Get Directions &rarr;</a>
   </div>
 </a>
 
