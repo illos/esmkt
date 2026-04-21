@@ -64,7 +64,7 @@
 .hero-v2 {
   position: relative;
   min-height: 100vh;
-  padding-top: 70px;
+  padding-top: 96px;
   background: var(--charcoal);
   overflow: hidden;
 }
@@ -353,17 +353,18 @@
     align-items: center;
   }
 
-  /* Store pop: centered, 80% wide, static flow on mobile */
+  /* Store pop: full width, above quick links */
   .hv2-store-pop {
     position: relative;
     bottom: auto;
     left: auto;
-    width: 80%;
-    margin: 16px auto 0;
+    width: 100%;
+    margin: 0;
     z-index: 3;
+    order: 1;
   }
 
-  /* Quick links: centered, 80% wide, static flow on mobile */
+  /* Quick links: centered, 80% wide, below store pop */
   .hv2-links-panel {
     position: relative;
     top: auto;
@@ -371,6 +372,7 @@
     transform: none;
     width: 80%;
     margin: 16px auto 20px;
+    order: 2;
   }
 
   /* Photo fills the right column behind both */
