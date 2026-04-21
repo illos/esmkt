@@ -164,14 +164,20 @@ function checkDeliHours() {
   if (!onlineOrderingEnabled) {
     if (statusEl) {
       statusEl.className = 'header-status status-unavailable';
-      statusEl.innerHTML = '&#128683;&nbsp; Online Ordering Unavailable &nbsp;&middot;&nbsp; Call 775-572-3200';
+      statusEl.innerHTML = `
+        <span class="status-card-icon">&#10022;</span>
+        <span class="status-card-title">Online Ordering Unavailable</span>
+        <span class="status-card-sub">Call us to place your order &nbsp;&middot;&nbsp; 775-572-3200</span>`;
     }
     document.getElementById('deliOpenContent').style.display = 'none';
     orderingOpen = false;
   } else if (!deliIsOpen) {
     if (statusEl) {
       statusEl.className = 'header-status status-closed';
-      statusEl.innerHTML = `&#128336;&nbsp; Deli Closed &nbsp;&middot;&nbsp; ${deliHoursShortSummary()}`;
+      statusEl.innerHTML = `
+        <span class="status-card-icon">&#10022;</span>
+        <span class="status-card-title">Deli Closed</span>
+        <span class="status-card-sub">${deliHoursShortSummary()}</span>`;
     }
     document.getElementById('deliOpenContent').style.display = 'none';
     orderingOpen = false;
@@ -607,7 +613,7 @@ body{background:#F5F3EF;color:#1A1A18;font-family:'Source Sans 3',sans-serif;pri
 .pm-cat-wrap:first-child{margin-top:0}
 .pm-cat-hero{height:130px;overflow:hidden;border-radius:4px 4px 0 0}
 .pm-cat-hero img{width:100%;height:100%;object-fit:cover;display:block}
-.pm-cat-items{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pm-cat-items{columns:2;column-gap:8px}
 .pm-cat-name{font-family:'Oswald',sans-serif;font-size:14px;letter-spacing:5px;text-transform:uppercase;color:#7A5C28;padding:8px 0 6px;display:flex;align-items:center;justify-content:center;gap:10px}
 .pm-cat-name::before{content:'';flex:1;height:1px;background:linear-gradient(to right,transparent,#C9A96E)}
 .pm-cat-name::after{content:'';flex:1;height:1px;background:linear-gradient(to left,transparent,#C9A96E)}

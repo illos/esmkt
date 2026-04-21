@@ -220,8 +220,8 @@ function renderCategoryBlock(cat) {
       ondrop="onCatItemsDrop(event,${cat.id})">
       ${itemsHtml}
     </div>
-    <button class="btn-add-item-in-cat" onclick="openForm(null,${cat.id})">+ Add Item</button>
     ${footnotesRow}
+    <button class="btn-add-item-in-cat" onclick="openForm(null,${cat.id})">+ Add Item</button>
   </div>`;
 }
 
