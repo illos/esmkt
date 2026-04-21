@@ -568,10 +568,15 @@ function printMenu() {
     sorted.forEach(cat => {
       const items = (cat.itemIds || []).map(id => MENU.find(i => i.id === id)).filter(Boolean);
       if (!items.length) return;
-      html += `<div class="pm-cat">`;
+      // Wrap heading + first row together so they can't be orphaned across pages
+      const firstRow = items.slice(0, 2);
+      const rest     = items.slice(2);
+      html += `<div class="pm-cat-wrap">`;
       if (cat.photo) html += `<div class="pm-cat-hero"><img src="/images/${cat.photo}" alt="${cat.name}"/></div>`;
-      html += `<div class="pm-cat-name"><span class="pm-cat-star">&#10022;</span>${cat.name}<span class="pm-cat-star">&#10022;</span></div></div>`;
-      items.forEach(item => { html += piCard(item); placed.add(item.id); });
+      html += `<div class="pm-cat-name"><span class="pm-cat-star">&#10022;</span>${cat.name}<span class="pm-cat-star">&#10022;</span></div>`;
+      html += `<div class="pm-first-row">${firstRow.map(item => { placed.add(item.id); return piCard(item); }).join('')}</div>`;
+      html += `</div>`;
+      rest.forEach(item => { html += piCard(item); placed.add(item.id); });
     });
     MENU.filter(i => !placed.has(i.id)).forEach(item => { html += piCard(item); });
   } else {
@@ -591,10 +596,11 @@ body{background:#F5F3EF;color:#1A1A18;font-family:'Source Sans 3',sans-serif;pri
 .pm-header-name span{color:#7A5C28}
 .pm-header-sub{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:5px;text-transform:uppercase;color:#7A5C28;display:block;margin-top:6px}
 .pm-grid{columns:2 260px;column-gap:16px;padding:0 16px 20px}
-.pm-cat{column-span:all;break-after:avoid;margin-top:20px}
-.pm-cat:first-child{margin-top:0}
+.pm-cat-wrap{column-span:all;break-inside:avoid;page-break-inside:avoid;margin-top:24px}
+.pm-cat-wrap:first-child{margin-top:0}
 .pm-cat-hero{height:160px;overflow:hidden;border-radius:4px 4px 0 0}
 .pm-cat-hero img{width:100%;height:100%;object-fit:cover;display:block}
+.pm-first-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .pm-cat-name{font-family:'Oswald',sans-serif;font-size:16px;letter-spacing:5px;text-transform:uppercase;color:#7A5C28;padding:12px 0 8px;display:flex;align-items:center;justify-content:center;gap:12px}
 .pm-cat-name::before{content:'';flex:1;height:1px;background:linear-gradient(to right,transparent,#C9A96E)}
 .pm-cat-name::after{content:'';flex:1;height:1px;background:linear-gradient(to left,transparent,#C9A96E)}
