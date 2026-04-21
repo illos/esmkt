@@ -141,6 +141,15 @@ function renderBannerHours() {
   }
 }
 
+// Returns a short hours summary, e.g. "Mon \u2013 Sat \u00a0 9:00 AM \u2013 3:00 PM"
+function deliHoursShortSummary() {
+  const openDays = deliHours.filter(h => !h.closed);
+  if (!openDays.length) return '';
+  const days = summarizeDeliDays();
+  if (deliHoursVary()) return days;
+  return `${days} &nbsp; ${fmt12(openDays[0].open)} &ndash; ${fmt12(openDays[0].close)}`;
+}
+
 function checkDeliHours() {
   const today = getTodayDeliHours();
   const now   = new Date();
@@ -150,34 +159,27 @@ function checkDeliHours() {
     deliIsOpen = mins >= toMins(today.open) && mins < toMins(today.close);
   }
 
-  const banner     = document.getElementById('deliClosedBanner');
-  const icon       = document.getElementById('closedIcon');
-  const title      = document.getElementById('closedTitle');
-  const sub        = document.getElementById('closedSub');
-  const hoursWrap  = document.getElementById('closedHoursContainer');
+  const statusEl = document.getElementById('headerStatus');
 
   if (!onlineOrderingEnabled) {
-    // Ordering disabled by admin toggle — show "unavailable" banner regardless of time
-    icon.textContent      = '📵';
-    title.textContent     = 'Online Ordering Unavailable';
-    sub.textContent       = 'Please call us to place your order: 775-572-3200';
-    hoursWrap.style.display = 'none';
-    banner.classList.add('visible');
+    if (statusEl) {
+      statusEl.className = 'header-status status-unavailable';
+      statusEl.innerHTML = '&#128683;&nbsp; Online Ordering Unavailable &nbsp;&middot;&nbsp; Call 775-572-3200';
+    }
     document.getElementById('deliOpenContent').style.display = 'none';
     orderingOpen = false;
   } else if (!deliIsOpen) {
-    // Outside deli hours — show regular closed banner with hours
-    icon.textContent      = '🕰';
-    title.textContent     = 'Deli is Closed';
-    sub.textContent       = 'Stop by during deli hours to order fresh \u2014 or call ahead.';
-    hoursWrap.style.display = '';
-    renderBannerHours();
-    banner.classList.add('visible');
+    if (statusEl) {
+      statusEl.className = 'header-status status-closed';
+      statusEl.innerHTML = `&#128336;&nbsp; Deli Closed &nbsp;&middot;&nbsp; ${deliHoursShortSummary()}`;
+    }
     document.getElementById('deliOpenContent').style.display = 'none';
     orderingOpen = false;
   } else {
-    // Deli is open and ordering is enabled
-    banner.classList.remove('visible');
+    if (statusEl) {
+      statusEl.className = 'header-status';
+      statusEl.innerHTML = `Deli open ${deliHoursShortSummary()}`;
+    }
     document.getElementById('deliOpenContent').style.display = 'block';
     orderingOpen = true;
   }
@@ -568,7 +570,7 @@ function printMenu() {
       if (!items.length) return;
       html += `<div class="pm-cat">`;
       if (cat.photo) html += `<div class="pm-cat-hero"><img src="/images/${cat.photo}" alt="${cat.name}"/></div>`;
-      html += `<div class="pm-cat-name">${cat.name}</div></div>`;
+      html += `<div class="pm-cat-name"><span class="pm-cat-star">&#10022;</span>${cat.name}<span class="pm-cat-star">&#10022;</span></div></div>`;
       items.forEach(item => { html += piCard(item); placed.add(item.id); });
     });
     MENU.filter(i => !placed.has(i.id)).forEach(item => { html += piCard(item); });
@@ -593,8 +595,10 @@ body{background:#F5F3EF;color:#1A1A18;font-family:'Source Sans 3',sans-serif;pri
 .pm-cat:first-child{margin-top:0}
 .pm-cat-hero{height:160px;overflow:hidden;border-radius:4px 4px 0 0}
 .pm-cat-hero img{width:100%;height:100%;object-fit:cover;display:block}
-.pm-cat-name{font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:4px;text-transform:uppercase;color:#7A5C28;padding:8px 0 10px;border-bottom:1px solid #D8D3CA;display:flex;align-items:center;gap:12px}
-.pm-cat-name::after{content:'';flex:1;height:1px;background:#D8D3CA}
+.pm-cat-name{font-family:'Oswald',sans-serif;font-size:16px;letter-spacing:5px;text-transform:uppercase;color:#7A5C28;padding:12px 0 8px;display:flex;align-items:center;justify-content:center;gap:12px}
+.pm-cat-name::before{content:'';flex:1;height:1px;background:linear-gradient(to right,transparent,#C9A96E)}
+.pm-cat-name::after{content:'';flex:1;height:1px;background:linear-gradient(to left,transparent,#C9A96E)}
+.pm-cat-star{color:#C9A96E;font-size:9px;flex-shrink:0;line-height:1}
 .pi-card{background:#FFF;border:1px solid #D8D3CA;border-radius:4px;overflow:hidden;break-inside:avoid;margin-bottom:12px}
 .pi-img{height:120px;overflow:hidden}
 .pi-img img{width:100%;height:100%;object-fit:cover;display:block}

@@ -60,6 +60,7 @@
     text-align: center;
     padding: 32px 16px 24px;
     border-bottom: 1px solid var(--charcoal-border);
+    position: relative;
   }
 
   .logo-badge { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; }
@@ -112,12 +113,19 @@
   .logo-dividers::after { background: linear-gradient(to left, transparent, var(--gold)); }
   .logo-dividers span { color: var(--gold); font-size: 12px; }
 
-  .header-desc {
+  .header-status {
     font-size: 13px;
     color: var(--cream-dim);
     letter-spacing: 1px;
     margin-top: 10px;
     font-style: italic;
+    transition: color 0.3s;
+  }
+  .header-status.status-closed,
+  .header-status.status-unavailable {
+    color: var(--gold);
+    font-style: normal;
+    letter-spacing: 0.5px;
   }
 
   /* ─── SECTION TITLE ─── */
@@ -905,15 +913,9 @@
   .cat-header-wrap {
     column-span: all;
     break-after: avoid;
-    margin-top: 32px;
-    padding-top: 20px;
-    border-top: 1px solid var(--charcoal-border);
+    margin-top: 36px;
   }
-  .menu-grid > .cat-header-wrap:first-child {
-    margin-top: 0;
-    padding-top: 0;
-    border-top: none;
-  }
+  .menu-grid > .cat-header-wrap:first-child { margin-top: 0; }
 
   .cat-hero-img {
     height: 280px;
@@ -975,6 +977,10 @@
 
   /* ─── PRINT MENU BUTTON ─── */
   .btn-print-menu {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
     background: transparent;
     border: 1px solid var(--gold-dark);
     color: var(--gold);
@@ -987,7 +993,6 @@
     border-radius: 2px;
     transition: background 0.2s, color 0.2s, border-color 0.2s;
     white-space: nowrap;
-    margin-top: 16px;
   }
   .btn-print-menu:hover {
     background: var(--gold);
