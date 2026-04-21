@@ -84,10 +84,9 @@ function switchTab(tab) {
   activeTab = tab;
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1))?.classList.add('active');
+  if (tab === 'settings') { showPage('pageSettings'); loadSettings(); }
   if (tab === 'menu')     { showPage('pageList');     loadMenu(); }
-  if (tab === 'hours')    { showPage('pageHours');    loadHours(); }
   if (tab === 'events')   { showPage('pageEvents');   loadEvents(); }
-  if (tab === 'siteinfo') { showPage('pageSiteinfo'); loadSiteInfo(); }
 }
 
 async function showList() {
@@ -716,8 +715,13 @@ function promptDeleteItem(id, name) {
   });
 }
 
-// ─── HOURS ────────────────────────────────────────────────────────────────────
+// ─── SETTINGS & HOURS ────────────────────────────────────────────────────────
 let settingsData = null;
+
+async function loadSettings() {
+  await loadHours();    // fetches settingsData, renders hours tables, syncs toggle
+  loadSiteInfo();       // populates site info fields from settingsData (already cached)
+}
 
 async function loadHours() {
   try {

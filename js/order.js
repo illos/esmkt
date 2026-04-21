@@ -408,7 +408,9 @@ function renderOrder() {
   const list      = document.getElementById('orderList');
   const totalEl   = document.getElementById('orderTotal');
   const taxEl     = document.getElementById('taxAmount');
+  const taxLabelEl = document.getElementById('taxLabel');
   const grandEl   = document.getElementById('orderGrandTotal');
+  if (taxLabelEl) taxLabelEl.textContent = deliTaxRate ? `Tax (${deliTaxRate}%)` : 'Tax';
   const badge     = document.getElementById('cartBadge');
   const float     = document.getElementById('cartBubbleFloat');
   const secTitle  = document.getElementById('orderSectionTitle');

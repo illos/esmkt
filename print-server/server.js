@@ -247,7 +247,7 @@ function formatReceipt(order) {
   r += '\n';
   r += THIN + '\n';
   r += row('Subtotal', `$${order.subtotal.toFixed(2)}`) + '\n';
-  r += row('Tax (6.85%)', `$${order.tax.toFixed(2)}`) + '\n';
+  r += row(order.taxRate ? `Tax (${order.taxRate}%)` : 'Tax', `$${order.tax.toFixed(2)}`) + '\n';
   r += WIDE + '\n';
   r += row('TOTAL', `$${order.total.toFixed(2)}`) + '\n';
   r += WIDE + '\n';
