@@ -128,10 +128,12 @@
   }
   .section-title::after { content: ''; flex: 1; height: 1px; background: var(--charcoal-border); }
 
-  /* ─── MENU GRID — masonry via CSS columns ─── */
+  /* ─── MENU GRID ─── */
   .menu-grid {
-    columns: 2 260px;
-    column-gap: 16px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    align-items: start;
   }
 
   /* ─── MENU CARD ─── */
@@ -142,8 +144,6 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    break-inside: avoid;
-    margin-bottom: 16px;
     transition: border-color 0.2s;
   }
   /* no hover border effect */
@@ -885,7 +885,7 @@
   .option-select:focus { border-color: var(--gold-dark); }
 
   .menu-loading {
-    column-span: all;
+    grid-column: 1 / -1;
     text-align: center;
     padding: 60px 20px;
     font-family: 'Oswald', sans-serif;
@@ -895,13 +895,23 @@
     color: var(--cream-dim);
   }
 
-  /* ─── CATEGORY HEADER WRAPPER ─── */
+  /* ─── CATEGORY HEADER / FOOTER WRAPPERS ─── */
   .cat-header-wrap {
-    column-span: all;
-    break-after: avoid;
+    grid-column: 1 / -1;
     margin-top: 36px;
   }
   .menu-grid > .cat-header-wrap:first-child { margin-top: 0; }
+
+  .cat-footer-wrap { grid-column: 1 / -1; }
+
+  .cat-footer-notes {
+    font-size: 13px;
+    color: var(--cream-dim);
+    font-style: italic;
+    text-align: center;
+    padding: 6px 24px 4px;
+    line-height: 1.55;
+  }
 
   .cat-hero-img {
     height: 280px;
@@ -984,7 +994,7 @@
   }
 
   @media (max-width: 600px) {
-    .menu-grid { columns: 1; }
+    .menu-grid { grid-template-columns: 1fr; }
     .floating-cart { display: flex; }
     .nav-phone { display: none; }
   }

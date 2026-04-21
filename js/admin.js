@@ -95,10 +95,31 @@ async function showList() {
   switchTab('menu');
 }
 
+// ─── ORDERING UI HELPER ───────────────────────────────────────────────────────
+function updateOrderingUI(enabled) {
+  const toggle = document.getElementById('onlineOrderingToggle');
+  const desc   = document.getElementById('orderingStatusDesc');
+  if (toggle) toggle.checked = enabled;
+  if (desc) {
+    desc.textContent  = enabled ? 'Enabled' : 'Disabled';
+    desc.style.color  = enabled ? '' : 'var(--cream-dim)';
+  }
+}
+
 // ─── MENU API ─────────────────────────────────────────────────────────────────
 async function loadMenu() {
   const container = document.getElementById('categoryContainer');
   container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--cream-dim);font-style:italic"><span class="spinner"></span> Loading…</div>';
+
+  // Load settings to initialise the online ordering toggle (if not already loaded)
+  if (!settingsData) {
+    try {
+      const sRes = await apiFetch('/api/settings');
+      if (sRes.ok) settingsData = await sRes.json();
+    } catch(_) {}
+  }
+  updateOrderingUI(settingsData?.onlineOrdering !== false);
+
   try {
     const res  = await apiFetch('/api/menu');
     const data = await res.json();
@@ -173,6 +194,15 @@ function renderCategoryBlock(cat) {
         onkeydown="if(event.key==='Enter')this.blur()"/>
     </div>`;
 
+  const footnotesRow = isUncat ? '' : `
+    <div class="cat-footnotes-row">
+      <input class="cat-footnotes-input" type="text" value="${esc(cat.footnotes || '')}"
+        placeholder="Footnotes &mdash; shown after items (optional)"
+        data-cat-id="${cat.id}"
+        onblur="saveCatFootnotes(this,${cat.id})"
+        onkeydown="if(event.key==='Enter')this.blur()"/>
+    </div>`;
+
   return `<div class="category-block${isUncat ? ' cat-uncategorized' : ''}" data-cat-id="${cat.id}"
     ondragover="onCatBlockDragOver(event,${cat.id})"
     ondrop="onCatBlockDrop(event,${cat.id})"
@@ -191,6 +221,7 @@ function renderCategoryBlock(cat) {
       ${itemsHtml}
     </div>
     <button class="btn-add-item-in-cat" onclick="openForm(null,${cat.id})">+ Add Item</button>
+    ${footnotesRow}
   </div>`;
 }
 
@@ -338,6 +369,12 @@ function saveCatDesc(input, catId) {
   const desc = input.value.trim();
   const cat  = menuCategories.find(c => c.id === catId);
   if (cat && cat.description !== desc) { cat.description = desc; saveFullState(); }
+}
+
+function saveCatFootnotes(input, catId) {
+  const footnotes = input.value.trim();
+  const cat       = menuCategories.find(c => c.id === catId);
+  if (cat && cat.footnotes !== footnotes) { cat.footnotes = footnotes; saveFullState(); }
 }
 
 async function handleCatPhotoSelect(input, catId) {
@@ -686,7 +723,7 @@ async function loadHours() {
     const res  = await apiFetch('/api/settings');
     const data = await res.json();
     settingsData = data;
-    document.getElementById('onlineOrderingToggle').checked = data.onlineOrdering !== false;
+    updateOrderingUI(data.onlineOrdering !== false);
     renderHoursTable('storeHoursBody', data.storeHours);
     renderHoursTable('deliHoursBody',  data.deliHours);
   } catch(e) { showToast('Could not load hours.', true); }
@@ -706,11 +743,11 @@ async function saveOnlineOrdering(enabled) {
     });
     if (!res.ok) throw new Error('Save failed');
     settingsData.onlineOrdering = enabled;
+    updateOrderingUI(enabled);
     showToast(enabled ? 'Online ordering enabled.' : 'Online ordering disabled.');
   } catch(e) {
     showToast(e.message, true);
-    // Revert toggle on failure
-    document.getElementById('onlineOrderingToggle').checked = !enabled;
+    updateOrderingUI(!enabled); // revert on failure
   }
 }
 

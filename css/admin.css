@@ -671,26 +671,33 @@
   .tab-btn:hover { color: var(--cream); }
   .tab-btn.active { color: var(--gold); border-bottom-color: var(--gold); }
 
-  /* ─── ONLINE ORDERING TOGGLE ─── */
-  .ordering-toggle-row {
+  /* ─── ONLINE ORDERING STATUS BAR ─── */
+  .ordering-status-bar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 24px;
-    padding: 16px 20px;
+    gap: 16px;
+    padding: 10px 16px;
+    background: var(--charcoal-card);
+    border: 1px solid var(--charcoal-border);
+    border-radius: 4px;
+    margin-bottom: 16px;
   }
-  .ordering-toggle-info { flex: 1; }
-  .ordering-toggle-label {
+  .ordering-status-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .ordering-status-label {
     font-family: 'Oswald', sans-serif;
-    font-size: 14px;
-    letter-spacing: 1px;
-    color: var(--cream);
-    margin-bottom: 4px;
-  }
-  .ordering-toggle-desc {
-    font-size: 12px;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
     color: var(--cream-dim);
-    line-height: 1.5;
+  }
+  .ordering-status-desc {
+    font-size: 11px;
+    color: var(--gold);
     font-style: italic;
   }
 
@@ -912,6 +919,28 @@
   .cat-desc-input::placeholder { color: rgba(184,176,160,0.25); }
   .cat-desc-input:hover { border-bottom-color: rgba(58,56,48,0.6); }
   .cat-desc-input:focus { border-bottom-color: var(--charcoal-border); }
+
+  /* ─── CATEGORY FOOTNOTES ROW ─── */
+  .cat-footnotes-row {
+    padding: 8px 14px 10px;
+    border-top: 1px solid var(--charcoal-border);
+  }
+  .cat-footnotes-input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px dashed transparent;
+    color: var(--cream-dim);
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 12px;
+    font-style: italic;
+    padding: 2px 4px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .cat-footnotes-input::placeholder { color: rgba(184,176,160,0.25); }
+  .cat-footnotes-input:hover { border-bottom-color: rgba(58,56,48,0.6); }
+  .cat-footnotes-input:focus { border-bottom-color: var(--charcoal-border); }
 
   /* ─── ADD ITEM PER CATEGORY BUTTON ─── */
   .btn-add-item-in-cat {

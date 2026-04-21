@@ -322,6 +322,16 @@ function renderMenu() {
       grid.appendChild(wrap);
 
       catItems.forEach(item => { grid.appendChild(renderItemCard(item)); placedIds.add(item.id); });
+
+      if (cat.footnotes) {
+        const footWrap = document.createElement('div');
+        footWrap.className = 'cat-footer-wrap';
+        const footText = document.createElement('div');
+        footText.className = 'cat-footer-notes';
+        footText.textContent = cat.footnotes;
+        footWrap.appendChild(footText);
+        grid.appendChild(footWrap);
+      }
     });
     MENU.filter(i => !placedIds.has(i.id)).forEach(item => grid.appendChild(renderItemCard(item)));
   } else {

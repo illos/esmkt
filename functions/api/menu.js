@@ -86,15 +86,16 @@ export async function onRequestPut({ request, env }) {
 
   data.items[idx] = updated;
 
-  // Move to a different category if requested
+  // Move to a different category only if the target differs from the current one
   if (categoryId != null) {
-    const newCatId = Number(categoryId);
-    // Remove from current category
-    data.categories.forEach(c => { c.itemIds = c.itemIds.filter(id => id !== updated.id); });
-    // Add to new category
-    const cat = data.categories.find(c => c.id === newCatId)
-             || data.categories.find(c => c.id === 0);
-    if (cat && !cat.itemIds.includes(updated.id)) cat.itemIds.push(updated.id);
+    const newCatId    = Number(categoryId);
+    const currentCat  = data.categories.find(c => c.itemIds.includes(updated.id));
+    if (!currentCat || currentCat.id !== newCatId) {
+      data.categories.forEach(c => { c.itemIds = c.itemIds.filter(id => id !== updated.id); });
+      const cat = data.categories.find(c => c.id === newCatId)
+               || data.categories.find(c => c.id === 0);
+      if (cat && !cat.itemIds.includes(updated.id)) cat.itemIds.push(updated.id);
+    }
   }
 
   await env.MENU_KV.put('menu', JSON.stringify(data));
@@ -163,7 +164,7 @@ async function getMenuData(env) {
   }
 
   // ── Ensure categories have photo + description fields ────────────────────
-  data.categories = data.categories.map(cat => ({ photo: null, description: '', ...cat }));
+  data.categories = data.categories.map(cat => ({ photo: null, description: '', footnotes: '', ...cat }));
 
   // ── Ensure items have new fields ──────────────────────────────────────────
   data.items = data.items.map(item => ({
