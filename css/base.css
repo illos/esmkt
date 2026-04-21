@@ -82,6 +82,7 @@
   }
   .gf-logo-link { display: inline-block; margin-bottom: 16px; }
   .gf-logo { height: 56px; width: auto; filter: drop-shadow(0 1px 6px rgba(0,0,0,0.5)); }
+  .gf-logo--full { height: auto; width: 100%; max-width: 260px; }
   .gf-tagline { font-size: 12px; color: var(--cream-dim); line-height: 1.7; margin-bottom: 20px; font-weight: 300; max-width: 220px; }
   .gf-contact { display: flex; flex-direction: column; gap: 10px; }
   .gf-contact-item { display: flex; align-items: center; gap: 10px; color: var(--cream-dim); text-decoration: none; font-size: 12px; line-height: 1.4; transition: color 0.15s; }
