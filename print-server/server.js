@@ -1,7 +1,7 @@
 /**
  * Esmeralda Market — Local Print Server
  * ──────────────────────────────────────
- * Runs on the deli PC and receives order data from the web order page.
+ * Runs on the snackbar PC and receives order data from the web order page.
  * Formats a receipt and sends it to the system's default (or configured) printer.
  *
  * Usage:

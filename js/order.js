@@ -1,7 +1,7 @@
 // ─── MENU DATA ────────────────────────────────────────────────────────────────
 // Fallback used only if the API is unreachable
 const MENU_FALLBACK = [
-  { id:1, name:'Classic Deli Sub',   price:9.50,  photo:null, description:'Stacked high on a fresh hoagie roll with your choice of meats, crisp lettuce, tomato, and our house mustard.', addons:['Avocado +$1','Bacon +$1.50','Extra Cheese +$0.75','Jalapeños +$0.50','Double Meat +$2'] },
+  { id:1, name:'Classic Snackbar Sub',   price:9.50,  photo:null, description:'Stacked high on a fresh hoagie roll with your choice of meats, crisp lettuce, tomato, and our house mustard.', addons:['Avocado +$1','Bacon +$1.50','Extra Cheese +$0.75','Jalapeños +$0.50','Double Meat +$2'] },
   { id:2, name:'BLT on Sourdough',   price:8.00,  photo:null, description:'Crispy applewood bacon, heirloom tomato, and romaine on thick-cut grilled sourdough.', addons:['Avocado +$1','Fried Egg +$1','Extra Bacon +$1.50','Hot Sauce +$0'] },
   { id:3, name:'Green Chile Burger', price:11.00, photo:null, description:'1/3 lb hand-formed patty smothered in roasted Hatch green chile and pepper jack cheese.', addons:['Extra Patty +$3','Bacon +$1.50','Mushrooms +$0.75','Caramelized Onions +$0.75','Extra Chile +$0.50'] },
   { id:4, name:'Breakfast Burrito',  price:8.50,  photo:null, description:'Scrambled eggs, potato, cheese, and salsa wrapped in a grilled flour tortilla. Fuel for the trail.', addons:['Bacon +$1.50','Sausage +$1.50','Avocado +$1','Extra Salsa +$0','Green Chile +$0.75'] },
@@ -34,12 +34,12 @@ let deliTaxRate = 0;               // loaded from /api/settings (0–100, percen
 document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('footerYear').textContent = new Date().getFullYear();
   // checkDeliHours and populatePickupTimes are called inside initMenu()
-  // after loading deli hours from the API
+  // after loading snackbar hours from the API
   await initMenu();
 });
 
-// ─── DELI HOURS ──────────────────────────────────────────────────────────────
-// Fallback deli hours (Mon-Sat 9am-3pm, Sun closed)
+// ─── SNACKBAR HOURS ──────────────────────────────────────────────────────────
+// Fallback snackbar hours (Mon-Sat 9am-3pm, Sun closed)
 const DAYS_ARR = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 let deliHours = DAYS_ARR.map((d,i) => ({ day:d, open:i<6?'09:00':null, close:i<6?'15:00':null, closed:i===6 }));
 
@@ -92,7 +92,7 @@ async function initMenu() {
   renderMenu();
 }
 
-// ─── DELI HOURS CHECK ────────────────────────────────────────────────────────
+// ─── SNACKBAR HOURS CHECK ────────────────────────────────────────────────────
 function fmt12(t) {
   if (!t) return '—';
   const [h, m] = t.split(':').map(Number);
@@ -185,10 +185,10 @@ function checkDeliHours() {
   if (statusEl) {
     if (deliIsOpen) {
       statusEl.className = 'header-status status-open';
-      statusEl.innerHTML = `<span class="status-card-icon">&#10022;</span><span class="status-card-title">Deli Open</span><span class="status-card-sub">${todayHoursText()}</span>`;
+      statusEl.innerHTML = `<span class="status-card-icon">&#10022;</span><span class="status-card-title">Snackbar Open</span><span class="status-card-sub">${todayHoursText()}</span>`;
     } else {
       statusEl.className = 'header-status status-closed';
-      statusEl.innerHTML = `<span class="status-card-icon">&#10022;</span><span class="status-card-title">Deli Closed</span><span class="status-card-sub">${todayHoursText()}</span>`;
+      statusEl.innerHTML = `<span class="status-card-icon">&#10022;</span><span class="status-card-title">Snackbar Closed</span><span class="status-card-sub">${todayHoursText()}</span>`;
     }
   }
 
@@ -235,7 +235,7 @@ function populatePickupTimes() {
   if (select.options.length === 1) {
     const opt = document.createElement('option');
     opt.value    = 'As soon as ready';
-    opt.textContent = 'Deli closed — As soon as ready';
+    opt.textContent = 'Snackbar closed — As soon as ready';
     opt.disabled = true;
     select.appendChild(opt);
   }
@@ -618,7 +618,7 @@ function printMenu() {
   win.document.write(`<!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8"/>
-<title>Esmeralda Market — Deli Menu</title>
+<title>Esmeralda Market — Snackbar Menu</title>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -655,7 +655,7 @@ body{background:#F5F3EF;color:#1A1A18;font-family:'Source Sans 3',sans-serif;pri
 </head><body>
 <div class="pm-header">
   <span class="pm-header-name">ESMERALDA Market</span>
-  <span class="pm-header-sub">Deli Menu &nbsp;&middot;&nbsp; Call to Order &nbsp;&middot;&nbsp; ${sitePhone}</span>
+  <span class="pm-header-sub">Snackbar Menu &nbsp;&middot;&nbsp; Call to Order &nbsp;&middot;&nbsp; ${sitePhone}</span>
 </div>
 <div class="pm-grid">${html}</div>
 </body></html>`);

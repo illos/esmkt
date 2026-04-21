@@ -28,8 +28,8 @@ const DEFAULT_SETTINGS = {
   onlineOrdering:  true,
   phone:           '775-572-3200',
   deliTax:         0,
-  heroDescription: 'Your full-service desert outpost in Fish Lake Valley — gas up, stock the cooler, and grab a scratch-made deli sandwich before hitting the open road.',
-  heroButtonText: 'Order from the Deli',
+  heroDescription: 'Your full-service desert outpost in Fish Lake Valley — gas up, stock the cooler, and grab a scratch-made snackbar sandwich before hitting the open road.',
+  heroButtonText: 'Order from the Snackbar',
   heroButtonLink: 'menu.html',
   heroBgPhoto: null,
 };
