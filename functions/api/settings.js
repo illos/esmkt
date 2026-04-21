@@ -29,6 +29,9 @@ const DEFAULT_SETTINGS = {
   phone:           '775-572-3200',
   deliTax:         0,
   heroDescription: 'Your full-service desert outpost in Fish Lake Valley — gas up, stock the cooler, and grab a scratch-made deli sandwich before hitting the open road.',
+  heroButtonText: 'Order from the Deli',
+  heroButtonLink: 'menu.html',
+  heroBgPhoto: null,
 };
 
 export async function onRequestOptions() {
@@ -58,6 +61,9 @@ export async function onRequestPut({ request, env }) {
     ...(body.phone          !== undefined && { phone:          String(body.phone).trim() }),
     ...(body.deliTax        !== undefined && { deliTax:        parseFloat(body.deliTax) || 0 }),
     ...(body.heroDescription !== undefined && { heroDescription: String(body.heroDescription) }),
+    ...(body.heroButtonText !== undefined && { heroButtonText: String(body.heroButtonText) }),
+    ...(body.heroButtonLink !== undefined && { heroButtonLink: String(body.heroButtonLink) }),
+    ...(body.heroBgPhoto      !== undefined && { heroBgPhoto:      body.heroBgPhoto === null ? null : String(body.heroBgPhoto) }),
   };
 
   await env.MENU_KV.put('settings', JSON.stringify(data));
@@ -78,6 +84,9 @@ function migrateSettings(data) {
     phone:           data.phone           ?? DEFAULT_SETTINGS.phone,
     deliTax:         typeof data.deliTax === 'number' ? data.deliTax : DEFAULT_SETTINGS.deliTax,
     heroDescription: data.heroDescription ?? DEFAULT_SETTINGS.heroDescription,
+    heroButtonText: data.heroButtonText ?? DEFAULT_SETTINGS.heroButtonText,
+    heroButtonLink: data.heroButtonLink ?? DEFAULT_SETTINGS.heroButtonLink,
+    heroBgPhoto: data.heroBgPhoto ?? null,
   };
 }
 

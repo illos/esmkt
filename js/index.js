@@ -131,6 +131,21 @@
       const el = document.getElementById('heroDesc');
       if (el) el.textContent = s.heroDescription;
     }
+    if (s.heroButtonText || s.heroButtonLink) {
+      const btn = document.getElementById('heroBtn');
+      if (btn) {
+        if (s.heroButtonText) btn.textContent = s.heroButtonText;
+        if (s.heroButtonLink) btn.href = s.heroButtonLink;
+      }
+    }
+    if (s.heroBgPhoto) {
+      const hero = document.querySelector('.hero');
+      if (hero) {
+        const cur = hero.style.backgroundImage;
+        // Replace the url(...) portion while keeping gradient intact
+        hero.style.backgroundImage = cur.replace(/url\([^)]*\)/, `url('/images/${s.heroBgPhoto}')`);
+      }
+    }
   }
 
   // ─── Load settings + events from API ─────────────────────────────────────

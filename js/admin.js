@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (authToken) showList();
   setupUploadArea('uploadArea', applyPhotoFile);
   setupUploadArea('eventUploadArea', applyEventPhotoFile);
+  setupUploadArea('heroBgUploadArea', applyHeroBgFile);
 });
 
 function setupUploadArea(areaId, onFileFn) {
@@ -828,6 +829,23 @@ async function loadSiteInfo() {
   if (phone && settingsData.phone        != null) phone.value = settingsData.phone;
   if (tax   && settingsData.deliTax      != null) tax.value   = settingsData.deliTax;
   if (desc  && settingsData.heroDescription != null) desc.value = settingsData.heroDescription;
+  const btnText = document.getElementById('siHeroBtnText');
+  const btnLink = document.getElementById('siHeroBtnLink');
+  if (btnText && settingsData.heroButtonText != null) btnText.value = settingsData.heroButtonText;
+  if (btnLink && settingsData.heroButtonLink != null) btnLink.value = settingsData.heroButtonLink;
+  // Hero bg photo
+  const heroBgNote = document.getElementById('heroBgCurrentImageNote');
+  if (settingsData.heroBgPhoto) {
+    document.getElementById('heroBgImagePreview').src = `/images/${settingsData.heroBgPhoto}`;
+    document.getElementById('heroBgPreviewWrap').classList.add('has-image');
+    document.getElementById('heroBgUploadPlaceholder').style.display = 'none';
+    if (heroBgNote) heroBgNote.textContent = 'Current hero photo shown above. Upload a new one to replace it, or click × to remove.';
+  } else {
+    resetHeroBgUI();
+    if (heroBgNote) heroBgNote.textContent = '';
+  }
+  newHeroBgFile = null;
+  clearHeroBg_flag = false;
 }
 
 async function saveSiteInfo() {
@@ -836,21 +854,41 @@ async function saveSiteInfo() {
   if (btn) btn.disabled = true;
   if (ind) ind.style.display = 'flex';
 
-  const phone = document.getElementById('siPhone')?.value.trim()   ?? '';
-  const tax   = parseFloat(document.getElementById('siDeliTax')?.value) || 0;
-  const desc  = document.getElementById('siHeroDesc')?.value.trim() ?? '';
+  const phone   = document.getElementById('siPhone')?.value.trim()   ?? '';
+  const tax     = parseFloat(document.getElementById('siDeliTax')?.value) || 0;
+  const desc    = document.getElementById('siHeroDesc')?.value.trim() ?? '';
+  const btnText = document.getElementById('siHeroBtnText')?.value.trim() ?? '';
+  const btnLink = document.getElementById('siHeroBtnLink')?.value.trim() ?? '';
+
+  // Handle hero bg photo upload/removal separately before saving settings
+  let heroBgPhoto = settingsData?.heroBgPhoto ?? null;
+  if (clearHeroBg_flag) heroBgPhoto = null;
+  if (newHeroBgFile) {
+    try {
+      const fd = new FormData();
+      fd.append('file', newHeroBgFile);
+      fd.append('itemName', 'hero-bg');
+      const upRes  = await apiFetch('/api/upload', { method: 'POST', body: fd });
+      const upData = await upRes.json();
+      if (!upRes.ok) throw new Error(upData.error || 'Photo upload failed.');
+      heroBgPhoto = upData.filename;
+    } catch(e) { showToast(e.message, true); return; }
+  }
 
   try {
     const res = await apiFetch('/api/settings', {
       method:  'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ phone, deliTax: tax, heroDescription: desc }),
+      body:    JSON.stringify({ phone, deliTax: tax, heroDescription: desc, heroButtonText: btnText, heroButtonLink: btnLink, heroBgPhoto }),
     });
     if (!res.ok) throw new Error('Save failed');
     if (settingsData) {
       settingsData.phone           = phone;
       settingsData.deliTax         = tax;
       settingsData.heroDescription = desc;
+      settingsData.heroButtonText  = btnText;
+      settingsData.heroButtonLink  = btnLink;
+      settingsData.heroBgPhoto = heroBgPhoto;
     }
     showToast('Site info saved.');
   } catch(e) {
@@ -861,11 +899,46 @@ async function saveSiteInfo() {
   }
 }
 
+function handleHeroBgSelect(input) {
+  const f = input.files?.[0]; if (f) applyHeroBgFile(f);
+}
+function applyHeroBgFile(file) {
+  if (!file.type.startsWith('image/')) { showToast('Please select an image file.', true); return; }
+  if (file.size > 5 * 1024 * 1024)    { showToast('Image must be under 5 MB.', true);   return; }
+  newHeroBgFile = file; clearHeroBg_flag = false;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('heroBgImagePreview').src = e.target.result;
+    document.getElementById('heroBgPreviewWrap').classList.add('has-image');
+    document.getElementById('heroBgUploadPlaceholder').style.display = 'none';
+    document.getElementById('heroBgCurrentImageNote').textContent = `Ready to upload: ${file.name}`;
+  };
+  reader.readAsDataURL(file);
+}
+function resetHeroBgUI() {
+  const fileEl = document.getElementById('heroBgFile');
+  if (fileEl) fileEl.value = '';
+  const prev = document.getElementById('heroBgImagePreview');
+  if (prev) prev.src = '';
+  const wrap = document.getElementById('heroBgPreviewWrap');
+  if (wrap) wrap.classList.remove('has-image');
+  const ph = document.getElementById('heroBgUploadPlaceholder');
+  if (ph) ph.style.display = '';
+}
+function clearHeroBgPhoto(e) {
+  e.stopPropagation(); e.preventDefault();
+  newHeroBgFile = null; clearHeroBg_flag = true;
+  resetHeroBgUI();
+  document.getElementById('heroBgCurrentImageNote').textContent = '';
+}
+
 // ─── EVENTS ───────────────────────────────────────────────────────────────────
 let events = [];
 let editingEvent = null;
 let newEventPhotoFile = null;
 let clearEventPhoto_flag = false;
+let newHeroBgFile = null;
+let clearHeroBg_flag = false;
 
 async function loadEvents() {
   const container = document.getElementById('eventListContainer');

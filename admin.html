@@ -91,6 +91,34 @@
         style="min-height:80px"
         onblur="saveSiteInfo()"></textarea>
     </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="siHeroBtnText">Hero Button Text</label>
+        <input class="form-input" type="text" id="siHeroBtnText" placeholder="e.g. Order from the Deli"
+          onblur="saveSiteInfo()" onkeydown="if(event.key==='Enter')this.blur()"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="siHeroBtnLink">Hero Button Link</label>
+        <input class="form-input" type="text" id="siHeroBtnLink" placeholder="e.g. menu.html or https://…"
+          onblur="saveSiteInfo()" onkeydown="if(event.key==='Enter')this.blur()"/>
+      </div>
+    </div>
+    <div class="form-group-full">
+      <label class="form-label">Hero Background Photo</label>
+      <div class="image-upload-area" id="heroBgUploadArea">
+        <input type="file" id="heroBgFile" accept="image/jpeg,image/png,image/webp,image/gif" onchange="handleHeroBgSelect(this)"/>
+        <div class="upload-placeholder" id="heroBgUploadPlaceholder">
+          <span class="upload-icon">&#128247;</span>
+          <span class="upload-label">Click or drag to upload</span>
+          <span class="upload-hint">JPEG, PNG, WebP or GIF &middot; Max 5 MB</span>
+        </div>
+        <div class="image-preview-wrap" id="heroBgPreviewWrap">
+          <img class="image-preview" id="heroBgImagePreview" src="" alt="Preview"/>
+          <button class="image-preview-remove" onclick="clearHeroBgPhoto(event)" title="Remove photo">&#215;</button>
+        </div>
+      </div>
+      <div class="current-image-note" id="heroBgCurrentImageNote"></div>
+    </div>
     <div class="form-actions">
       <button class="btn-save" id="saveSiteInfoBtn" onclick="saveSiteInfo()">Save Site Info</button>
       <span id="savingSiteInfoIndicator" style="display:none;align-items:center;color:var(--cream-dim);font-size:13px;margin-left:16px">

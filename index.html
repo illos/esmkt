@@ -26,8 +26,7 @@
 <section class="hero">
   <div class="hero-content">
     <div class="hero-eyebrow">Battle Born &middot; NV Strong &middot; Est. 1978</div>
-    <div class="hero-name">ESMERALDA</div>
-    <div class="hero-sub">Market &middot; Gas &middot; Deli</div>
+    <img class="hero-logo" src="images/esmeralda-logo.svg" alt="Esmeralda Market"/>
     <div class="hero-divider"><span>&#10022;</span></div>
     <p class="hero-desc" id="heroDesc">Your full-service desert outpost in Fish Lake Valley &mdash; gas up, stock the cooler, and grab a scratch-made deli sandwich before hitting the open road.</p>
     <div class="hero-ctas">
@@ -35,7 +34,7 @@
         <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24 11.47 11.47 0 003.58.57 1 1 0 011 1V21a1 1 0 01-1 1A17 17 0 013 5a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.58a1 1 0 01-.25 1.01z"/></svg>
         <span id="callBtnPhone">775-572-3200</span>
       </a>
-      <a href="menu.html" class="btn-order">Order from the Deli &rarr;</a>
+      <a href="menu.html" class="btn-order" id="heroBtn">Order from the Deli &rarr;</a>
     </div>
   </div>
   <div class="hero-scroll">
@@ -44,26 +43,35 @@
   </div>
 </section>
 
-<!-- ─── HOURS ─── -->
-<section class="section hours" id="hours">
-  <div class="section-inner">
-    <div class="section-label">We&rsquo;re Open</div>
-    <h2 class="section-heading">Hours</h2>
-    <div class="hours-grid">
-      <div class="hours-card">
-        <div class="hours-card-type">Market &middot; Gas</div>
-        <div class="hours-card-name">Esmeralda Market</div>
-        <div class="hours-time" id="storeHoursTime">8:30 AM &ndash; 7:30 PM</div>
-        <div class="hours-days" id="storeHoursDays">Open Every Day</div>
-        <div class="hours-schedule" id="storeHoursSchedule" style="display:none"></div>
+<!-- ─── HOURS & LOCATION ─── -->
+<section class="section info-strip" id="hours">
+  <div class="info-strip-inner">
+    <div class="hours-card">
+      <div class="hours-card-type">Market &middot; Gas</div>
+      <div class="hours-card-name">Esmeralda Market</div>
+      <div class="hours-time" id="storeHoursTime">8:30 AM &ndash; 7:30 PM</div>
+      <div class="hours-days" id="storeHoursDays">Open Every Day</div>
+      <div class="hours-schedule" id="storeHoursSchedule" style="display:none"></div>
+    </div>
+    <div class="hours-card">
+      <div class="hours-card-type">Hot Food &middot; Made Fresh Daily</div>
+      <div class="hours-card-name">Deli Counter</div>
+      <div class="hours-time" id="deliHoursTime">9:00 AM &ndash; 3:00 PM</div>
+      <div class="hours-days" id="deliHoursDays">Monday &ndash; Saturday</div>
+      <div class="hours-schedule" id="deliHoursSchedule" style="display:none"></div>
+    </div>
+    <div class="hours-card location-card">
+      <div class="hours-card-type">Location</div>
+      <div class="hours-card-name">Find Us</div>
+      <div class="location-address">
+        <div class="location-line">HWY 264, Mile Marker 8</div>
+        <div class="location-line">Dyer, NV &nbsp;89010</div>
+        <div class="location-sub">Fish Lake Valley &middot; Esmeralda County, NV</div>
       </div>
-      <div class="hours-card">
-        <div class="hours-card-type">Hot Food &middot; Made Fresh Daily</div>
-        <div class="hours-card-name">Deli Counter</div>
-        <div class="hours-time" id="deliHoursTime">9:00 AM &ndash; 3:00 PM</div>
-        <div class="hours-days" id="deliHoursDays">Monday &ndash; Saturday</div>
-        <div class="hours-schedule" id="deliHoursSchedule" style="display:none"></div>
-      </div>
+      <a href="https://maps.app.goo.gl/dhU5oMRYwXpTUhmY9" target="_blank" rel="noopener noreferrer" class="btn-maps">
+        <span class="btn-maps-icon">&#128205;</span>
+        Open in Google Maps
+      </a>
     </div>
   </div>
 </section>
@@ -77,20 +85,26 @@
   </div>
 </section>
 
+<!-- ─── 24-HR FUEL BANNER ─── -->
+<div class="service-banner fuel-banner">
+  <div class="service-banner-inner">
+    <div class="service-banner-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22V6a2 2 0 012-2h8a2 2 0 012 2v16"/><path d="M3 22h12"/><path d="M9 6v4"/><path d="M15 10h2a2 2 0 012 2v2a2 2 0 002 2v0a2 2 0 002-2V8l-3-3"/><path d="M19 5v0a1 1 0 011 1v1"/></svg>
+    </div>
+    <div class="service-banner-body">
+      <span class="service-banner-title">24-Hour Fuel</span>
+      <span class="service-banner-sub">Gas &amp; Diesel &nbsp;&middot;&nbsp; Always Open</span>
+    </div>
+    <span class="service-banner-star">&#10022;</span>
+  </div>
+</div>
+
 <!-- ─── SERVICES ─── -->
 <section class="section services" id="services">
   <div class="section-inner">
     <div class="section-label">What We Offer</div>
     <h2 class="section-heading">Services</h2>
     <div class="services-grid">
-
-      <!-- 24-Hr Fuel -->
-      <div class="service-item">
-        <div class="service-icon">
-          <svg viewBox="0 0 24 24"><path d="M3 22V6a2 2 0 012-2h8a2 2 0 012 2v16"/><path d="M3 22h12"/><path d="M9 6v4"/><path d="M15 10h2a2 2 0 012 2v2a2 2 0 002 2v0a2 2 0 002-2V8l-3-3"/><path d="M19 5v0a1 1 0 011 1v1"/></svg>
-        </div>
-        <div class="service-label">24-Hr Fuel</div>
-      </div>
 
       <!-- Deli -->
       <div class="service-item">
@@ -124,14 +138,6 @@
         <div class="service-label">Beer</div>
       </div>
 
-      <!-- Fireworks -->
-      <div class="service-item">
-        <div class="service-icon">
-          <svg viewBox="0 0 24 24"><path d="M12 2v4"/><path d="M12 18v4"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="M4.93 4.93l2.83 2.83"/><path d="M16.24 16.24l2.83 2.83"/><path d="M19.07 4.93l-2.83 2.83"/><path d="M7.76 16.24l-2.83 2.83"/><circle cx="12" cy="12" r="3"/></svg>
-        </div>
-        <div class="service-label">Fireworks</div>
-      </div>
-
       <!-- Restrooms -->
       <div class="service-item">
         <div class="service-icon">
@@ -152,24 +158,19 @@
   </div>
 </section>
 
-<!-- ─── FIND US ─── -->
-<section class="section find-us" id="find-us">
-  <div class="section-inner">
-    <div class="section-label">Location</div>
-    <h2 class="section-heading">Find Us</h2>
-    <div class="find-us-layout">
-      <div class="address-block">
-        <div class="address-main">HWY 264, Mile Marker 8</div>
-        <div class="address-main">Dyer, NV &nbsp;89010</div>
-        <div class="address-sub">Fish Lake Valley &middot; Esmeralda County, Nevada</div>
-      </div>
-      <a href="https://maps.app.goo.gl/dhU5oMRYwXpTUhmY9" target="_blank" rel="noopener noreferrer" class="btn-maps">
-        <span class="btn-maps-icon">&#128205;</span>
-        Open in Google Maps
-      </a>
+<!-- ─── FIREWORKS BANNER ─── -->
+<div class="service-banner fireworks-banner">
+  <div class="service-banner-inner">
+    <div class="service-banner-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="M12 18v4"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="M4.93 4.93l2.83 2.83"/><path d="M16.24 16.24l2.83 2.83"/><path d="M19.07 4.93l-2.83 2.83"/><path d="M7.76 16.24l-2.83 2.83"/><circle cx="12" cy="12" r="3"/></svg>
     </div>
+    <div class="service-banner-body">
+      <span class="service-banner-title">Fireworks</span>
+      <span class="service-banner-sub">Nevada-Legal &nbsp;&middot;&nbsp; In Season</span>
+    </div>
+    <span class="service-banner-star">&#10022;</span>
   </div>
-</section>
+</div>
 
 <!-- ─── FOOTER ─── -->
 <footer class="site-footer">
