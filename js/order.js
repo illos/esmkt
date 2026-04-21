@@ -164,27 +164,21 @@ function checkDeliHours() {
   if (!onlineOrderingEnabled) {
     if (statusEl) {
       statusEl.className = 'header-status status-unavailable';
-      statusEl.innerHTML = `
-        <span class="status-card-icon">&#10022;</span>
-        <span class="status-card-title">Online Ordering Unavailable</span>
-        <span class="status-card-sub">Call us to place your order &nbsp;&middot;&nbsp; 775-572-3200</span>`;
+      statusEl.innerHTML = `<span class="status-card-icon">&#10022;</span><span class="status-card-title">Online Ordering Unavailable</span><span class="status-card-sub">Call to order &nbsp;&middot;&nbsp; 775-572-3200</span>`;
     }
     document.getElementById('deliOpenContent').style.display = 'none';
     orderingOpen = false;
   } else if (!deliIsOpen) {
     if (statusEl) {
       statusEl.className = 'header-status status-closed';
-      statusEl.innerHTML = `
-        <span class="status-card-icon">&#10022;</span>
-        <span class="status-card-title">Deli Closed</span>
-        <span class="status-card-sub">${deliHoursShortSummary()}</span>`;
+      statusEl.innerHTML = `<span class="status-card-icon">&#10022;</span><span class="status-card-title">Deli Closed</span><span class="status-card-sub">${deliHoursShortSummary()}</span>`;
     }
     document.getElementById('deliOpenContent').style.display = 'none';
     orderingOpen = false;
   } else {
     if (statusEl) {
-      statusEl.className = 'header-status';
-      statusEl.innerHTML = `Deli open ${deliHoursShortSummary()}`;
+      statusEl.className = 'header-status status-open';
+      statusEl.innerHTML = `<span class="status-card-icon">&#10022;</span><span class="status-card-title">Deli Open</span><span class="status-card-sub">${deliHoursShortSummary()}</span>`;
     }
     document.getElementById('deliOpenContent').style.display = 'block';
     orderingOpen = true;
