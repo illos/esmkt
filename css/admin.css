@@ -858,6 +858,28 @@
   .cat-desc-input:hover { border-bottom-color: rgba(58,56,48,0.6); }
   .cat-desc-input:focus { border-bottom-color: var(--charcoal-border); }
 
+  /* ─── ADD ITEM PER CATEGORY BUTTON ─── */
+  .btn-add-item-in-cat {
+    display: block;
+    width: 100%;
+    background: none;
+    border: none;
+    border-top: 1px dashed rgba(58,56,48,0.5);
+    color: rgba(184,176,160,0.3);
+    font-family: 'Oswald', sans-serif;
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 8px;
+    cursor: pointer;
+    transition: color 0.2s, background 0.2s;
+    border-radius: 0 0 4px 4px;
+  }
+  .btn-add-item-in-cat:hover {
+    color: var(--gold);
+    background: rgba(201,169,110,0.04);
+  }
+
   /* ─── ADD CATEGORY BUTTON (bottom) ─── */
   .btn-add-category {
     width: 100%;
@@ -895,11 +917,11 @@
   .item-drag-handle {
     position: absolute;
     top: 6px;
-    left: 6px;
+    right: 6px;
     cursor: grab;
-    color: rgba(255,255,255,0.7);
+    color: rgba(255,255,255,0.5);
     font-size: 11px;
-    background: rgba(0,0,0,0.55);
+    background: rgba(0,0,0,0.45);
     border-radius: 2px;
     padding: 2px 4px;
     z-index: 2;

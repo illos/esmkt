@@ -190,6 +190,7 @@ function renderCategoryBlock(cat) {
       ondrop="onCatItemsDrop(event,${cat.id})">
       ${itemsHtml}
     </div>
+    <button class="btn-add-item-in-cat" onclick="openForm(null,${cat.id})">+ Add Item</button>
   </div>`;
 }
 
@@ -391,7 +392,7 @@ async function saveFullState() {
 }
 
 // ─── ITEM FORM ─────────────────────────────────────────────────────────────────
-function openForm(itemId) {
+function openForm(itemId, defaultCatId) {
   editingItem = itemId ? menuItems.find(m => m.id === itemId) || null : null;
   newPhotoFile = null;
   clearExistingPhoto = false;
@@ -414,6 +415,8 @@ function openForm(itemId) {
   if (editingItem) {
     const curCat = menuCategories.find(c => c.itemIds?.includes(editingItem.id));
     if (curCat) catSel.value = curCat.id;
+  } else if (defaultCatId != null) {
+    catSel.value = defaultCatId;
   } else {
     // Default to first non-uncategorized category
     const first = menuCategories.find(c => c.id !== 0);
