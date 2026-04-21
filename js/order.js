@@ -25,6 +25,8 @@ function fmt(n) { return '$' + Number(n).toFixed(2); }
 // ─── STATE ───────────────────────────────────────────────────────────────────
 let cart = [];
 let slideshowTimers = {};
+let orderingOpen = false;          // true only when deli is open AND online ordering is enabled
+let onlineOrderingEnabled = true;  // loaded from /api/settings
 
 // ─── BOOT ────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
@@ -68,6 +70,7 @@ async function initMenu() {
       if (Array.isArray(sData.deliHours) && sData.deliHours.length === 7) {
         deliHours = sData.deliHours;
       }
+      onlineOrderingEnabled = sData.onlineOrdering !== false;
     }
   } catch (_) {
     MENU = MENU_FALLBACK;
@@ -142,13 +145,42 @@ function checkDeliHours() {
   const today = getTodayDeliHours();
   const now   = new Date();
   const mins  = now.getHours() * 60 + now.getMinutes();
-  let isOpen  = false;
+  let deliIsOpen = false;
   if (today && !today.closed && today.open && today.close) {
-    isOpen = mins >= toMins(today.open) && mins < toMins(today.close);
+    deliIsOpen = mins >= toMins(today.open) && mins < toMins(today.close);
   }
-  renderBannerHours();
-  document.getElementById('deliClosedBanner').classList.toggle('visible', !isOpen);
-  document.getElementById('deliOpenContent').style.display = isOpen ? 'block' : 'none';
+
+  const banner     = document.getElementById('deliClosedBanner');
+  const icon       = document.getElementById('closedIcon');
+  const title      = document.getElementById('closedTitle');
+  const sub        = document.getElementById('closedSub');
+  const hoursWrap  = document.getElementById('closedHoursContainer');
+
+  if (!onlineOrderingEnabled) {
+    // Ordering disabled by admin toggle — show "unavailable" banner regardless of time
+    icon.textContent      = '📵';
+    title.textContent     = 'Online Ordering Unavailable';
+    sub.textContent       = 'Please call us to place your order: 775-572-3200';
+    hoursWrap.style.display = 'none';
+    banner.classList.add('visible');
+    document.getElementById('deliOpenContent').style.display = 'none';
+    orderingOpen = false;
+  } else if (!deliIsOpen) {
+    // Outside deli hours — show regular closed banner with hours
+    icon.textContent      = '🕰';
+    title.textContent     = 'Deli is Closed';
+    sub.textContent       = 'Stop by during deli hours to order fresh \u2014 or call ahead.';
+    hoursWrap.style.display = '';
+    renderBannerHours();
+    banner.classList.add('visible');
+    document.getElementById('deliOpenContent').style.display = 'none';
+    orderingOpen = false;
+  } else {
+    // Deli is open and ordering is enabled
+    banner.classList.remove('visible');
+    document.getElementById('deliOpenContent').style.display = 'block';
+    orderingOpen = true;
+  }
 }
 
 // ─── PICKUP TIME DROPDOWN ────────────────────────────────────────────────────
@@ -211,6 +243,9 @@ function renderItemCard(item) {
   const card = document.createElement('div');
   card.id = `card-${item.id}`;
 
+  const addBtn = orderingOpen
+    ? `<button class="btn-add-plus" onclick="addToCart(${item.id})">+</button>` : '';
+
   if (item.photo) {
     card.className = 'menu-card';
     card.innerHTML = `
@@ -218,7 +253,7 @@ function renderItemCard(item) {
         <div class="slide active"><img src="/images/${item.photo}" alt="${item.name}" loading="lazy"/></div>
         <div class="card-price-add card-price-add--overlay">
           <span class="card-price">${fmt(item.price)}</span>
-          <button class="btn-add-plus" onclick="addToCart(${item.id})">+</button>
+          ${addBtn}
         </div>
       </div>
       <div class="card-body">
@@ -235,7 +270,7 @@ function renderItemCard(item) {
           <div class="card-name">${item.name}</div>
           <div class="card-price-add">
             <span class="card-price">${fmt(item.price)}</span>
-            <button class="btn-add-plus" onclick="addToCart(${item.id})">+</button>
+            ${addBtn}
           </div>
         </div>
         ${item.description ? `<div class="card-desc">${item.description}</div>` : ''}

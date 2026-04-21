@@ -686,9 +686,32 @@ async function loadHours() {
     const res  = await apiFetch('/api/settings');
     const data = await res.json();
     settingsData = data;
+    document.getElementById('onlineOrderingToggle').checked = data.onlineOrdering !== false;
     renderHoursTable('storeHoursBody', data.storeHours);
     renderHoursTable('deliHoursBody',  data.deliHours);
   } catch(e) { showToast('Could not load hours.', true); }
+}
+
+async function saveOnlineOrdering(enabled) {
+  if (!settingsData) return;
+  try {
+    const res = await apiFetch('/api/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        storeHours:     settingsData.storeHours,
+        deliHours:      settingsData.deliHours,
+        onlineOrdering: enabled,
+      }),
+    });
+    if (!res.ok) throw new Error('Save failed');
+    settingsData.onlineOrdering = enabled;
+    showToast(enabled ? 'Online ordering enabled.' : 'Online ordering disabled.');
+  } catch(e) {
+    showToast(e.message, true);
+    // Revert toggle on failure
+    document.getElementById('onlineOrderingToggle').checked = !enabled;
+  }
 }
 
 function renderHoursTable(tbodyId, hours) {
@@ -732,13 +755,14 @@ async function saveHours() {
   try {
     const storeHours = collectHours('storeHoursBody', settingsData.storeHours);
     const deliHours  = collectHours('deliHoursBody',  settingsData.deliHours);
+    const onlineOrdering = document.getElementById('onlineOrderingToggle')?.checked ?? (settingsData.onlineOrdering !== false);
     const res = await apiFetch('/api/settings', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ storeHours, deliHours }),
+      body: JSON.stringify({ storeHours, deliHours, onlineOrdering }),
     });
     if (!res.ok) throw new Error('Save failed');
-    settingsData = { storeHours, deliHours };
+    settingsData = { storeHours, deliHours, onlineOrdering };
     showToast('Hours saved.');
   } catch(e) { showToast(e.message, true); }
   finally { btn.disabled = false; ind.style.display = 'none'; }

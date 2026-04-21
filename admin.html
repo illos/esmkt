@@ -56,6 +56,20 @@
 
 <!-- ─── HOURS PAGE ─── -->
 <div class="page" id="pageHours">
+  <div class="hours-section-title">Online Ordering</div>
+  <div class="form-card" style="margin-bottom:24px">
+    <div class="ordering-toggle-row">
+      <div class="ordering-toggle-info">
+        <div class="ordering-toggle-label">Accept Online Orders</div>
+        <div class="ordering-toggle-desc">When off, the order page shows &ldquo;Online Ordering Unavailable&rdquo; and hides the add-to-order buttons.</div>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="onlineOrderingToggle" checked onchange="saveOnlineOrdering(this.checked)"/>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+  </div>
+
   <div class="hours-section-title">Store Hours</div>
   <div class="form-card" style="margin-bottom:24px">
     <table class="hours-table" id="storeHoursTable">

@@ -31,17 +31,19 @@
     <button class="btn-print-menu" onclick="printMenu()">&#9113;&nbsp; Print Menu</button>
   </header>
 
-  <!-- DELI CLOSED BANNER (shown when outside deli hours) -->
+  <!-- DELI CLOSED BANNER (shown when outside deli hours OR online ordering disabled) -->
   <div class="deli-closed-banner" id="deliClosedBanner">
-    <div class="closed-icon">&#128336;</div>
-    <div class="closed-title">Deli is Closed</div>
-    <div class="closed-sub">Stop by during deli hours to order fresh &mdash; or call ahead.</div>
-    <div class="closed-hours" id="closedHoursSimple">
-      <div class="closed-hours-item" id="closedHoursTime">9:00 AM &ndash; 3:00 PM</div>
-      <div class="closed-hours-divider"></div>
-      <div class="closed-hours-item" id="closedHoursDays">Monday &ndash; Saturday</div>
+    <div class="closed-icon" id="closedIcon">&#128336;</div>
+    <div class="closed-title" id="closedTitle">Deli is Closed</div>
+    <div class="closed-sub" id="closedSub">Stop by during deli hours to order fresh &mdash; or call ahead.</div>
+    <div id="closedHoursContainer">
+      <div class="closed-hours" id="closedHoursSimple">
+        <div class="closed-hours-item" id="closedHoursTime">9:00 AM &ndash; 3:00 PM</div>
+        <div class="closed-hours-divider"></div>
+        <div class="closed-hours-item" id="closedHoursDays">Monday &ndash; Saturday</div>
+      </div>
+      <div class="closed-hours-schedule" id="closedHoursSchedule" style="display:none"></div>
     </div>
-    <div class="closed-hours-schedule" id="closedHoursSchedule" style="display:none"></div>
   </div>
 
   <!-- MENU SECTION (always visible) -->
