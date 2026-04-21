@@ -128,12 +128,10 @@
   }
   .section-title::after { content: ''; flex: 1; height: 1px; background: var(--charcoal-border); }
 
-  /* ─── MENU GRID ─── */
+  /* ─── MENU GRID — masonry via CSS columns ─── */
   .menu-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
-    align-items: start;
+    columns: 2 260px;
+    column-gap: 16px;
   }
 
   /* ─── MENU CARD ─── */
@@ -144,6 +142,8 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    break-inside: avoid;
+    margin-bottom: 16px;
     transition: border-color 0.2s;
   }
   /* no hover border effect */
@@ -885,7 +885,7 @@
   .option-select:focus { border-color: var(--gold-dark); }
 
   .menu-loading {
-    grid-column: 1 / -1;
+    column-span: all;
     text-align: center;
     padding: 60px 20px;
     font-family: 'Oswald', sans-serif;
@@ -897,12 +897,13 @@
 
   /* ─── CATEGORY HEADER / FOOTER WRAPPERS ─── */
   .cat-header-wrap {
-    grid-column: 1 / -1;
+    column-span: all;
+    break-after: avoid;
     margin-top: 36px;
   }
   .menu-grid > .cat-header-wrap:first-child { margin-top: 0; }
 
-  .cat-footer-wrap { grid-column: 1 / -1; }
+  .cat-footer-wrap { column-span: all; }
 
   .cat-footer-notes {
     font-size: 13px;
@@ -994,7 +995,7 @@
   }
 
   @media (max-width: 600px) {
-    .menu-grid { grid-template-columns: 1fr; }
+    .menu-grid { columns: 1; }
     .floating-cart { display: flex; }
     .nav-phone { display: none; }
   }

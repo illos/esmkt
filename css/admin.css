@@ -876,18 +876,17 @@
   }
   .btn-delete-cat:hover { color: var(--danger); }
 
-  /* ─── CATEGORY ITEMS — 2-column card grid ─── */
+  /* ─── CATEGORY ITEMS — 2-column masonry ─── */
   .category-items {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+    columns: 2;
+    column-gap: 10px;
     padding: 12px;
     min-height: 44px;
   }
   .category-items.drop-active { background: rgba(201,169,110,0.03); }
 
   .category-empty-zone {
-    grid-column: 1 / -1;
+    column-span: all;
     padding: 16px;
     text-align: center;
     font-size: 12px;
@@ -989,6 +988,8 @@
     border: 1px solid var(--charcoal-border);
     border-radius: 3px;
     overflow: hidden;
+    break-inside: avoid;
+    margin-bottom: 10px;
     cursor: default;
     user-select: none;
     transition: border-color 0.2s;
