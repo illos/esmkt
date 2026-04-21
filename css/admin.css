@@ -243,40 +243,6 @@
   .menu-table tbody tr { transition: background 0.15s; }
   .menu-table tbody tr:hover { background: var(--charcoal-card); }
 
-  .item-thumb {
-    width: 48px;
-    height: 40px;
-    object-fit: cover;
-    border-radius: 2px;
-    border: 1px solid var(--charcoal-border);
-    display: block;
-    background: var(--charcoal-mid);
-  }
-  .item-thumb-placeholder {
-    width: 48px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--charcoal-mid);
-    border: 1px solid var(--charcoal-border);
-    border-radius: 2px;
-    color: rgba(201,169,110,0.3);
-    font-size: 18px;
-  }
-
-  .item-name-cell { font-weight: 600; }
-  .item-price-cell {
-    color: var(--gold);
-    font-family: 'Oswald', sans-serif;
-    font-size: 15px;
-    white-space: nowrap;
-  }
-  .item-addons-cell {
-    font-size: 12px;
-    color: var(--cream-dim);
-  }
-
   .table-actions { display: flex; gap: 8px; }
   .btn-edit {
     font-family: 'Oswald', sans-serif;
@@ -848,37 +814,153 @@
   }
   .btn-delete-cat:hover { color: var(--danger); }
 
-  /* ─── ITEM ROWS (div-based) ─── */
-  .item-row {
-    display: grid;
-    grid-template-columns: 20px 52px 1fr 72px 1fr 148px;
-    align-items: center; gap: 10px;
-    padding: 10px 14px;
-    border-bottom: 1px solid var(--charcoal-border);
-    transition: background 0.15s; cursor: default; user-select: none;
-  }
-  .item-row:last-child { border-bottom: none; }
-  .item-row:hover { background: rgba(255,255,255,0.03); }
-  .item-row.item-dragging { opacity: 0.35; }
-  .item-row.item-drag-over { border-top: 2px solid var(--gold); background: rgba(201,169,110,0.04); }
-  @media (max-width: 600px) {
-    .item-row { grid-template-columns: 20px 44px 1fr 64px 120px; }
-    .item-meta-cell { display: none; }
-  }
-  .item-drag-handle {
-    cursor: grab; color: rgba(184,176,160,0.25); font-size: 16px;
-    user-select: none; transition: color 0.2s; text-align: center;
-  }
-  .item-row:hover .item-drag-handle { color: rgba(184,176,160,0.55); }
-  .item-meta-cell { font-size: 12px; color: var(--cream-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .category-items { min-height: 8px; }
-  .category-empty-zone {
-    padding: 18px 14px; text-align: center;
-    font-size: 12px; color: rgba(184,176,160,0.3);
-    letter-spacing: 1px; font-style: italic; transition: background 0.15s, color 0.15s;
-  }
-  .category-empty-zone.drop-active,
-  .category-items.drop-active .category-empty-zone {
-    background: rgba(201,169,110,0.06); color: rgba(201,169,110,0.5);
+  /* ─── CATEGORY ITEMS — card grid ─── */
+  .category-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 12px;
+    min-height: 44px;
+    align-content: flex-start;
   }
   .category-items.drop-active { background: rgba(201,169,110,0.03); }
+
+  .category-empty-zone {
+    width: 100%;
+    padding: 16px;
+    text-align: center;
+    font-size: 12px;
+    color: rgba(184,176,160,0.3);
+    letter-spacing: 1px;
+    font-style: italic;
+    transition: background 0.15s, color 0.15s;
+  }
+  .category-empty-zone.drop-active { color: rgba(201,169,110,0.5); }
+
+  /* ─── ADMIN ITEM CARD ─── */
+  .item-row {
+    background: var(--charcoal);
+    border: 1px solid var(--charcoal-border);
+    border-radius: 3px;
+    overflow: hidden;
+    flex: 1 1 160px;
+    max-width: calc(50% - 5px);
+    min-width: 140px;
+    cursor: default;
+    user-select: none;
+    transition: border-color 0.2s;
+    position: relative;
+  }
+  .item-row:hover { border-color: var(--gold-dark); }
+  .item-row.item-dragging { opacity: 0.35; }
+  .item-row.item-drag-over { outline: 2px solid var(--gold); outline-offset: -2px; }
+
+  .item-drag-handle {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    cursor: grab;
+    color: rgba(255,255,255,0.7);
+    font-size: 11px;
+    background: rgba(0,0,0,0.55);
+    border-radius: 2px;
+    padding: 2px 4px;
+    z-index: 2;
+    line-height: 1;
+    user-select: none;
+    transition: color 0.15s;
+  }
+  .item-row:hover .item-drag-handle { color: var(--gold); }
+
+  .item-card-thumb {
+    height: 90px;
+    overflow: hidden;
+    background: var(--charcoal-mid);
+  }
+  .item-card-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .item-card-body {
+    padding: 8px 10px 10px;
+  }
+  .item-card-title {
+    font-family: 'Oswald', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--cream);
+    line-height: 1.2;
+    margin-bottom: 2px;
+  }
+  .item-card-price {
+    font-family: 'Oswald', sans-serif;
+    font-size: 13px;
+    color: var(--gold);
+    margin-bottom: 8px;
+  }
+  .item-card-actions {
+    display: flex;
+    gap: 6px;
+  }
+  .item-card-actions .btn-edit,
+  .item-card-actions .btn-delete {
+    flex: 1;
+    text-align: center;
+    padding: 4px 6px;
+    font-size: 10px;
+  }
+
+  /* ─── CATEGORY PHOTO CONTROL ─── */
+  .cat-photo-control {
+    position: relative;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .cat-header-thumb {
+    width: 40px;
+    height: 32px;
+    object-fit: cover;
+    border-radius: 2px;
+    border: 1px solid var(--charcoal-border);
+    display: block;
+  }
+  .cat-photo-empty {
+    width: 40px;
+    height: 32px;
+    border: 1px dashed rgba(58,56,48,0.7);
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.2s;
+    background: none;
+    cursor: pointer;
+  }
+  .cat-photo-empty:hover { border-color: var(--gold-dark); }
+  .cat-photo-icon { font-size: 14px; opacity: 0.35; line-height: 1; }
+  .cat-photo-control .btn-remove-cat-photo {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: var(--charcoal-mid);
+    border: 1px solid var(--charcoal-border);
+    color: var(--cream-dim);
+    font-size: 10px;
+    width: 16px;
+    height: 16px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 50%;
+    line-height: 1;
+    z-index: 3;
+    transition: color 0.2s;
+  }
+  .cat-photo-control:hover .btn-remove-cat-photo { display: flex; }
+  .cat-photo-control .btn-remove-cat-photo:hover { color: var(--danger); border-color: var(--danger); }

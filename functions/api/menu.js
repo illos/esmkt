@@ -147,20 +147,23 @@ async function getMenuData(env) {
   if (!data.categories) {
     data.nextCatId  = 2;
     data.categories = [
-      { id: 1, name: 'Menu', itemIds: data.items.map(i => i.id) },
-      { id: 0, name: 'Uncategorized', itemIds: [] },
+      { id: 1, name: 'Menu', itemIds: data.items.map(i => i.id), photo: null },
+      { id: 0, name: 'Uncategorized', itemIds: [], photo: null },
     ];
   }
 
   // ── Ensure Uncategorized category always exists ───────────────────────────
   if (!data.categories.find(c => c.id === 0)) {
-    data.categories.push({ id: 0, name: 'Uncategorized', itemIds: [] });
+    data.categories.push({ id: 0, name: 'Uncategorized', itemIds: [], photo: null });
   }
 
   // ── Ensure nextCatId exists ───────────────────────────────────────────────
   if (!data.nextCatId) {
     data.nextCatId = Math.max(...data.categories.map(c => c.id), 1) + 1;
   }
+
+  // ── Ensure categories have photo field ───────────────────────────────────
+  data.categories = data.categories.map(cat => ({ photo: null, ...cat }));
 
   // ── Ensure items have new fields ──────────────────────────────────────────
   data.items = data.items.map(item => ({

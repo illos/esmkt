@@ -140,6 +140,17 @@ function renderCategoryBlock(cat) {
          ondragstart="onCatDragStart(event,${cat.id})"
          title="Drag to reorder">&#8942;&#8942;</span>`;
 
+  const photoControl = isUncat ? '' : (cat.photo
+    ? `<div class="cat-photo-control">
+         <img class="cat-header-thumb" src="/images/${cat.photo}" alt=""/>
+         <button class="btn-remove-cat-photo" onclick="removeCatPhoto(event,${cat.id})" title="Remove photo">&#215;</button>
+       </div>`
+    : `<label class="cat-photo-control cat-photo-empty" title="Add hero photo">
+         <span class="cat-photo-icon">&#128247;</span>
+         <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" style="display:none"
+           onchange="handleCatPhotoSelect(this,${cat.id})"/>
+       </label>`);
+
   const headerName = isUncat
     ? `<span class="cat-name-text">Uncategorized</span>`
     : `<input class="cat-name-input" type="text" value="${esc(cat.name)}"
@@ -159,6 +170,7 @@ function renderCategoryBlock(cat) {
     ondragend="onCatDragEnd(event)">
     <div class="category-header">
       ${headerHandle}
+      ${photoControl}
       ${headerName}
       <span class="cat-item-count">${count} item${count!==1?'s':''}</span>
       ${deleteBtn}
@@ -172,25 +184,23 @@ function renderCategoryBlock(cat) {
 }
 
 function renderItemRow(item, catId) {
-  const photoHtml = item.photo
-    ? `<img class="item-thumb" src="/images/${item.photo}" alt="" loading="lazy"/>`
-    : `<div class="item-thumb-placeholder">&#10022;</div>`;
-  const ac = item.addons?.length  || 0;
-  const oc = item.options?.length || 0;
-  const meta = [ac ? `${ac} add-on${ac===1?'':'s'}` : '', oc ? `${oc} option${oc===1?'':'s'}` : ''].filter(Boolean).join(', ') || '—';
+  const thumbHtml = item.photo
+    ? `<div class="item-card-thumb"><img src="/images/${item.photo}" alt="" loading="lazy"/></div>`
+    : '';
   return `<div class="item-row" draggable="true" data-item-id="${item.id}" data-cat-id="${catId}"
     ondragstart="onItemDragStart(event,${item.id},${catId})"
     ondragover="onItemDragOver(event,${item.id},${catId})"
     ondrop="onItemDrop(event,${item.id},${catId})"
     ondragend="onItemDragEnd(event)">
     <span class="item-drag-handle">&#8942;&#8942;</span>
-    <div>${photoHtml}</div>
-    <div class="item-name-cell">${esc(item.name)}</div>
-    <div class="item-price-cell">$${Number(item.price).toFixed(2)}</div>
-    <div class="item-meta-cell">${meta}</div>
-    <div class="table-actions">
-      <button class="btn-edit" onclick="openForm(${item.id})">Edit</button>
-      <button class="btn-delete" onclick="promptDeleteItem(${item.id},'${esc(item.name)}')">Delete</button>
+    ${thumbHtml}
+    <div class="item-card-body">
+      <div class="item-card-title">${esc(item.name)}</div>
+      <div class="item-card-price">$${Number(item.price).toFixed(2)}</div>
+      <div class="item-card-actions">
+        <button class="btn-edit" onclick="openForm(${item.id})">Edit</button>
+        <button class="btn-delete" onclick="promptDeleteItem(${item.id},'${esc(item.name)}')">Delete</button>
+      </div>
     </div>
   </div>`;
 }
@@ -294,7 +304,7 @@ function clearCatDragOver()  { document.querySelectorAll('.cat-drag-over,.drop-a
 // ─── CATEGORY MANAGEMENT ──────────────────────────────────────────────────────
 function addCategory() {
   const newId = Math.max(...menuCategories.map(c => c.id), 0) + 1;
-  const newCat = { id: newId, name: 'New Category', itemIds: [] };
+  const newCat = { id: newId, name: 'New Category', itemIds: [], photo: null };
   const uncatIdx = menuCategories.findIndex(c => c.id === 0);
   if (uncatIdx !== -1) menuCategories.splice(uncatIdx, 0, newCat);
   else menuCategories.push(newCat);
@@ -311,6 +321,31 @@ function saveCatName(input, catId) {
   if (!name) { input.value = input.dataset.orig; return; }
   const cat = menuCategories.find(c => c.id === catId);
   if (cat && cat.name !== name) { cat.name = name; input.dataset.orig = name; saveFullState(); }
+}
+
+async function handleCatPhotoSelect(input, catId) {
+  const file = input.files?.[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) { showToast('Please select an image file.', true); return; }
+  if (file.size > 5 * 1024 * 1024) { showToast('Image must be under 5 MB.', true); return; }
+  try {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('itemName', `category-${catId}`);
+    const res  = await apiFetch('/api/upload', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Upload failed.');
+    const cat = menuCategories.find(c => c.id === catId);
+    if (cat) cat.photo = data.filename;
+    renderCategories();
+    saveFullState();
+  } catch(e) { showToast(e.message, true); }
+}
+
+function removeCatPhoto(e, catId) {
+  e.stopPropagation(); e.preventDefault();
+  const cat = menuCategories.find(c => c.id === catId);
+  if (cat) { cat.photo = null; renderCategories(); saveFullState(); }
 }
 
 function promptDeleteCat(catId) {

@@ -187,74 +187,95 @@ function populatePickupTimes() {
 }
 
 // ─── RENDER MENU ─────────────────────────────────────────────────────────────
+function renderItemCard(item) {
+  const defaultSet = new Set(item.defaultAddons || []);
+  const addonsHTML = item.addons?.length ? `
+    <details class="addon-dropdown">
+      <summary class="addon-summary">Add-ons <span class="addon-arrow">&#9662;</span></summary>
+      <ul class="addons-list">${item.addons.map(a => {
+        const isDefault = defaultSet.has(a);
+        return `<li class="addon-item${isDefault?' checked':''}" data-default="${isDefault}"><label><input type="checkbox"${isDefault?' checked':''} onchange="syncAddon(this)"/><span>${a}</span></label></li>`;
+      }).join('')}</ul>
+    </details>` : '';
+
+  const optionsHTML = item.options?.length ? `
+    <div class="item-options">${item.options.map(opt => `
+      <div class="option-select-group">
+        <label class="option-select-label">${opt.name}</label>
+        <select class="option-select" data-option-name="${opt.name}">
+          ${opt.choices.map(c => `<option value="${c}">${c}</option>`).join('')}
+        </select>
+      </div>`).join('')}
+    </div>` : '';
+
+  const card = document.createElement('div');
+  card.id = `card-${item.id}`;
+
+  if (item.photo) {
+    card.className = 'menu-card';
+    card.innerHTML = `
+      <div class="card-slideshow" id="slideshow-${item.id}">
+        <div class="slide active"><img src="/images/${item.photo}" alt="${item.name}" loading="lazy"/></div>
+        <div class="price-badge">${fmt(item.price)}</div>
+      </div>
+      <div class="card-body">
+        <div class="card-name">${item.name}</div>
+        ${item.description ? `<div class="card-desc">${item.description}</div>` : ''}
+        ${optionsHTML}
+        ${addonsHTML}
+        <button class="btn-add" onclick="addToCart(${item.id})">Add to Order</button>
+      </div>`;
+  } else {
+    card.className = 'menu-card no-photo';
+    card.innerHTML = `
+      <div class="card-body">
+        <div class="card-name-price">
+          <div class="card-name">${item.name}</div>
+          <div class="card-price">${fmt(item.price)}</div>
+        </div>
+        ${item.description ? `<div class="card-desc">${item.description}</div>` : ''}
+        ${optionsHTML}
+        ${addonsHTML}
+        <button class="btn-add" onclick="addToCart(${item.id})">Add to Order</button>
+      </div>`;
+  }
+  return card;
+}
+
 function renderMenu() {
   const grid = document.getElementById('menuGrid');
   grid.innerHTML = '';
   if (!MENU.length) { grid.innerHTML = '<div class="menu-loading">No menu items.</div>'; return; }
 
-  // Build ordered list of items per category
   const cats = MENU_CATEGORIES.filter(c => c.id !== 0 || c.itemIds?.length);
   const sortedCats = [...cats.filter(c => c.id !== 0), ...cats.filter(c => c.id === 0)];
   const placedIds = new Set();
 
-  function renderItemCard(item) {
-    const defaultSet = new Set(item.defaultAddons || []);
-    const addonsHTML = item.addons?.length ? `
-      <details class="addon-dropdown">
-        <summary class="addon-summary">Add-ons <span class="addon-arrow">&#9662;</span></summary>
-        <ul class="addons-list">${item.addons.map(a => {
-          const isDefault = defaultSet.has(a);
-          return `<li class="addon-item${isDefault?' checked':''}" data-default="${isDefault}"><label><input type="checkbox"${isDefault?' checked':''} onchange="syncAddon(this)"/><span>${a}</span></label></li>`;
-        }).join('')}</ul>
-      </details>` : '';
-
-    const optionsHTML = item.options?.length ? `
-      <div class="item-options">${item.options.map(opt => `
-        <div class="option-select-group">
-          <label class="option-select-label">${opt.name}</label>
-          <select class="option-select" data-option-name="${opt.name}">
-            ${opt.choices.map(c => `<option value="${c}">${c}</option>`).join('')}
-          </select>
-        </div>`).join('')}
-      </div>` : '';
-
-    const slideContent = item.photo
-      ? `<div class="slide active"><img src="/images/${item.photo}" alt="${item.name}" loading="lazy"/></div>`
-      : `<div class="slide active"><div class="slide-placeholder">&#10022;</div></div>`;
-
-    const card = document.createElement('div');
-    card.className = 'menu-card';
-    card.id = `card-${item.id}`;
-    card.innerHTML = `
-      <div class="card-slideshow" id="slideshow-${item.id}">
-        ${slideContent}
-        <div class="price-badge">${fmt(item.price)}</div>
-      </div>
-      <div class="card-body">
-        <div class="card-name">${item.name}</div>
-        <div class="card-desc">${item.description || ''}</div>
-        ${optionsHTML}
-        ${addonsHTML}
-        <button class="btn-add" onclick="addToCart(${item.id})">Add to Order</button>
-      </div>`;
-    return card;
-  }
-
   if (sortedCats.length > 1 || (sortedCats.length === 1 && sortedCats[0].id !== 0)) {
-    // Render with category headings
     sortedCats.forEach(cat => {
       const catItems = (cat.itemIds || []).map(id => MENU.find(i => i.id === id)).filter(Boolean);
       if (!catItems.length) return;
+
+      const wrap = document.createElement('div');
+      wrap.className = 'cat-header-wrap';
+
+      if (cat.photo) {
+        const hero = document.createElement('div');
+        hero.className = 'cat-hero-img';
+        hero.innerHTML = `<img src="/images/${cat.photo}" alt="${cat.name}"/>`;
+        wrap.appendChild(hero);
+      }
+
       const heading = document.createElement('div');
       heading.className = 'menu-category-heading';
       heading.textContent = cat.name;
-      grid.appendChild(heading);
+      wrap.appendChild(heading);
+      grid.appendChild(wrap);
+
       catItems.forEach(item => { grid.appendChild(renderItemCard(item)); placedIds.add(item.id); });
     });
-    // Any items not in any category
     MENU.filter(i => !placedIds.has(i.id)).forEach(item => grid.appendChild(renderItemCard(item)));
   } else {
-    // No categories — just flat list
     MENU.forEach(item => grid.appendChild(renderItemCard(item)));
   }
 }
@@ -461,9 +482,93 @@ function buildReceipt(order) {
     <span><strong>Ordered at:</strong> ${d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>`;
 }
 
-// ─── PRINT ───────────────────────────────────────────────────────────────────
+// ─── PRINT RECEIPT ────────────────────────────────────────────────────────────
 function printReceipt() {
   window.print();
+}
+
+// ─── PRINT MENU ───────────────────────────────────────────────────────────────
+function printMenu() {
+  const win = window.open('', '_blank');
+  if (!win) { showToast('Please allow pop-ups to print the menu.'); return; }
+
+  function piCard(item) {
+    const addonsText = item.addons?.length
+      ? `<div class="pi-addons"><span class="pi-label">Add-ons:</span> ${item.addons.join(' · ')}</div>` : '';
+    const optsText = item.options?.length
+      ? item.options.map(o => `<div class="pi-addons"><span class="pi-label">${o.name}:</span> ${o.choices.join(', ')}</div>`).join('') : '';
+    const descText = item.description ? `<div class="pi-desc">${item.description}</div>` : '';
+    const bodyContent = `
+      <div class="pi-name-price">
+        <span class="pi-name">${item.name}</span>
+        <span class="pi-price">$${Number(item.price).toFixed(2)}</span>
+      </div>
+      ${descText}${optsText}${addonsText}`;
+    if (item.photo) {
+      return `<div class="pi-card"><div class="pi-img"><img src="/images/${item.photo}" alt="${item.name}"/></div><div class="pi-body">${bodyContent}</div></div>`;
+    }
+    return `<div class="pi-card no-photo"><div class="pi-body">${bodyContent}</div></div>`;
+  }
+
+  let html = '';
+  const cats = MENU_CATEGORIES.filter(c => c.id !== 0 || c.itemIds?.length);
+  const sorted = [...cats.filter(c => c.id !== 0), ...cats.filter(c => c.id === 0)];
+  const placed = new Set();
+
+  if (sorted.length > 1 || (sorted.length === 1 && sorted[0].id !== 0)) {
+    sorted.forEach(cat => {
+      const items = (cat.itemIds || []).map(id => MENU.find(i => i.id === id)).filter(Boolean);
+      if (!items.length) return;
+      html += `<div class="pm-cat">`;
+      if (cat.photo) html += `<div class="pm-cat-hero"><img src="/images/${cat.photo}" alt="${cat.name}"/></div>`;
+      html += `<div class="pm-cat-name">${cat.name}</div></div>`;
+      items.forEach(item => { html += piCard(item); placed.add(item.id); });
+    });
+    MENU.filter(i => !placed.has(i.id)).forEach(item => { html += piCard(item); });
+  } else {
+    MENU.forEach(item => { html += piCard(item); });
+  }
+
+  win.document.write(`<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"/>
+<title>Esmeralda Market — Deli Menu</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:#F5F3EF;color:#1A1A18;font-family:'Source Sans 3',sans-serif;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+.pm-header{text-align:center;padding:20px 0 16px;border-bottom:2px solid #C9A96E;margin-bottom:20px}
+.pm-header-name{font-family:'Oswald',sans-serif;font-size:34px;font-weight:700;letter-spacing:8px;text-transform:uppercase;color:#1A1A18;display:block;line-height:1}
+.pm-header-name span{color:#7A5C28}
+.pm-header-sub{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:5px;text-transform:uppercase;color:#7A5C28;display:block;margin-top:6px}
+.pm-grid{columns:2 260px;column-gap:16px;padding:0 16px 20px}
+.pm-cat{column-span:all;break-after:avoid;margin-top:20px}
+.pm-cat:first-child{margin-top:0}
+.pm-cat-hero{height:160px;overflow:hidden;border-radius:4px 4px 0 0}
+.pm-cat-hero img{width:100%;height:100%;object-fit:cover;display:block}
+.pm-cat-name{font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:4px;text-transform:uppercase;color:#7A5C28;padding:8px 0 10px;border-bottom:1px solid #D8D3CA;display:flex;align-items:center;gap:12px}
+.pm-cat-name::after{content:'';flex:1;height:1px;background:#D8D3CA}
+.pi-card{background:#FFF;border:1px solid #D8D3CA;border-radius:4px;overflow:hidden;break-inside:avoid;margin-bottom:12px}
+.pi-img{height:120px;overflow:hidden}
+.pi-img img{width:100%;height:100%;object-fit:cover;display:block}
+.pi-body{padding:10px 14px 12px;display:flex;flex-direction:column;gap:4px}
+.pi-name-price{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.pi-name{font-family:'Oswald',sans-serif;font-size:15px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#1A1A18;line-height:1.2}
+.pi-price{font-family:'Oswald',sans-serif;font-size:14px;font-weight:600;color:#7A5C28;white-space:nowrap;background:#F5F3EF;border:1px solid #C9A96E;padding:1px 8px;border-radius:2px;flex-shrink:0}
+.pi-desc{font-size:12px;color:#6A6460;font-style:italic;line-height:1.4}
+.pi-addons{font-size:11px;color:#6A6460;line-height:1.4}
+.pi-label{font-family:'Oswald',sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#7A5C28;margin-right:2px}
+@media print{*{print-color-adjust:exact;-webkit-print-color-adjust:exact}}
+</style>
+</head><body>
+<div class="pm-header">
+  <span class="pm-header-name">E<span>S</span>MERALDA Market</span>
+  <span class="pm-header-sub">Deli Menu &nbsp;&middot;&nbsp; Call to Order &nbsp;&middot;&nbsp; 775-572-3200</span>
+</div>
+<div class="pm-grid">${html}</div>
+</body></html>`);
+  win.document.close();
+  setTimeout(() => { win.focus(); win.print(); }, 600);
 }
 
 // ─── NEW ORDER ───────────────────────────────────────────────────────────────
