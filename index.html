@@ -9,29 +9,13 @@
 <link rel="stylesheet" href="css/index.css"/>
 <style>
 /* ══════════════════════════════════════════════════════════════
-   VINTAGE WHISKEY FONT
+   TOPO TEXTURE — applied to hero + all sections below
+   Uses ::before with z-index:-1 inside isolation:isolate so it
+   sits over the background colour but under all content.
    ══════════════════════════════════════════════════════════════ */
-@font-face {
-  font-family: 'VintageWhiskey';
-  src: url('assets/fonts/vintage_whiskey_full-webfont.woff2') format('woff2'),
-       url('assets/fonts/vintage_whiskey_full-webfont.woff') format('woff');
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
 
-/* ══════════════════════════════════════════════════════════════
-   HERO V2 — two-column split
-   ══════════════════════════════════════════════════════════════ */
-.hero-v2 {
-  position: relative;
-  min-height: 100vh;
-  padding-top: 72px; /* nav height */
-  background: var(--charcoal);
-  overflow: hidden;
-}
-
-/* Topo texture on left bg */
+/* Hero topo lives on ::after so it doesn't conflict with right-
+   column gradients that use ::before / ::after on child divs */
 .hero-v2::after {
   content: '';
   position: absolute;
@@ -42,6 +26,39 @@
   opacity: 0.045;
   pointer-events: none;
   z-index: 0;
+}
+
+/* All page sections + banners + footer */
+.section,
+.service-banner,
+.site-footer {
+  position: relative;
+  isolation: isolate;
+}
+
+.section::before,
+.service-banner::before,
+.site-footer::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url('assets/topo-white.svg');
+  background-size: 480px;
+  background-repeat: repeat;
+  opacity: 0.04;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   HERO V2 — two-column split
+   ══════════════════════════════════════════════════════════════ */
+.hero-v2 {
+  position: relative;
+  min-height: 100vh;
+  padding-top: 72px;
+  background: var(--charcoal);
+  overflow: hidden;
 }
 
 .hero-v2-inner {
@@ -86,21 +103,23 @@
 }
 
 .hv2-name {
-  font-family: 'VintageWhiskey', 'Oswald', sans-serif;
+  font-family: 'Oswald', sans-serif;
+  font-weight: 700;
   font-size: clamp(54px, 6vw, 84px);
   line-height: 0.9;
   color: var(--cream);
   text-transform: uppercase;
-  letter-spacing: 2px;
+  letter-spacing: 3px;
 }
 
 .hv2-market {
-  font-family: 'VintageWhiskey', 'Oswald', sans-serif;
+  font-family: 'Oswald', sans-serif;
+  font-weight: 400;
   font-size: clamp(28px, 3.5vw, 50px);
-  line-height: 1.1;
+  line-height: 1.2;
   color: var(--gold-dark);
   text-transform: uppercase;
-  letter-spacing: 6px;
+  letter-spacing: 8px;
 }
 
 .hv2-tagline {
@@ -150,13 +169,19 @@
   display: block;
 }
 
-/* Gradient: left edge bleeds into dark bg */
+/* Gradient: wide gradual left-edge fade into the dark bg */
 .hero-v2-right::before {
   content: '';
   position: absolute;
   top: 0; left: 0; bottom: 0;
-  width: 140px;
-  background: linear-gradient(to right, var(--charcoal) 0%, transparent 100%);
+  width: 55%;
+  background: linear-gradient(
+    to right,
+    var(--charcoal)       0%,
+    rgba(26,26,24,0.75)  30%,
+    rgba(26,26,24,0.30)  60%,
+    transparent          100%
+  );
   z-index: 2;
   pointer-events: none;
 }
@@ -172,37 +197,55 @@
   pointer-events: none;
 }
 
-/* ── Quick-links panel ── */
+/* ── Quick-links panel — floating card with topo bg ── */
 .hv2-links-panel {
   position: absolute;
-  top: 0; right: 0; bottom: 0;
-  width: 230px;
-  background: rgba(12, 12, 10, 0.86);
-  border-left: 1px solid rgba(160,120,64,0.35);
-  backdrop-filter: blur(8px);
+  top: 50%;
+  right: 24px;
+  transform: translateY(-50%);
+  width: 220px;
+  background: rgba(12, 12, 10, 0.88);
+  border: 1px solid rgba(160,120,64,0.35);
+  backdrop-filter: blur(10px);
   display: flex;
   flex-direction: column;
   justify-content: center;
   z-index: 3;
-  padding: 0;
+  overflow: hidden; /* clip the topo pseudo-element */
+}
+
+/* Topo texture inside the links panel */
+.hv2-links-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url('assets/topo-white.svg');
+  background-size: 300px;
+  background-repeat: repeat;
+  opacity: 0.07;
+  pointer-events: none;
+  z-index: 0;
 }
 
 .hv2-links-header {
+  position: relative;
+  z-index: 1;
   font-family: 'Oswald', sans-serif;
   font-size: 9px;
   letter-spacing: 5px;
   text-transform: uppercase;
   color: var(--gold);
-  padding: 0 28px 14px;
+  padding: 16px 24px 14px;
   border-bottom: 1px solid rgba(160,120,64,0.2);
-  margin-bottom: 6px;
 }
 
 .hv2-link {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: 13px;
-  padding: 15px 28px;
+  padding: 14px 24px;
   color: var(--cream);
   text-decoration: none;
   font-family: 'Oswald', sans-serif;
@@ -226,7 +269,7 @@
 .hv2-link:hover {
   background: rgba(200,169,110,0.08);
   color: var(--gold);
-  padding-left: 34px;
+  padding-left: 30px;
 }
 
 .hv2-link:hover svg { opacity: 1; }
@@ -241,23 +284,19 @@
 
 .hv2-link:hover .hv2-arr { opacity: 0.9; }
 
-/* ── Store photo pop-out ── */
+/* ── Store photo — always visible, no hover slide ── */
 .hv2-store-pop {
   position: absolute;
-  bottom: 48px;
+  bottom: 52px;
   left: 0;
-  width: 210px;
+  width: 260px;
   z-index: 5;
   border: 2px solid var(--gold-dark);
   box-shadow:
-    0 0 0 1px rgba(20,20,18,0.8),
-    0 12px 40px rgba(0,0,0,0.7);
+    0 0 0 1px rgba(20,20,18,0.7),
+    0 16px 48px rgba(0,0,0,0.75);
   overflow: hidden;
-  transform: translateX(-24px);
-  transition: transform 0.3s;
 }
-
-.hv2-store-pop:hover { transform: translateX(0); }
 
 .hv2-store-pop img {
   width: 100%;
@@ -285,9 +324,9 @@
   }
 
   .hv2-store-pop {
-    left: -8px;
+    left: 0;
     bottom: 60px;
-    width: 240px;
+    width: 280px;
   }
 }
 
@@ -299,22 +338,24 @@
   }
 
   .hero-v2-right {
-    min-height: 55vw;
+    min-height: 60vw;
   }
 
   .hv2-store-pop { display: none; }
 
   .hv2-links-panel {
-    width: 180px;
+    width: 170px;
+    right: 12px;
   }
 
   .hv2-link {
-    padding: 12px 18px;
+    padding: 11px 16px;
     font-size: 10px;
     gap: 8px;
+    letter-spacing: 1.5px;
   }
 
-  .hv2-links-header { padding: 0 18px 12px; }
+  .hv2-links-header { padding: 12px 16px 10px; }
 }
 </style>
 </head>
