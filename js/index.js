@@ -113,6 +113,26 @@
     renderHoursCard(siteSettings.deliHours,  'deliHoursTime',  'deliHoursDays',  'deliHoursSchedule');
   }
 
+  // ─── Apply site-info fields from settings ────────────────────────────────
+  function applySiteInfo(s) {
+    if (!s) return;
+    if (s.phone) {
+      const digits = s.phone.replace(/\D/g, '');
+      const navPhone    = document.getElementById('navPhone');
+      const callBtn     = document.getElementById('callBtn');
+      const callBtnPhone = document.getElementById('callBtnPhone');
+      const footerPhone = document.getElementById('footerPhone');
+      if (navPhone)     { navPhone.textContent = s.phone; navPhone.href = `tel:${digits}`; }
+      if (callBtn)      { callBtn.href = `tel:${digits}`; }
+      if (callBtnPhone) { callBtnPhone.textContent = s.phone; }
+      if (footerPhone)  { footerPhone.textContent = s.phone; }
+    }
+    if (s.heroDescription) {
+      const el = document.getElementById('heroDesc');
+      if (el) el.textContent = s.heroDescription;
+    }
+  }
+
   // ─── Load settings + events from API ─────────────────────────────────────
   async function initSite() {
     try {
@@ -120,7 +140,10 @@
         fetch('/api/settings'),
         fetch('/api/events'),
       ]);
-      if (settingsRes.ok) siteSettings = await settingsRes.json();
+      if (settingsRes.ok) {
+        siteSettings = await settingsRes.json();
+        applySiteInfo(siteSettings);
+      }
       if (eventsRes.ok) {
         const eData = await eventsRes.json();
         renderEvents(eData.events || []);

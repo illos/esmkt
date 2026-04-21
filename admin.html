@@ -19,9 +19,10 @@
 
 <!-- Admin Section Tabs -->
 <div class="admin-tabs" id="adminTabs">
-  <button class="tab-btn active" id="tabMenu"   onclick="switchTab('menu')">Menu</button>
-  <button class="tab-btn"        id="tabHours"  onclick="switchTab('hours')">Hours</button>
-  <button class="tab-btn"        id="tabEvents" onclick="switchTab('events')">Events</button>
+  <button class="tab-btn active" id="tabMenu"     onclick="switchTab('menu')">Menu</button>
+  <button class="tab-btn"        id="tabHours"   onclick="switchTab('hours')">Hours</button>
+  <button class="tab-btn"        id="tabEvents"  onclick="switchTab('events')">Events</button>
+  <button class="tab-btn"        id="tabSiteinfo" onclick="switchTab('siteinfo')">Site Info</button>
 </div>
 
 <!-- ─── LOGIN PAGE ─── -->
@@ -221,6 +222,43 @@
         <span class="spinner"></span> Saving…
       </span>
     </div>
+  </div>
+</div>
+
+<!-- ─── SITE INFO PAGE ─── -->
+<div class="page" id="pageSiteinfo">
+  <div class="hours-section-title">Site Info</div>
+  <div class="form-card">
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="siPhone">Phone Number</label>
+        <input class="form-input" type="tel" id="siPhone" placeholder="e.g. 775-572-3200"
+          onblur="saveSiteInfo()" onkeydown="if(event.key==='Enter')this.blur()"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="siDeliTax">Deli Tax Rate <span style="font-size:10px;text-transform:none;letter-spacing:0;color:rgba(184,176,160,0.5)">(%)</span></label>
+        <input class="form-input" type="number" id="siDeliTax" placeholder="e.g. 8.25"
+          step="0.01" min="0" max="100"
+          onblur="saveSiteInfo()" onkeydown="if(event.key==='Enter')this.blur()"/>
+      </div>
+    </div>
+
+    <div class="form-group-full">
+      <label class="form-label" for="siHeroDesc">Homepage Description</label>
+      <textarea class="form-textarea" id="siHeroDesc"
+        placeholder="Hero section text shown on the homepage…"
+        style="min-height:100px"
+        onblur="saveSiteInfo()"></textarea>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn-save" id="saveSiteInfoBtn" onclick="saveSiteInfo()">Save</button>
+      <span id="savingSiteInfoIndicator" style="display:none;align-items:center;color:var(--cream-dim);font-size:13px;margin-left:16px">
+        <span class="spinner"></span> Saving…
+      </span>
+    </div>
+
   </div>
 </div>
 

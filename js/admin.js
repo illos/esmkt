@@ -84,9 +84,10 @@ function switchTab(tab) {
   activeTab = tab;
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1))?.classList.add('active');
-  if (tab === 'menu')   { showPage('pageList');   loadMenu(); }
-  if (tab === 'hours')  { showPage('pageHours');  loadHours(); }
-  if (tab === 'events') { showPage('pageEvents'); loadEvents(); }
+  if (tab === 'menu')     { showPage('pageList');     loadMenu(); }
+  if (tab === 'hours')    { showPage('pageHours');    loadHours(); }
+  if (tab === 'events')   { showPage('pageEvents');   loadEvents(); }
+  if (tab === 'siteinfo') { showPage('pageSiteinfo'); loadSiteInfo(); }
 }
 
 async function showList() {
@@ -803,6 +804,57 @@ async function saveHours() {
     showToast('Hours saved.');
   } catch(e) { showToast(e.message, true); }
   finally { btn.disabled = false; ind.style.display = 'none'; }
+}
+
+// ─── SITE INFO ────────────────────────────────────────────────────────────────
+
+async function loadSiteInfo() {
+  if (!settingsData) {
+    try {
+      const res = await apiFetch('/api/settings');
+      if (res.ok) settingsData = await res.json();
+    } catch(_) {}
+  }
+  if (!settingsData) return;
+
+  const phone = document.getElementById('siPhone');
+  const tax   = document.getElementById('siDeliTax');
+  const desc  = document.getElementById('siHeroDesc');
+
+  if (phone && settingsData.phone        != null) phone.value = settingsData.phone;
+  if (tax   && settingsData.deliTax      != null) tax.value   = settingsData.deliTax;
+  if (desc  && settingsData.heroDescription != null) desc.value = settingsData.heroDescription;
+}
+
+async function saveSiteInfo() {
+  const btn = document.getElementById('saveSiteInfoBtn');
+  const ind = document.getElementById('savingSiteInfoIndicator');
+  if (btn) btn.disabled = true;
+  if (ind) ind.style.display = 'flex';
+
+  const phone = document.getElementById('siPhone')?.value.trim()   ?? '';
+  const tax   = parseFloat(document.getElementById('siDeliTax')?.value) || 0;
+  const desc  = document.getElementById('siHeroDesc')?.value.trim() ?? '';
+
+  try {
+    const res = await apiFetch('/api/settings', {
+      method:  'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ phone, deliTax: tax, heroDescription: desc }),
+    });
+    if (!res.ok) throw new Error('Save failed');
+    if (settingsData) {
+      settingsData.phone           = phone;
+      settingsData.deliTax         = tax;
+      settingsData.heroDescription = desc;
+    }
+    showToast('Site info saved.');
+  } catch(e) {
+    showToast(e.message, true);
+  } finally {
+    if (btn) btn.disabled = false;
+    if (ind) ind.style.display = 'none';
+  }
 }
 
 // ─── EVENTS ───────────────────────────────────────────────────────────────────

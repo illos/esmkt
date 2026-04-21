@@ -17,7 +17,7 @@
     <span class="store-status" id="storeStatus">...</span>
   </div>
   <div class="nav-right">
-    <a href="tel:7755723200" class="nav-phone">775-572-3200</a>
+    <a href="tel:7755723200" class="nav-phone" id="navPhone">775-572-3200</a>
     <a href="menu.html" class="nav-cta">Order Deli</a>
   </div>
 </nav>
@@ -29,11 +29,11 @@
     <div class="hero-name">ESMERALDA</div>
     <div class="hero-sub">Market &middot; Gas &middot; Deli</div>
     <div class="hero-divider"><span>&#10022;</span></div>
-    <p class="hero-desc">Your full-service desert outpost in Fish Lake Valley &mdash; gas up, stock the cooler, and grab a scratch-made deli sandwich before hitting the open road.</p>
+    <p class="hero-desc" id="heroDesc">Your full-service desert outpost in Fish Lake Valley &mdash; gas up, stock the cooler, and grab a scratch-made deli sandwich before hitting the open road.</p>
     <div class="hero-ctas">
-      <a href="tel:7755723200" class="btn-call">
+      <a href="tel:7755723200" class="btn-call" id="callBtn">
         <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24 11.47 11.47 0 003.58.57 1 1 0 011 1V21a1 1 0 01-1 1A17 17 0 013 5a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.58a1 1 0 01-.25 1.01z"/></svg>
-        775-572-3200
+        <span id="callBtnPhone">775-572-3200</span>
       </a>
       <a href="menu.html" class="btn-order">Order from the Deli &rarr;</a>
     </div>
@@ -173,7 +173,7 @@
 
 <!-- ─── FOOTER ─── -->
 <footer class="site-footer">
-  <p class="footer-text">&copy; <span id="footerYear"></span> Esmeralda Market &middot; HWY 264 MM8, Dyer, NV 89010 &middot; 775-572-3200</p>
+  <p class="footer-text">&copy; <span id="footerYear"></span> Esmeralda Market &middot; HWY 264 MM8, Dyer, NV 89010 &middot; <span id="footerPhone">775-572-3200</span></p>
 </footer>
 
 <script src="js/index.js"></script>

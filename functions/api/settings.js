@@ -25,7 +25,10 @@ const DEFAULT_SETTINGS = {
     close:  i < 6 ? '15:00' : null,
     closed: i === 6,   // Sunday closed
   })),
-  onlineOrdering: true,
+  onlineOrdering:  true,
+  phone:           '775-572-3200',
+  deliTax:         0,
+  heroDescription: 'Your full-service desert outpost in Fish Lake Valley — gas up, stock the cooler, and grab a scratch-made deli sandwich before hitting the open road.',
 };
 
 export async function onRequestOptions() {
@@ -42,11 +45,21 @@ export async function onRequestGet({ env }) {
 export async function onRequestPut({ request, env }) {
   if (!await isAuthorized(request, env)) return unauthorized();
   const body = await request.json();
+
+  // Merge with existing data so partial saves don't wipe unrelated fields
+  const raw      = await env.MENU_KV.get('settings');
+  const existing = raw ? migrateSettings(JSON.parse(raw)) : { ...DEFAULT_SETTINGS };
+
   const data = {
-    storeHours:     validateHours(body.storeHours),
-    deliHours:      validateHours(body.deliHours),
-    onlineOrdering: body.onlineOrdering !== false,
+    ...existing,
+    ...(body.storeHours     !== undefined && { storeHours:     validateHours(body.storeHours) }),
+    ...(body.deliHours      !== undefined && { deliHours:      validateHours(body.deliHours) }),
+    ...(body.onlineOrdering !== undefined && { onlineOrdering: body.onlineOrdering !== false }),
+    ...(body.phone          !== undefined && { phone:          String(body.phone).trim() }),
+    ...(body.deliTax        !== undefined && { deliTax:        parseFloat(body.deliTax) || 0 }),
+    ...(body.heroDescription !== undefined && { heroDescription: String(body.heroDescription) }),
   };
+
   await env.MENU_KV.put('settings', JSON.stringify(data));
   return json({ success: true });
 }
@@ -59,9 +72,12 @@ function migrateSettings(data) {
     return stored.map((entry, i) => ({ ...defaults[i], ...entry }));
   };
   return {
-    storeHours:     merge(data.storeHours, DEFAULT_SETTINGS.storeHours),
-    deliHours:      merge(data.deliHours,  DEFAULT_SETTINGS.deliHours),
-    onlineOrdering: data.onlineOrdering !== false,
+    storeHours:      merge(data.storeHours, DEFAULT_SETTINGS.storeHours),
+    deliHours:       merge(data.deliHours,  DEFAULT_SETTINGS.deliHours),
+    onlineOrdering:  data.onlineOrdering !== false,
+    phone:           data.phone           ?? DEFAULT_SETTINGS.phone,
+    deliTax:         typeof data.deliTax === 'number' ? data.deliTax : DEFAULT_SETTINGS.deliTax,
+    heroDescription: data.heroDescription ?? DEFAULT_SETTINGS.heroDescription,
   };
 }
 

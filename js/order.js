@@ -27,6 +27,8 @@ let cart = [];
 let slideshowTimers = {};
 let orderingOpen = false;          // true only when deli is open AND online ordering is enabled
 let onlineOrderingEnabled = true;  // loaded from /api/settings
+let sitePhone = '775-572-3200';    // loaded from /api/settings
+let deliTaxRate = 0;               // loaded from /api/settings (0–100, percent)
 
 // ─── BOOT ────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
@@ -71,6 +73,16 @@ async function initMenu() {
         deliHours = sData.deliHours;
       }
       onlineOrderingEnabled = sData.onlineOrdering !== false;
+      if (sData.phone)    sitePhone   = sData.phone;
+      if (typeof sData.deliTax === 'number') deliTaxRate = sData.deliTax;
+
+      // Apply dynamic phone to nav link
+      const navPhone = document.getElementById('navPhone');
+      if (navPhone && sData.phone) {
+        const digits = sData.phone.replace(/\D/g, '');
+        navPhone.textContent = sData.phone;
+        navPhone.href = `tel:${digits}`;
+      }
     }
   } catch (_) {
     MENU = MENU_FALLBACK;
@@ -184,7 +196,7 @@ function checkDeliHours() {
   if (orderingEl) {
     if (!onlineOrderingEnabled) {
       orderingEl.style.display = '';
-      orderingEl.innerHTML = `<span class="status-card-icon">&#10022;</span><span class="status-card-title">Online Ordering Unavailable</span><span class="status-card-sub">Call to order &nbsp;&middot;&nbsp; 775-572-3200</span>`;
+      orderingEl.innerHTML = `<span class="status-card-icon">&#10022;</span><span class="status-card-title">Online Ordering Unavailable</span><span class="status-card-sub">Call to order &nbsp;&middot;&nbsp; ${sitePhone}</span>`;
     } else {
       orderingEl.style.display = 'none';
     }
@@ -429,9 +441,10 @@ function renderOrder() {
     </li>`;
   }).join('');
 
-  const subtotal = calcSubtotal();
-  const tax      = Math.round(subtotal * 0.0685 * 100) / 100;
-  const grand    = Math.round((subtotal + tax) * 100) / 100;
+  const subtotal  = calcSubtotal();
+  const taxFrac   = deliTaxRate / 100;
+  const tax       = Math.round(subtotal * taxFrac * 100) / 100;
+  const grand     = Math.round((subtotal + tax) * 100) / 100;
 
   totalEl.textContent = fmt(subtotal);
   if (taxEl)   taxEl.textContent   = fmt(tax);
@@ -458,7 +471,7 @@ function submitOrder() {
   if (!cart.length) { showToast('Your order is empty');            return; }
 
   const subtotal = calcSubtotal();
-  const tax      = Math.round(subtotal * 0.0685 * 100) / 100;
+  const tax      = Math.round(subtotal * (deliTaxRate / 100) * 100) / 100;
   const total    = Math.round((subtotal + tax) * 100) / 100;
   const orderId  = 'ESM-' + Date.now().toString(36).toUpperCase();
   const ts       = new Date();
@@ -479,7 +492,7 @@ function submitOrder() {
       addons:       c.addons.map(a => a.label),
       addons_total: c.addons.reduce((s, a) => s + (a.price || 0), 0),
     })),
-    subtotal, tax, total,
+    subtotal, tax, total, taxRate: deliTaxRate,
   };
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -536,7 +549,7 @@ function buildReceipt(order) {
   // ── Totals ──
   html += `<div class="receipt-row" style="padding-top:8px;border-top:1px solid var(--charcoal-border)">
               <span>Subtotal</span><span>${fmt(order.subtotal)}</span></div>`;
-  html += `<div class="receipt-row"><span>Tax (6.85%)</span><span>${fmt(order.tax)}</span></div>`;
+  html += `<div class="receipt-row"><span>Tax${order.taxRate ? ` (${order.taxRate}%)` : ''}</span><span>${fmt(order.tax)}</span></div>`;
   html += `<div class="receipt-row total-line"><span>Total</span><span>${fmt(order.total)}</span></div>`;
   lines.innerHTML = html;
 
@@ -640,7 +653,7 @@ body{background:#F5F3EF;color:#1A1A18;font-family:'Source Sans 3',sans-serif;pri
 </head><body>
 <div class="pm-header">
   <span class="pm-header-name">ESMERALDA Market</span>
-  <span class="pm-header-sub">Deli Menu &nbsp;&middot;&nbsp; Call to Order &nbsp;&middot;&nbsp; 775-572-3200</span>
+  <span class="pm-header-sub">Deli Menu &nbsp;&middot;&nbsp; Call to Order &nbsp;&middot;&nbsp; ${sitePhone}</span>
 </div>
 <div class="pm-grid">${html}</div>
 </body></html>`);
