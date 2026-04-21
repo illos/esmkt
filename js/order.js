@@ -633,7 +633,7 @@ body{background:#F5F3EF;color:#1A1A18;font-family:'Source Sans 3',sans-serif;pri
 </style>
 </head><body>
 <div class="pm-header">
-  <span class="pm-header-name">E<span>S</span>MERALDA Market</span>
+  <span class="pm-header-name">ESMERALDA Market</span>
   <span class="pm-header-sub">Deli Menu &nbsp;&middot;&nbsp; Call to Order &nbsp;&middot;&nbsp; 775-572-3200</span>
 </div>
 <div class="pm-grid">${html}</div>

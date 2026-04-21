@@ -19,7 +19,6 @@
     text-transform: uppercase;
     text-decoration: none;
   }
-  .nav-logo span { color: var(--gold); }
   .nav-label {
     font-family: 'Oswald', sans-serif;
     font-size: 11px;
@@ -68,7 +67,6 @@
     color: var(--cream);
     text-shadow: 2px 2px 0 rgba(0,0,0,0.5);
   }
-  .login-logo span { color: var(--gold); }
   .login-sub {
     font-family: 'Oswald', sans-serif;
     font-size: 11px;
