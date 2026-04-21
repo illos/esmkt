@@ -19,7 +19,7 @@ export async function onRequestGet({ params, env }) {
   return new Response(obj.body, {
     headers: {
       'Content-Type': contentType,
-      'Cache-Control': 'public, max-age=31536000, immutable', // images are keyed by name+timestamp so safe to cache forever
+      'Cache-Control': 'public, max-age=31536000, immutable',
     },
   });
 }
