@@ -85,26 +85,32 @@
   // ─── Update store open/closed pill ────────────────────────────────────────
   function updateStoreStatus() {
     const today = todayHours(siteSettings.storeHours);
-    const el    = document.getElementById('storeStatus');
+    const els   = [
+      document.getElementById('storeStatus'),
+      document.getElementById('storeStatusMobile'),
+    ].filter(Boolean);
     if (!today || today.closed || !today.open) {
-      el.textContent = 'Closed Today';
-      el.className   = 'store-status is-closed';
+      els.forEach(el => { el.textContent = 'Closed Today'; el.className = el.className.replace(/store-status\S*/g,'').trim() + ' store-status is-closed'; });
       return;
     }
     const now     = new Date();
     const current = now.getHours() * 60 + now.getMinutes();
     const opens   = toMins(today.open);
     const closes  = toMins(today.close);
+    let text, state;
     if (current >= opens && current < closes) {
-      el.textContent = 'Open Now';
-      el.className   = 'store-status is-open';
+      text = 'Open Now'; state = 'is-open';
     } else if (current < opens) {
-      el.textContent = `Opens ${fmt12(today.open)}`;
-      el.className   = 'store-status is-closed';
+      text = `Opens ${fmt12(today.open)}`; state = 'is-closed';
     } else {
-      el.textContent = `Opens ${fmt12(today.open)} Tomorrow`;
-      el.className   = 'store-status is-closed';
+      text = `Opens ${fmt12(today.open)} Tomorrow`; state = 'is-closed';
     }
+    els.forEach(el => {
+      el.textContent = text;
+      // preserve the desktop/mobile modifier class
+      const mod = el.classList.contains('store-status--mobile') ? 'store-status--mobile' : 'store-status--desktop';
+      el.className = `store-status ${mod} ${state}`;
+    });
   }
 
   // ─── Render hours cards ───────────────────────────────────────────────────

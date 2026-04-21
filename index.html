@@ -50,6 +50,14 @@
   z-index: -1;
 }
 
+/* ── Store status pill: desktop in nav-left, mobile in nav-right ── */
+.store-status--mobile { display: none; }
+
+@media (max-width: 600px) {
+  .store-status--desktop { display: none; }
+  .store-status--mobile  { display: inline-flex; }
+}
+
 /* ══════════════════════════════════════════════════════════════
    HERO V2 — two-column split
    ══════════════════════════════════════════════════════════════ */
@@ -659,9 +667,10 @@
     <a href="index.html" class="nav-logo">
       <img src="assets/emskt-logo-inline.webp" alt="Esmeralda Market" class="nav-logo-img"/>
     </a>
-    <span class="store-status" id="storeStatus">...</span>
+    <span class="store-status store-status--desktop" id="storeStatus">...</span>
   </div>
   <div class="nav-right">
+    <span class="store-status store-status--mobile" id="storeStatusMobile">...</span>
     <a href="tel:7755723200" class="nav-phone" id="navPhone">775-572-3200</a>
     <a href="menu.html" class="nav-cta">Menu</a>
   </div>
