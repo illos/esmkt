@@ -4,9 +4,319 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Esmeralda Market · Fish Lake Valley, NV</title>
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="css/base.css"/>
 <link rel="stylesheet" href="css/index.css"/>
+<style>
+/* ══════════════════════════════════════════════════════════════
+   VINTAGE WHISKEY FONT
+   ══════════════════════════════════════════════════════════════ */
+@font-face {
+  font-family: 'VintageWhiskey';
+  src: url('assets/fonts/vintage_whiskey_full-webfont.woff2') format('woff2'),
+       url('assets/fonts/vintage_whiskey_full-webfont.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   HERO V2 — two-column split
+   ══════════════════════════════════════════════════════════════ */
+.hero-v2 {
+  position: relative;
+  min-height: 100vh;
+  padding-top: 72px; /* nav height */
+  background: var(--charcoal);
+  overflow: hidden;
+}
+
+/* Topo texture on left bg */
+.hero-v2::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url('assets/topo-white.svg');
+  background-size: 520px;
+  background-repeat: repeat;
+  opacity: 0.045;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.hero-v2-inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 72px);
+}
+
+/* ── LEFT column ── */
+.hero-v2-left {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 52px 40px 52px 52px;
+  gap: 22px;
+}
+
+.hv2-logo {
+  width: min(260px, 56vw);
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 2px 16px rgba(0,0,0,0.8));
+}
+
+.hv2-headline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.hv2-eyebrow {
+  font-family: 'Oswald', sans-serif;
+  font-size: 10px;
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 8px;
+  opacity: 0.9;
+}
+
+.hv2-name {
+  font-family: 'VintageWhiskey', 'Oswald', sans-serif;
+  font-size: clamp(54px, 6vw, 84px);
+  line-height: 0.9;
+  color: var(--cream);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.hv2-market {
+  font-family: 'VintageWhiskey', 'Oswald', sans-serif;
+  font-size: clamp(28px, 3.5vw, 50px);
+  line-height: 1.1;
+  color: var(--gold-dark);
+  text-transform: uppercase;
+  letter-spacing: 6px;
+}
+
+.hv2-tagline {
+  font-family: 'Oswald', sans-serif;
+  font-size: 9px;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  color: rgba(184,176,160,0.38);
+  margin-top: 14px;
+}
+
+.hv2-divider {
+  width: 48px;
+  height: 1px;
+  background: linear-gradient(to right, var(--gold-dark), transparent);
+}
+
+.hv2-desc {
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--cream-dim);
+  max-width: 360px;
+  margin: 0;
+  font-weight: 300;
+}
+
+.hv2-ctas {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* ── RIGHT column — photo frame ── */
+.hero-v2-right {
+  flex: 1;
+  position: relative;
+  min-height: 340px;
+  overflow: hidden;
+}
+
+.hv2-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 35%;
+  display: block;
+}
+
+/* Gradient: left edge bleeds into dark bg */
+.hero-v2-right::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  width: 140px;
+  background: linear-gradient(to right, var(--charcoal) 0%, transparent 100%);
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Gradient: bottom edge fades out */
+.hero-v2-right::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 80px;
+  background: linear-gradient(to bottom, transparent, var(--charcoal));
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* ── Quick-links panel ── */
+.hv2-links-panel {
+  position: absolute;
+  top: 0; right: 0; bottom: 0;
+  width: 230px;
+  background: rgba(12, 12, 10, 0.86);
+  border-left: 1px solid rgba(160,120,64,0.35);
+  backdrop-filter: blur(8px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  z-index: 3;
+  padding: 0;
+}
+
+.hv2-links-header {
+  font-family: 'Oswald', sans-serif;
+  font-size: 9px;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  color: var(--gold);
+  padding: 0 28px 14px;
+  border-bottom: 1px solid rgba(160,120,64,0.2);
+  margin-bottom: 6px;
+}
+
+.hv2-link {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 15px 28px;
+  color: var(--cream);
+  text-decoration: none;
+  font-family: 'Oswald', sans-serif;
+  font-size: 12px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  transition: background 0.15s, color 0.15s, padding-left 0.15s;
+}
+
+.hv2-link:last-child { border-bottom: none; }
+
+.hv2-link svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  color: var(--gold);
+  opacity: 0.75;
+}
+
+.hv2-link:hover {
+  background: rgba(200,169,110,0.08);
+  color: var(--gold);
+  padding-left: 34px;
+}
+
+.hv2-link:hover svg { opacity: 1; }
+
+.hv2-arr {
+  margin-left: auto;
+  color: var(--gold);
+  opacity: 0.4;
+  font-size: 14px;
+  transition: opacity 0.15s;
+}
+
+.hv2-link:hover .hv2-arr { opacity: 0.9; }
+
+/* ── Store photo pop-out ── */
+.hv2-store-pop {
+  position: absolute;
+  bottom: 48px;
+  left: 0;
+  width: 210px;
+  z-index: 5;
+  border: 2px solid var(--gold-dark);
+  box-shadow:
+    0 0 0 1px rgba(20,20,18,0.8),
+    0 12px 40px rgba(0,0,0,0.7);
+  overflow: hidden;
+  transform: translateX(-24px);
+  transition: transform 0.3s;
+}
+
+.hv2-store-pop:hover { transform: translateX(0); }
+
+.hv2-store-pop img {
+  width: 100%;
+  height: auto;
+  display: block;
+  aspect-ratio: 3/2;
+  object-fit: cover;
+}
+
+/* ── Desktop: side-by-side ── */
+@media (min-width: 860px) {
+  .hero-v2-inner {
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  .hero-v2-left {
+    flex: 0 0 40%;
+    padding: 80px 56px 80px 64px;
+  }
+
+  .hero-v2-right {
+    flex: 1;
+    min-height: 100%;
+  }
+
+  .hv2-store-pop {
+    left: -8px;
+    bottom: 60px;
+    width: 240px;
+  }
+}
+
+/* ── Mobile ── */
+@media (max-width: 859px) {
+  .hero-v2-left {
+    padding: 44px 28px 32px;
+    gap: 16px;
+  }
+
+  .hero-v2-right {
+    min-height: 55vw;
+  }
+
+  .hv2-store-pop { display: none; }
+
+  .hv2-links-panel {
+    width: 180px;
+  }
+
+  .hv2-link {
+    padding: 12px 18px;
+    font-size: 10px;
+    gap: 8px;
+  }
+
+  .hv2-links-header { padding: 0 18px 12px; }
+}
+</style>
 </head>
 <body>
 
@@ -22,24 +332,73 @@
   </div>
 </nav>
 
-<!-- ─── HERO ─── -->
-<section class="hero">
-  <div class="hero-content">
-    <div class="hero-eyebrow">Battle Born &middot; NV Strong &middot; Est. 1978</div>
-    <img class="hero-logo" src="assets/esmeralda-logo.webp" alt="Esmeralda Market"/>
-    <div class="hero-divider"><span>&#10022;</span></div>
-    <p class="hero-desc" id="heroDesc">Your full-service desert outpost in Fish Lake Valley &mdash; gas up, stock the cooler, and grab a scratch-made deli sandwich before hitting the open road.</p>
-    <div class="hero-ctas">
-      <a href="tel:7755723200" class="btn-call" id="callBtn">
-        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24 11.47 11.47 0 003.58.57 1 1 0 011 1V21a1 1 0 01-1 1A17 17 0 013 5a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.58a1 1 0 01-.25 1.01z"/></svg>
-        <span id="callBtnPhone">775-572-3200</span>
-      </a>
-      <a href="menu.html" class="btn-order" id="heroBtn">Order from the Deli &rarr;</a>
+<!-- ─── HERO V2 ─── -->
+<section class="hero-v2">
+  <div class="hero-v2-inner">
+
+    <!-- LEFT: Heading + CTAs -->
+    <div class="hero-v2-left">
+      <img class="hv2-logo" src="assets/esmeralda-logo.webp" alt="Esmeralda Market"/>
+
+      <div class="hv2-headline">
+        <span class="hv2-eyebrow">Welcome to the</span>
+        <span class="hv2-name">Esmeralda</span>
+        <span class="hv2-market">Market</span>
+        <span class="hv2-tagline">Gas &nbsp;&middot;&nbsp; Groceries &nbsp;&middot;&nbsp; Deli</span>
+      </div>
+
+      <div class="hv2-divider"></div>
+
+      <p class="hv2-desc" id="heroDesc">Your full-service desert outpost in Fish Lake Valley &mdash; gas up, stock the cooler, and grab a scratch-made deli sandwich before hitting the open road.</p>
+
+      <div class="hv2-ctas">
+        <a href="tel:7755723200" class="btn-call" id="callBtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24 11.47 11.47 0 003.58.57 1 1 0 011 1V21a1 1 0 01-1 1A17 17 0 013 5a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.58a1 1 0 01-.25 1.01z"/></svg>
+          <span id="callBtnPhone">775-572-3200</span>
+        </a>
+        <a href="menu.html" class="btn-order" id="heroBtn">Order from the Deli &rarr;</a>
+      </div>
     </div>
-  </div>
-  <div class="hero-scroll">
-    <div class="hero-scroll-arrow"></div>
-    <div class="hero-scroll-label">Scroll</div>
+
+    <!-- RIGHT: Photo + links panel -->
+    <div class="hero-v2-right">
+      <img class="hv2-photo" src="assets/landscape.jpg" alt="Fish Lake Valley, Nevada" id="heroBgImg"/>
+
+      <!-- Quick-nav panel overlaid on right edge of photo -->
+      <nav class="hv2-links-panel" aria-label="Quick links">
+        <div class="hv2-links-header">Quick Links</div>
+
+        <a href="https://maps.app.goo.gl/dhU5oMRYwXpTUhmY9" target="_blank" rel="noopener noreferrer" class="hv2-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          <span>Get Directions</span>
+          <span class="hv2-arr">&rarr;</span>
+        </a>
+
+        <a href="menu.html" class="hv2-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 17h7M17 14v7"/></svg>
+          <span>Deli Menu</span>
+          <span class="hv2-arr">&rarr;</span>
+        </a>
+
+        <a href="#hours" class="hv2-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          <span>Store Hours</span>
+          <span class="hv2-arr">&rarr;</span>
+        </a>
+
+        <a href="tel:7755723200" class="hv2-link" id="heroCallLink">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24 11.47 11.47 0 003.58.57 1 1 0 011 1V21a1 1 0 01-1 1A17 17 0 013 5a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.58a1 1 0 01-.25 1.01z"/></svg>
+          <span>Call Us</span>
+          <span class="hv2-arr">&rarr;</span>
+        </a>
+      </nav>
+
+      <!-- Store photo popping out from left edge of the photo frame -->
+      <div class="hv2-store-pop">
+        <img src="assets/store-photo.jpg" alt="Esmeralda Market storefront"/>
+      </div>
+    </div>
+
   </div>
 </section>
 
@@ -106,7 +465,6 @@
     <h2 class="section-heading">Services</h2>
     <div class="services-grid">
 
-      <!-- Deli -->
       <div class="service-item">
         <div class="service-icon">
           <svg viewBox="0 0 24 24"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>
@@ -114,7 +472,6 @@
         <div class="service-label">Deli</div>
       </div>
 
-      <!-- Cold Drinks -->
       <div class="service-item">
         <div class="service-icon">
           <svg viewBox="0 0 24 24"><path d="M7 3h10l-1.5 9H8.5L7 3z"/><path d="M8.5 12v7a1 1 0 001 1h5a1 1 0 001-1v-7"/><path d="M5 7h14"/><path d="M10 16h4"/></svg>
@@ -122,7 +479,6 @@
         <div class="service-label">Cold Drinks</div>
       </div>
 
-      <!-- Ice -->
       <div class="service-item">
         <div class="service-icon">
           <svg viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/><line x1="19.07" y1="4.93" x2="4.93" y2="19.07"/><circle cx="12" cy="12" r="2"/></svg>
@@ -130,7 +486,6 @@
         <div class="service-label">Ice</div>
       </div>
 
-      <!-- Beer -->
       <div class="service-item">
         <div class="service-icon">
           <svg viewBox="0 0 24 24"><path d="M5 3h11l1 4H5V3z"/><path d="M5 7v13a1 1 0 001 1h9a1 1 0 001-1V7"/><path d="M17 9h2a2 2 0 010 4h-2"/></svg>
@@ -138,7 +493,6 @@
         <div class="service-label">Beer</div>
       </div>
 
-      <!-- Restrooms -->
       <div class="service-item">
         <div class="service-icon">
           <svg viewBox="0 0 24 24"><circle cx="9" cy="4" r="1.5"/><path d="M6 8h6l-1 5H7L6 8z"/><path d="M7 13l-1 5h4l.5-2.5"/><path d="M10 13l1 5h-1"/><circle cx="17" cy="4" r="1.5"/><path d="M14.5 8h5l-1 5h-3l-1-5z"/><path d="M15.5 13l-1 5h4l-1-5"/></svg>
@@ -146,7 +500,6 @@
         <div class="service-label">Restrooms</div>
       </div>
 
-      <!-- Free WiFi -->
       <div class="service-item">
         <div class="service-icon">
           <svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0114.08 0"/><path d="M1.42 9a16 16 0 0121.16 0"/><path d="M8.53 16.11a6 6 0 016.95 0"/><circle cx="12" cy="20" r="1" fill="currentColor" stroke="none"/></svg>
@@ -178,5 +531,23 @@
 </footer>
 
 <script src="js/index.js"></script>
+<script>
+// Patch applySiteInfo: hero bg now drives an <img> src instead of CSS background
+(function () {
+  var _orig = applySiteInfo;
+  applySiteInfo = function (s) {
+    _orig(s); // handles phone, heroDesc, heroBtn
+    if (s && s.heroBgPhoto) {
+      var photo = document.getElementById('heroBgImg');
+      if (photo) photo.src = '/images/' + s.heroBgPhoto;
+    }
+    // Mirror phone to the Call Us quick-link
+    if (s && s.phone) {
+      var el = document.getElementById('heroCallLink');
+      if (el) el.href = 'tel:' + s.phone.replace(/\D/g, '');
+    }
+  };
+}());
+</script>
 </body>
 </html>
