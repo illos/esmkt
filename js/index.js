@@ -141,9 +141,9 @@
     if (s.heroBgPhoto) {
       const hero = document.querySelector('.hero');
       if (hero) {
-        const cur = hero.style.backgroundImage;
-        // Replace the url(...) portion while keeping gradient intact
-        hero.style.backgroundImage = cur.replace(/url\([^)]*\)/, `url('/images/${s.heroBgPhoto}')`);
+        // Set inline background to override the CSS static fallback.
+        // The gradient overlay lives on .hero::before so only the image changes here.
+        hero.style.background = `url('/images/${s.heroBgPhoto}') center 40% / cover no-repeat`;
       }
     }
   }
