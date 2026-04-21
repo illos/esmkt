@@ -152,12 +152,12 @@
     margin-bottom: 16px;
     transition: border-color 0.2s;
   }
-  .menu-card:hover { border-color: var(--gold-dark); }
+  /* no hover border effect */
 
   /* ─── NO-PHOTO COMPACT CARD ─── */
   .card-name-price {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
     gap: 10px;
   }
@@ -175,6 +175,35 @@
     flex-shrink: 0;
     line-height: 1.6;
   }
+
+  /* ─── INLINE PRICE + ADD BUTTON ROW ─── */
+  .card-price-add {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .btn-add-plus {
+    background: transparent;
+    border: 1px solid var(--gold-dark);
+    color: var(--gold);
+    font-family: 'Oswald', sans-serif;
+    font-size: 22px;
+    font-weight: 400;
+    line-height: 1;
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+    flex-shrink: 0;
+  }
+  .btn-add-plus:hover { background: var(--gold); color: var(--charcoal); border-color: var(--gold); }
+  .btn-add-plus.added { background: var(--gold); color: var(--charcoal); border-color: var(--gold); font-size: 16px; }
 
   .card-slideshow {
     position: relative;
@@ -868,9 +897,15 @@
   .cat-header-wrap {
     column-span: all;
     break-after: avoid;
-    margin-top: 20px;
+    margin-top: 32px;
+    padding-top: 20px;
+    border-top: 1px solid var(--charcoal-border);
   }
-  .menu-grid > .cat-header-wrap:first-child { margin-top: 0; }
+  .menu-grid > .cat-header-wrap:first-child {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+  }
 
   .cat-hero-img {
     height: 280px;

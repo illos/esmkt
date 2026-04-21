@@ -216,14 +216,16 @@ function renderItemCard(item) {
     card.innerHTML = `
       <div class="card-slideshow" id="slideshow-${item.id}">
         <div class="slide active"><img src="/images/${item.photo}" alt="${item.name}" loading="lazy"/></div>
-        <div class="price-badge">${fmt(item.price)}</div>
       </div>
       <div class="card-body">
         <div class="card-name">${item.name}</div>
         ${item.description ? `<div class="card-desc">${item.description}</div>` : ''}
         ${optionsHTML}
         ${addonsHTML}
-        <button class="btn-add" onclick="addToCart(${item.id})">Add to Order</button>
+        <div class="card-price-add">
+          <span class="card-price">${fmt(item.price)}</span>
+          <button class="btn-add-plus" onclick="addToCart(${item.id})">+</button>
+        </div>
       </div>`;
   } else {
     card.className = 'menu-card no-photo';
@@ -231,12 +233,14 @@ function renderItemCard(item) {
       <div class="card-body">
         <div class="card-name-price">
           <div class="card-name">${item.name}</div>
-          <div class="card-price">${fmt(item.price)}</div>
+          <div class="card-price-add">
+            <span class="card-price">${fmt(item.price)}</span>
+            <button class="btn-add-plus" onclick="addToCart(${item.id})">+</button>
+          </div>
         </div>
         ${item.description ? `<div class="card-desc">${item.description}</div>` : ''}
         ${optionsHTML}
         ${addonsHTML}
-        <button class="btn-add" onclick="addToCart(${item.id})">Add to Order</button>
       </div>`;
   }
   return card;
@@ -311,10 +315,10 @@ function addToCart(itemId) {
   document.getElementById('orderPanel').classList.add('visible');
   document.getElementById('floatingCart').classList.add('visible');
 
-  const btn = card.querySelector('.btn-add');
-  btn.textContent = '&#10022; Added';
+  const btn = card.querySelector('.btn-add-plus');
+  btn.textContent = '✓';
   btn.classList.add('added');
-  setTimeout(() => { btn.textContent = 'Add to Order'; btn.classList.remove('added'); }, 1500);
+  setTimeout(() => { btn.textContent = '+'; btn.classList.remove('added'); }, 1500);
 
   // Reset addons to their default state
   card.querySelectorAll('.addon-item').forEach(el => {
