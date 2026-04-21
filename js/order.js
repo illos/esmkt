@@ -150,6 +150,13 @@ function deliHoursShortSummary() {
   return `${days} &nbsp; ${fmt12(openDays[0].open)} &ndash; ${fmt12(openDays[0].close)}`;
 }
 
+// Returns just today's hours, e.g. "9:00 AM \u2013 3:00 PM" or "Closed Today"
+function todayHoursText() {
+  const today = getTodayDeliHours();
+  if (!today || today.closed || !today.open || !today.close) return 'Closed Today';
+  return `${fmt12(today.open)} &ndash; ${fmt12(today.close)}`;
+}
+
 function checkDeliHours() {
   const today = getTodayDeliHours();
   const now   = new Date();
@@ -171,14 +178,14 @@ function checkDeliHours() {
   } else if (!deliIsOpen) {
     if (statusEl) {
       statusEl.className = 'header-status status-closed';
-      statusEl.innerHTML = `<span class="status-card-icon">&#10022;</span><span class="status-card-title">Deli Closed</span><span class="status-card-sub">${deliHoursShortSummary()}</span>`;
+      statusEl.innerHTML = `<span class="status-card-icon">&#10022;</span><span class="status-card-title">Deli Closed</span><span class="status-card-sub">${todayHoursText()}</span>`;
     }
     document.getElementById('deliOpenContent').style.display = 'none';
     orderingOpen = false;
   } else {
     if (statusEl) {
       statusEl.className = 'header-status status-open';
-      statusEl.innerHTML = `<span class="status-card-icon">&#10022;</span><span class="status-card-title">Deli Open</span><span class="status-card-sub">${deliHoursShortSummary()}</span>`;
+      statusEl.innerHTML = `<span class="status-card-icon">&#10022;</span><span class="status-card-title">Deli Open</span><span class="status-card-sub">${todayHoursText()}</span>`;
     }
     document.getElementById('deliOpenContent').style.display = 'block';
     orderingOpen = true;

@@ -15,7 +15,7 @@ FILE STRUCTURE
 --------------------------------------------------------------------------------
 
   index.html                  Homepage
-  order.html                  Deli order page
+  menu.html                  Deli order page
   admin.html                  Admin panel (menu management)
   readme.txt                  This file
   _headers                    Cloudflare Pages HTTP headers config
@@ -53,7 +53,7 @@ WHAT'S BEEN BUILT
   - Fully responsive.
 
 
-  order.html — Deli Order Page
+  menu.html — Deli Order Page
   ─────────────────────────────
   - Loads the menu from GET /api/menu at page load.
     Falls back to a hardcoded menu if the API is unreachable (e.g., local dev).
@@ -190,7 +190,7 @@ STEP 6 — Test
   1. Visit https://esmeralda-market.pages.dev/admin.html
   2. Log in with your ADMIN_PASSWORD.
   3. Add a menu item and upload a photo.
-  4. Visit /order.html — the item should appear.
+  4. Visit /menu.html — the item should appear.
 
 NOTES
   - wrangler.toml must be at the root of your project (next to index.html).
@@ -232,8 +232,8 @@ Step 3 — Start the server:
 Step 4 — Test it:
   - Visit http://localhost:3000 — should show { "status": "ok", ... }
 
-Step 5 — Connect order.html to the print server:
-  In order.html, find the submitOrder() function and uncomment:
+Step 5 — Connect menu.html to the print server:
+  In menu.html, find the submitOrder() function and uncomment:
 
     fetch('http://localhost:3000/print', {
       method: 'POST',
@@ -256,11 +256,11 @@ WHAT STILL NEEDS TO BE DONE
 --------------------------------------------------------------------------------
 
 1. CONNECT ORDER PAGE TO PRINT SERVER
-   Uncomment the fetch to localhost:3000/print in order.html's submitOrder().
+   Uncomment the fetch to localhost:3000/print in menu.html's submitOrder().
    (See Step 5 in the print server section above.)
 
 2. GOOGLE SHEETS ORDER LOGGING
-   In order.html, uncomment the Google Sheets fetch in submitOrder() once you
+   In menu.html, uncomment the Google Sheets fetch in submitOrder() once you
    have a deployed Apps Script Web App. The Apps Script code is documented in
    the previous version of this readme. Steps:
      a. Create a Google Sheet with order columns.
