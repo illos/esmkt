@@ -169,17 +169,18 @@
   display: block;
 }
 
-/* Gradient: wide gradual left-edge fade into the dark bg */
+/* Gradient: very gradual left-edge fade into the dark bg */
 .hero-v2-right::before {
   content: '';
   position: absolute;
   top: 0; left: 0; bottom: 0;
-  width: 55%;
+  width: 70%;
   background: linear-gradient(
     to right,
     var(--charcoal)       0%,
-    rgba(26,26,24,0.75)  30%,
-    rgba(26,26,24,0.30)  60%,
+    rgba(26,26,24,0.80)  20%,
+    rgba(26,26,24,0.45)  50%,
+    rgba(26,26,24,0.10)  80%,
     transparent          100%
   );
   z-index: 2;
@@ -210,7 +211,7 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  z-index: 3;
+  z-index: 5;
   overflow: hidden; /* clip the topo pseudo-element */
 }
 
@@ -284,13 +285,13 @@
 
 .hv2-link:hover .hv2-arr { opacity: 0.9; }
 
-/* ── Store photo — always visible, no hover slide ── */
+/* ── Store photo — always visible, 80% larger than original ── */
 .hv2-store-pop {
   position: absolute;
   bottom: 52px;
   left: 0;
-  width: 260px;
-  z-index: 5;
+  width: 470px;
+  z-index: 3;
   border: 2px solid var(--gold-dark);
   box-shadow:
     0 0 0 1px rgba(20,20,18,0.7),
@@ -326,7 +327,7 @@
   .hv2-store-pop {
     left: 0;
     bottom: 60px;
-    width: 280px;
+    width: 504px;
   }
 }
 
@@ -357,6 +358,65 @@
 
   .hv2-links-header { padding: 12px 16px 10px; }
 }
+
+/* ── Hero photo as fixed background ── */
+.hv2-photo {
+  background-size: cover;
+  background-position: center 35%;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  position: absolute;
+  inset: 0;
+}
+
+/* ── Topo texture on hours cards + service items ── */
+.hours-card,
+.service-item {
+  position: relative;
+  isolation: isolate;
+}
+
+.hours-card::before,
+.service-item::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url('assets/topo-white.svg');
+  background-size: 300px;
+  background-repeat: repeat;
+  opacity: 0.06;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* ── Brighter fuel + fireworks banners ── */
+.fuel-banner {
+  background: linear-gradient(100deg, rgba(210,140,20,0.65) 0%, rgba(150,85,10,0.32) 45%, var(--charcoal) 78%) !important;
+}
+
+.fireworks-banner {
+  background: linear-gradient(100deg, rgba(210,45,45,0.65) 0%, rgba(155,18,18,0.32) 45%, var(--charcoal) 78%) !important;
+}
+
+/* ── Logo banner ── */
+.logo-banner {
+  border-top: 1px solid var(--charcoal-border);
+  border-bottom: 1px solid var(--charcoal-border);
+}
+
+.logo-banner-inner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 28px 24px;
+}
+
+.logo-banner-img {
+  height: 110px;
+  width: auto;
+  display: block;
+  filter: drop-shadow(0 2px 16px rgba(0,0,0,0.65));
+}
 </style>
 </head>
 <body>
@@ -379,8 +439,6 @@
 
     <!-- LEFT: Heading + CTAs -->
     <div class="hero-v2-left">
-      <img class="hv2-logo" src="assets/esmeralda-logo.webp" alt="Esmeralda Market"/>
-
       <div class="hv2-headline">
         <span class="hv2-eyebrow">Welcome to the</span>
         <span class="hv2-name">Esmeralda</span>
@@ -403,7 +461,7 @@
 
     <!-- RIGHT: Photo + links panel -->
     <div class="hero-v2-right">
-      <img class="hv2-photo" src="assets/landscape.jpg" alt="Fish Lake Valley, Nevada" id="heroBgImg"/>
+      <div class="hv2-photo" id="heroBgImg" style="background-image: url('assets/landscape.jpg')"></div>
 
       <!-- Quick-nav panel overlaid on right edge of photo -->
       <nav class="hv2-links-panel" aria-label="Quick links">
@@ -442,6 +500,13 @@
 
   </div>
 </section>
+
+<!-- ─── LOGO BANNER ─── -->
+<div class="service-banner logo-banner">
+  <div class="logo-banner-inner">
+    <img class="logo-banner-img" src="assets/esmeralda-logo.webp" alt="Esmeralda Market"/>
+  </div>
+</div>
 
 <!-- ─── HOURS & LOCATION ─── -->
 <section class="section info-strip" id="hours">
@@ -580,7 +645,7 @@
     _orig(s); // handles phone, heroDesc, heroBtn
     if (s && s.heroBgPhoto) {
       var photo = document.getElementById('heroBgImg');
-      if (photo) photo.src = '/images/' + s.heroBgPhoto;
+      if (photo) photo.style.backgroundImage = "url('/images/" + s.heroBgPhoto + "')";
     }
     // Mirror phone to the Call Us quick-link
     if (s && s.phone) {
