@@ -588,7 +588,9 @@ function printMenu() {
       html += `<div class="pm-cat-wrap">`;
       if (cat.photo) html += `<div class="pm-cat-hero"><img src="/images/${cat.photo}" alt="${cat.name}"/></div>`;
       html += `<div class="pm-cat-name"><span class="pm-cat-star">&#10022;</span>${cat.name}<span class="pm-cat-star">&#10022;</span></div>`;
+      if (cat.description) html += `<div class="pm-cat-desc">${cat.description}</div>`;
       html += `<div class="pm-cat-items">${items.map(item => { placed.add(item.id); return piCard(item); }).join('')}</div>`;
+      if (cat.footnotes) html += `<div class="pm-cat-footnotes">${cat.footnotes}</div>`;
       html += `</div>`;
     });
     MENU.filter(i => !placed.has(i.id)).forEach(item => { html += piCard(item); });
@@ -619,6 +621,8 @@ body{background:#F5F3EF;color:#1A1A18;font-family:'Source Sans 3',sans-serif;pri
 .pm-cat-name::before{content:'';flex:1;height:1px;background:linear-gradient(to right,transparent,#C9A96E)}
 .pm-cat-name::after{content:'';flex:1;height:1px;background:linear-gradient(to left,transparent,#C9A96E)}
 .pm-cat-star{color:#C9A96E;font-size:9px;flex-shrink:0;line-height:1}
+.pm-cat-desc{font-size:10px;color:#6B6357;text-align:center;padding:0 16px 6px;font-style:italic;line-height:1.4}
+.pm-cat-footnotes{font-size:10px;color:#6B6357;text-align:center;padding:6px 16px 2px;font-style:italic;line-height:1.4;border-top:1px solid #E0DAD0;margin-top:4px}
 .pi-card{background:#FFF;border:1px solid #D8D3CA;border-radius:3px;overflow:hidden;break-inside:avoid;margin-bottom:8px}
 .pi-img{height:100px;overflow:hidden}
 .pi-img img{width:100%;height:100%;object-fit:cover;display:block}
