@@ -55,69 +55,31 @@
     padding: 0 16px 80px;
   }
 
-  /* ─── HEADER ─── */
-  .site-header {
-    text-align: center;
-    padding: 32px 16px 24px;
-    border-bottom: 1px solid var(--charcoal-border);
-    position: relative;
-  }
-
-  .logo-badge { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; }
-
-  .logo-tagline {
-    font-family: 'Oswald', sans-serif;
-    font-size: 10px;
-    letter-spacing: 4px;
-    color: var(--gold);
-    text-transform: uppercase;
-  }
-
-  .logo-name {
-    font-family: 'Oswald', sans-serif;
-    font-size: clamp(36px, 8vw, 64px);
-    font-weight: 700;
-    letter-spacing: 6px;
-    color: var(--cream);
-    text-transform: uppercase;
-    line-height: 1;
-    text-shadow: 2px 2px 0 rgba(0,0,0,0.5);
-  }
-  .logo-name span { color: var(--gold); }
-
-  .logo-sub {
-    font-family: 'Oswald', sans-serif;
-    font-size: 11px;
-    letter-spacing: 3px;
-    color: var(--cream-dim);
-    text-transform: uppercase;
-    border: 1px solid var(--charcoal-border);
-    padding: 3px 14px;
-    margin-top: 4px;
-  }
-
-  .logo-dividers {
+  /* ─── PAGE HEADER ─── */
+  .page-header-row {
     display: flex;
     align-items: center;
-    gap: 8px;
-    width: 100%;
-    max-width: 340px;
-    margin: 8px auto 0;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 28px 0 18px;
+    border-bottom: 1px solid var(--charcoal-border);
   }
-  .logo-dividers::before, .logo-dividers::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: linear-gradient(to right, transparent, var(--gold));
+
+  .page-title {
+    font-family: 'Oswald', sans-serif;
+    font-size: clamp(22px, 4vw, 32px);
+    font-weight: 600;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--cream);
+    line-height: 1;
   }
-  .logo-dividers::after { background: linear-gradient(to left, transparent, var(--gold)); }
-  .logo-dividers span { color: var(--gold); font-size: 12px; }
 
   .header-status {
     font-size: 13px;
     color: var(--cream-dim);
     letter-spacing: 1px;
-    margin-top: 10px;
+    padding: 12px 0 20px;
     font-style: italic;
     transition: color 0.3s;
   }
@@ -977,10 +939,6 @@
 
   /* ─── PRINT MENU BUTTON ─── */
   .btn-print-menu {
-    position: absolute;
-    right: 0;
-    top: 50%;
-    transform: translateY(-50%);
     background: transparent;
     border: 1px solid var(--gold-dark);
     color: var(--gold);
@@ -993,6 +951,7 @@
     border-radius: 2px;
     transition: background 0.2s, color 0.2s, border-color 0.2s;
     white-space: nowrap;
+    flex-shrink: 0;
   }
   .btn-print-menu:hover {
     background: var(--gold);
@@ -1023,7 +982,7 @@
   /* ─── PRINT STYLES ─── */
   @media print {
     /* Hide everything except the receipt */
-    .site-nav, .site-header, .section-title, .menu-grid,
+    .site-nav, .page-header-row, .header-status, .section-title, .menu-grid,
     #orderSectionTitle, .order-panel-header, .order-list,
     .order-total-row:not(.order-total-grand), .checkout-form,
     .success-header, .success-actions, .floating-cart,
