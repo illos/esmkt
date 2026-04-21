@@ -115,8 +115,13 @@
 
   // ─── Render hours cards ───────────────────────────────────────────────────
   function renderHoursCards() {
-    renderHoursCard(siteSettings.storeHours, 'storeHoursTime', 'storeHoursDays', 'storeHoursSchedule');
-    renderHoursCard(siteSettings.deliHours,  'deliHoursTime',  'deliHoursDays',  'deliHoursSchedule');
+    renderHoursCard(siteSettings.storeHours, 'storeHoursTime',       'storeHoursDays',       'storeHoursSchedule');
+    renderHoursCard(siteSettings.deliHours,  'deliHoursTime',        'deliHoursDays',        'deliHoursSchedule');
+    // Footer copies
+    if (document.getElementById('footerStoreHoursTime')) {
+      renderHoursCard(siteSettings.storeHours, 'footerStoreHoursTime', 'footerStoreHoursDays', 'footerStoreHoursSchedule');
+      renderHoursCard(siteSettings.deliHours,  'footerDeliHoursTime',  'footerDeliHoursDays',  'footerDeliHoursSchedule');
+    }
   }
 
   // ─── Apply site-info fields from settings ────────────────────────────────
