@@ -184,6 +184,14 @@
     flex-shrink: 0;
   }
 
+  /* Overlay variant — sits in top-right corner over the photo */
+  .card-price-add--overlay {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 3;
+  }
+
   .btn-add-plus {
     background: transparent;
     border: 1px solid var(--gold-dark);

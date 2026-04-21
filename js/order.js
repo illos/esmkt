@@ -216,16 +216,16 @@ function renderItemCard(item) {
     card.innerHTML = `
       <div class="card-slideshow" id="slideshow-${item.id}">
         <div class="slide active"><img src="/images/${item.photo}" alt="${item.name}" loading="lazy"/></div>
+        <div class="card-price-add card-price-add--overlay">
+          <span class="card-price">${fmt(item.price)}</span>
+          <button class="btn-add-plus" onclick="addToCart(${item.id})">+</button>
+        </div>
       </div>
       <div class="card-body">
         <div class="card-name">${item.name}</div>
         ${item.description ? `<div class="card-desc">${item.description}</div>` : ''}
         ${optionsHTML}
         ${addonsHTML}
-        <div class="card-price-add">
-          <span class="card-price">${fmt(item.price)}</span>
-          <button class="btn-add-plus" onclick="addToCart(${item.id})">+</button>
-        </div>
       </div>`;
   } else {
     card.className = 'menu-card no-photo';
