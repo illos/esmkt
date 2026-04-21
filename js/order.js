@@ -166,30 +166,32 @@ function checkDeliHours() {
     deliIsOpen = mins >= toMins(today.open) && mins < toMins(today.close);
   }
 
-  const statusEl = document.getElementById('headerStatus');
+  const statusEl   = document.getElementById('headerStatus');
+  const orderingEl = document.getElementById('orderingStatus');
 
-  if (!onlineOrderingEnabled) {
-    if (statusEl) {
-      statusEl.className = 'header-status status-unavailable';
-      statusEl.innerHTML = `<span class="status-card-icon">&#10022;</span><span class="status-card-title">Online Ordering Unavailable</span><span class="status-card-sub">Call to order &nbsp;&middot;&nbsp; 775-572-3200</span>`;
-    }
-    document.getElementById('deliOpenContent').style.display = 'none';
-    orderingOpen = false;
-  } else if (!deliIsOpen) {
-    if (statusEl) {
+  // Always show deli open/closed state
+  if (statusEl) {
+    if (deliIsOpen) {
+      statusEl.className = 'header-status status-open';
+      statusEl.innerHTML = `<span class="status-card-icon">&#10022;</span><span class="status-card-title">Deli Open</span><span class="status-card-sub">${todayHoursText()}</span>`;
+    } else {
       statusEl.className = 'header-status status-closed';
       statusEl.innerHTML = `<span class="status-card-icon">&#10022;</span><span class="status-card-title">Deli Closed</span><span class="status-card-sub">${todayHoursText()}</span>`;
     }
-    document.getElementById('deliOpenContent').style.display = 'none';
-    orderingOpen = false;
-  } else {
-    if (statusEl) {
-      statusEl.className = 'header-status status-open';
-      statusEl.innerHTML = `<span class="status-card-icon">&#10022;</span><span class="status-card-title">Deli Open</span><span class="status-card-sub">${todayHoursText()}</span>`;
-    }
-    document.getElementById('deliOpenContent').style.display = 'block';
-    orderingOpen = true;
   }
+
+  // Show online ordering unavailable notice in addition if needed
+  if (orderingEl) {
+    if (!onlineOrderingEnabled) {
+      orderingEl.style.display = '';
+      orderingEl.innerHTML = `<span class="status-card-icon">&#10022;</span><span class="status-card-title">Online Ordering Unavailable</span><span class="status-card-sub">Call to order &nbsp;&middot;&nbsp; 775-572-3200</span>`;
+    } else {
+      orderingEl.style.display = 'none';
+    }
+  }
+
+  orderingOpen = deliIsOpen && onlineOrderingEnabled;
+  document.getElementById('deliOpenContent').style.display = orderingOpen ? 'block' : 'none';
 }
 
 // ─── PICKUP TIME DROPDOWN ────────────────────────────────────────────────────
