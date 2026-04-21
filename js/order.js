@@ -590,31 +590,32 @@ function printMenu() {
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+@page{margin:0.4cm 0.5cm}
 body{background:#F5F3EF;color:#1A1A18;font-family:'Source Sans 3',sans-serif;print-color-adjust:exact;-webkit-print-color-adjust:exact}
-.pm-header{text-align:center;padding:20px 0 16px;border-bottom:2px solid #C9A96E;margin-bottom:20px}
-.pm-header-name{font-family:'Oswald',sans-serif;font-size:34px;font-weight:700;letter-spacing:8px;text-transform:uppercase;color:#1A1A18;display:block;line-height:1}
+.pm-header{text-align:center;padding:12px 0 10px;border-bottom:2px solid #C9A96E;margin-bottom:14px}
+.pm-header-name{font-family:'Oswald',sans-serif;font-size:28px;font-weight:700;letter-spacing:8px;text-transform:uppercase;color:#1A1A18;display:block;line-height:1}
 .pm-header-name span{color:#7A5C28}
-.pm-header-sub{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:5px;text-transform:uppercase;color:#7A5C28;display:block;margin-top:6px}
-.pm-grid{columns:2 260px;column-gap:16px;padding:0 16px 20px}
-.pm-cat-wrap{column-span:all;break-inside:avoid;page-break-inside:avoid;margin-top:24px}
+.pm-header-sub{font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:5px;text-transform:uppercase;color:#7A5C28;display:block;margin-top:4px}
+.pm-grid{columns:2 240px;column-gap:10px;padding:0 0 10px}
+.pm-cat-wrap{column-span:all;break-inside:avoid;page-break-inside:avoid;margin-top:16px}
 .pm-cat-wrap:first-child{margin-top:0}
-.pm-cat-hero{height:160px;overflow:hidden;border-radius:4px 4px 0 0}
+.pm-cat-hero{height:130px;overflow:hidden;border-radius:4px 4px 0 0}
 .pm-cat-hero img{width:100%;height:100%;object-fit:cover;display:block}
-.pm-first-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.pm-cat-name{font-family:'Oswald',sans-serif;font-size:16px;letter-spacing:5px;text-transform:uppercase;color:#7A5C28;padding:12px 0 8px;display:flex;align-items:center;justify-content:center;gap:12px}
+.pm-first-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pm-cat-name{font-family:'Oswald',sans-serif;font-size:14px;letter-spacing:5px;text-transform:uppercase;color:#7A5C28;padding:8px 0 6px;display:flex;align-items:center;justify-content:center;gap:10px}
 .pm-cat-name::before{content:'';flex:1;height:1px;background:linear-gradient(to right,transparent,#C9A96E)}
 .pm-cat-name::after{content:'';flex:1;height:1px;background:linear-gradient(to left,transparent,#C9A96E)}
 .pm-cat-star{color:#C9A96E;font-size:9px;flex-shrink:0;line-height:1}
-.pi-card{background:#FFF;border:1px solid #D8D3CA;border-radius:4px;overflow:hidden;break-inside:avoid;margin-bottom:12px}
-.pi-img{height:120px;overflow:hidden}
+.pi-card{background:#FFF;border:1px solid #D8D3CA;border-radius:3px;overflow:hidden;break-inside:avoid;margin-bottom:8px}
+.pi-img{height:100px;overflow:hidden}
 .pi-img img{width:100%;height:100%;object-fit:cover;display:block}
-.pi-body{padding:10px 14px 12px;display:flex;flex-direction:column;gap:4px}
-.pi-name-price{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
-.pi-name{font-family:'Oswald',sans-serif;font-size:15px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#1A1A18;line-height:1.2}
-.pi-price{font-family:'Oswald',sans-serif;font-size:14px;font-weight:600;color:#7A5C28;white-space:nowrap;background:#F5F3EF;border:1px solid #C9A96E;padding:1px 8px;border-radius:2px;flex-shrink:0}
-.pi-desc{font-size:12px;color:#6A6460;font-style:italic;line-height:1.4}
-.pi-addons{font-size:11px;color:#6A6460;line-height:1.4}
-.pi-label{font-family:'Oswald',sans-serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#7A5C28;margin-right:2px}
+.pi-body{padding:7px 10px 8px;display:flex;flex-direction:column;gap:3px}
+.pi-name-price{display:flex;align-items:flex-start;justify-content:space-between;gap:6px}
+.pi-name{font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#1A1A18;line-height:1.2}
+.pi-price{font-family:'Oswald',sans-serif;font-size:12px;font-weight:600;color:#7A5C28;white-space:nowrap;background:#F5F3EF;border:1px solid #C9A96E;padding:1px 6px;border-radius:2px;flex-shrink:0}
+.pi-desc{font-size:11px;color:#6A6460;font-style:italic;line-height:1.35}
+.pi-addons{font-size:10px;color:#6A6460;line-height:1.35}
+.pi-label{font-family:'Oswald',sans-serif;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:#7A5C28;margin-right:2px}
 @media print{*{print-color-adjust:exact;-webkit-print-color-adjust:exact}}
 </style>
 </head><body>
