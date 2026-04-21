@@ -25,9 +25,9 @@ const SEED = {
   nextId:    9,
   nextCatId: 3,
   categories: [
-    { id: 1, name: 'Sandwiches',      itemIds: [1, 2, 5, 7] },
-    { id: 2, name: 'Mains & Sides',   itemIds: [3, 4, 6, 8] },
-    { id: 0, name: 'Uncategorized',   itemIds: [] },
+    { id: 1, name: 'Sandwiches',      itemIds: [1, 2, 5, 7], photo: null, description: '' },
+    { id: 2, name: 'Mains & Sides',   itemIds: [3, 4, 6, 8], photo: null, description: '' },
+    { id: 0, name: 'Uncategorized',   itemIds: [],            photo: null, description: '' },
   ],
   items: [
     { id:1, name:'Classic Deli Sub',   price:9.50,  photo:null, description:'Stacked high on a fresh hoagie roll with your choice of meats, crisp lettuce, tomato, and our house mustard.', addons:['Avocado +$1','Bacon +$1.50','Extra Cheese +$0.75','Jalapeños +$0.50','Double Meat +$2'], defaultAddons:[], options:[] },
@@ -147,14 +147,14 @@ async function getMenuData(env) {
   if (!data.categories) {
     data.nextCatId  = 2;
     data.categories = [
-      { id: 1, name: 'Menu', itemIds: data.items.map(i => i.id), photo: null },
-      { id: 0, name: 'Uncategorized', itemIds: [], photo: null },
+      { id: 1, name: 'Menu', itemIds: data.items.map(i => i.id), photo: null, description: '' },
+      { id: 0, name: 'Uncategorized', itemIds: [], photo: null, description: '' },
     ];
   }
 
   // ── Ensure Uncategorized category always exists ───────────────────────────
   if (!data.categories.find(c => c.id === 0)) {
-    data.categories.push({ id: 0, name: 'Uncategorized', itemIds: [], photo: null });
+    data.categories.push({ id: 0, name: 'Uncategorized', itemIds: [], photo: null, description: '' });
   }
 
   // ── Ensure nextCatId exists ───────────────────────────────────────────────
@@ -162,8 +162,8 @@ async function getMenuData(env) {
     data.nextCatId = Math.max(...data.categories.map(c => c.id), 1) + 1;
   }
 
-  // ── Ensure categories have photo field ───────────────────────────────────
-  data.categories = data.categories.map(cat => ({ photo: null, ...cat }));
+  // ── Ensure categories have photo + description fields ────────────────────
+  data.categories = data.categories.map(cat => ({ photo: null, description: '', ...cat }));
 
   // ── Ensure items have new fields ──────────────────────────────────────────
   data.items = data.items.map(item => ({

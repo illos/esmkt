@@ -164,6 +164,15 @@ function renderCategoryBlock(cat) {
     ? items.map(item => renderItemRow(item, cat.id)).join('')
     : `<div class="category-empty-zone" data-cat-id="${cat.id}">Drop items here</div>`;
 
+  const descRow = isUncat ? '' : `
+    <div class="cat-desc-row">
+      <input class="cat-desc-input" type="text" value="${esc(cat.description || '')}"
+        placeholder="Category description (optional)"
+        data-cat-id="${cat.id}"
+        onblur="saveCatDesc(this,${cat.id})"
+        onkeydown="if(event.key==='Enter')this.blur()"/>
+    </div>`;
+
   return `<div class="category-block${isUncat ? ' cat-uncategorized' : ''}" data-cat-id="${cat.id}"
     ondragover="onCatBlockDragOver(event,${cat.id})"
     ondrop="onCatBlockDrop(event,${cat.id})"
@@ -175,6 +184,7 @@ function renderCategoryBlock(cat) {
       <span class="cat-item-count">${count} item${count!==1?'s':''}</span>
       ${deleteBtn}
     </div>
+    ${descRow}
     <div class="category-items" data-cat-id="${cat.id}"
       ondragover="onCatItemsDragOver(event,${cat.id})"
       ondrop="onCatItemsDrop(event,${cat.id})">
@@ -304,7 +314,7 @@ function clearCatDragOver()  { document.querySelectorAll('.cat-drag-over,.drop-a
 // ─── CATEGORY MANAGEMENT ──────────────────────────────────────────────────────
 function addCategory() {
   const newId = Math.max(...menuCategories.map(c => c.id), 0) + 1;
-  const newCat = { id: newId, name: 'New Category', itemIds: [], photo: null };
+  const newCat = { id: newId, name: 'New Category', itemIds: [], photo: null, description: '' };
   const uncatIdx = menuCategories.findIndex(c => c.id === 0);
   if (uncatIdx !== -1) menuCategories.splice(uncatIdx, 0, newCat);
   else menuCategories.push(newCat);
@@ -321,6 +331,12 @@ function saveCatName(input, catId) {
   if (!name) { input.value = input.dataset.orig; return; }
   const cat = menuCategories.find(c => c.id === catId);
   if (cat && cat.name !== name) { cat.name = name; input.dataset.orig = name; saveFullState(); }
+}
+
+function saveCatDesc(input, catId) {
+  const desc = input.value.trim();
+  const cat  = menuCategories.find(c => c.id === catId);
+  if (cat && cat.description !== desc) { cat.description = desc; saveFullState(); }
 }
 
 async function handleCatPhotoSelect(input, catId) {

@@ -814,19 +814,18 @@
   }
   .btn-delete-cat:hover { color: var(--danger); }
 
-  /* ─── CATEGORY ITEMS — card grid ─── */
+  /* ─── CATEGORY ITEMS — 2-column card grid ─── */
   .category-items {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
     gap: 10px;
     padding: 12px;
     min-height: 44px;
-    align-content: flex-start;
   }
   .category-items.drop-active { background: rgba(201,169,110,0.03); }
 
   .category-empty-zone {
-    width: 100%;
+    grid-column: 1 / -1;
     padding: 16px;
     text-align: center;
     font-size: 12px;
@@ -837,15 +836,53 @@
   }
   .category-empty-zone.drop-active { color: rgba(201,169,110,0.5); }
 
+  /* ─── CATEGORY DESCRIPTION ROW ─── */
+  .cat-desc-row {
+    padding: 0 14px 10px;
+    border-bottom: 1px solid var(--charcoal-border);
+  }
+  .cat-desc-input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px dashed transparent;
+    color: var(--cream-dim);
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 13px;
+    font-style: italic;
+    padding: 2px 4px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .cat-desc-input::placeholder { color: rgba(184,176,160,0.25); }
+  .cat-desc-input:hover { border-bottom-color: rgba(58,56,48,0.6); }
+  .cat-desc-input:focus { border-bottom-color: var(--charcoal-border); }
+
+  /* ─── ADD CATEGORY BUTTON (bottom) ─── */
+  .btn-add-category {
+    width: 100%;
+    background: none;
+    border: 1px dashed var(--charcoal-border);
+    color: var(--cream-dim);
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 12px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: border-color 0.2s, color 0.2s;
+    margin-top: 8px;
+    display: block;
+  }
+  .btn-add-category:hover { border-color: var(--gold-dark); color: var(--gold); }
+
   /* ─── ADMIN ITEM CARD ─── */
   .item-row {
     background: var(--charcoal);
     border: 1px solid var(--charcoal-border);
     border-radius: 3px;
     overflow: hidden;
-    flex: 1 1 160px;
-    max-width: calc(50% - 5px);
-    min-width: 140px;
     cursor: default;
     user-select: none;
     transition: border-color 0.2s;

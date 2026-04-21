@@ -268,8 +268,16 @@ function renderMenu() {
 
       const heading = document.createElement('div');
       heading.className = 'menu-category-heading';
-      heading.textContent = cat.name;
+      heading.innerHTML = `<span class="cat-heading-star">&#10022;</span>${cat.name}<span class="cat-heading-star">&#10022;</span>`;
       wrap.appendChild(heading);
+
+      if (cat.description) {
+        const desc = document.createElement('div');
+        desc.className = 'cat-header-desc';
+        desc.textContent = cat.description;
+        wrap.appendChild(desc);
+      }
+
       grid.appendChild(wrap);
 
       catItems.forEach(item => { grid.appendChild(renderItemCard(item)); placedIds.add(item.id); });
