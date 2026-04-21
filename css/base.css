@@ -16,6 +16,24 @@
   }
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* ── Global nav logo image — centered in all navs ── */
+  .nav-logo {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    z-index: 1;
+  }
+
+  .nav-logo-img {
+    height: 32px;
+    width: auto;
+    display: block;
+    filter: drop-shadow(0 1px 6px rgba(0,0,0,0.5));
+  }
   html { scroll-behavior: smooth; }
 
   body {

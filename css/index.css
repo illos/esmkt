@@ -22,16 +22,7 @@
     flex-shrink: 0;
   }
 
-  .nav-logo {
-    font-family: 'Oswald', sans-serif;
-    font-size: 20px;
-    font-weight: 700;
-    letter-spacing: 5px;
-    color: var(--cream);
-    text-transform: uppercase;
-    text-decoration: none;
-    line-height: 1;
-  }
+  /* .nav-logo layout handled in base.css */
   /* Store status pill */
   .store-status {
     font-family: 'Oswald', sans-serif;

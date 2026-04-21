@@ -25,15 +25,7 @@
   }
   .nav-back:hover { color: var(--gold); }
 
-  .nav-logo {
-    font-family: 'Oswald', sans-serif;
-    font-size: 18px;
-    font-weight: 700;
-    letter-spacing: 5px;
-    color: var(--cream);
-    text-transform: uppercase;
-    text-decoration: none;
-  }
+  /* .nav-logo layout handled in base.css */
   .nav-phone {
     font-family: 'Oswald', sans-serif;
     font-size: 12px;
