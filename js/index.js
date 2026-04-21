@@ -173,20 +173,29 @@
     if (!events.length) return; // section stays hidden
     const grid    = document.getElementById('eventsGrid');
     const section = document.getElementById('events');
-    grid.innerHTML = events.map(ev => {
+    grid.innerHTML = events.map((ev, idx) => {
       const dateStr = ev.date
         ? new Date(ev.date + 'T12:00:00').toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' })
         : '';
       const imgHtml = ev.photo
         ? `<img class="event-img" src="/images/${ev.photo}" alt="${escHtml(ev.title)}" loading="lazy"/>`
         : `<div class="event-img-placeholder">&#10022;</div>`;
-      return `<div class="event-card">
-        ${imgHtml}
-        <div class="event-body">
+      const body = `<div class="event-body">
           ${dateStr ? `<div class="event-date">${dateStr}</div>` : ''}
           <div class="event-title">${escHtml(ev.title)}</div>
           ${ev.description ? `<div class="event-desc">${escHtml(ev.description)}</div>` : ''}
-        </div>
+        </div>`;
+      if (idx === 0) {
+        // Featured: text left, image right, full image visible
+        return `<div class="event-card event-card--featured">
+          ${body}
+          ${imgHtml}
+        </div>`;
+      }
+      // Standard card: image on top, text below
+      return `<div class="event-card event-card--standard">
+        ${imgHtml}
+        ${body}
       </div>`;
     }).join('');
     section.style.display = '';
