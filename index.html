@@ -956,6 +956,8 @@
     flex-shrink: 0;
   }
   .explore-img-wrap::after { display: none !important; }
+  /* Left cards have body first in DOM — force image to render first */
+  .explore-card--left .explore-img-wrap { order: -1; }
   .explore-body {
     display: flex !important;
     width: 100% !important;
