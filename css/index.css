@@ -547,6 +547,9 @@
     .hero-ctas { flex-direction: column; align-items: center; }
     .btn-call, .btn-order { width: 100%; max-width: 320px; justify-content: center; }
     .services-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
+    /* Banner buttons: stack text above, button full width */
+    .service-banner-inner { flex-wrap: wrap; }
+    .banner-menu-btn { width: 100%; margin-left: 0; justify-content: center; }
   }
 
 /* ══════════════════════════════════════════════════════════════
