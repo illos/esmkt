@@ -42,7 +42,7 @@ FILE STRUCTURE
                           global button styles, responsive breakpoints
     index.css             Homepage-specific styles (hero, explore section,
                           hours cards, events grid, service banners, footer)
-    order.css             Snackbar order/menu page styles (menu cards,
+    menu.css              Snackbar order/menu page styles (menu cards,
                           cart, checkout form, receipt, toast, floating cart)
     admin.css             Admin panel styles (tabs, tables, form cards,
                           image upload areas, drag handles, modals)
@@ -57,7 +57,7 @@ FILE STRUCTURE
                           renderHoursCards(), updateStoreStatus(),
                           renderEvents(), scroll-driven trail animation,
                           hero bg photo patching.
-    order.js              Snackbar order page: menu loading, hours check
+    menu.js               Snackbar order page: menu loading, hours check
                           (checkSnackbarHours), cart, tax calculation,
                           order submission, receipt building, print menu.
     admin.js              Admin panel: auth, all tab logic (settings, hours,
@@ -307,8 +307,8 @@ API ENDPOINTS (Cloudflare Pages Functions)
     Returns: { items: [...], categories: [...] }
 
   POST /api/menu                   (auth)  — create item
-    Body:    { item: { name, price, description, photo, addons, defaultAddons,
-               options }, categoryId }
+    Body:    { item: { name, price, description, photo, options, defaultOptions,
+               choices }, categoryId }
     Returns: { item, categories }
 
   PUT /api/menu                    (auth)  — update item
@@ -361,7 +361,7 @@ PRINT SERVER  (separate project: print-server/)
 --------------------------------------------------------------------------------
 
 Purpose:
-  Runs on the snackbar/register PC. Receives the order object that order.js
+  Runs on the snackbar/register PC. Receives the order object that menu.js
   builds after a customer submits a checkout, formats it as a plain-text
   40-column receipt, and sends it to the system default printer.
 
@@ -370,7 +370,7 @@ Location:
   Start it with "npm start" on the snackbar PC and keep the window open.
 
 Integration point:
-  In js/order.js, inside the submitOrder() function, there is a commented-out
+  In js/menu.js, inside the submitOrder() function, there is a commented-out
   fetch block:
 
     // fetch('http://localhost:3000/print', {
@@ -589,7 +589,7 @@ STEP 7 — (Optional) Set up print server on snackbar PC
   cd print-server
   npm install
   npm start
-  (Then uncomment the fetch block in js/order.js — see print-server/README.md)
+  (Then uncomment the fetch block in js/menu.js — see print-server/README.md)
 
 CLOUDFLARE FUNCTION ROUTING
   Pages Functions map automatically from their file path:

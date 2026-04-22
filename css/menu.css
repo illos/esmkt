@@ -324,15 +324,15 @@
     font-style: italic;
   }
 
-  /* Add-ons — collapsible dropdown */
-  .addon-dropdown {
+  /* Options — collapsible dropdown */
+  .option-dropdown {
     margin-top: 10px;
     border: 1px solid var(--charcoal-border);
     border-radius: 2px;
     overflow: hidden;
   }
-  .addon-dropdown[open] .addon-arrow { transform: rotate(180deg); }
-  .addon-summary {
+  .option-dropdown[open] .option-arrow { transform: rotate(180deg); }
+  .option-summary {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -347,14 +347,14 @@
     list-style: none;
     user-select: none;
   }
-  .addon-summary::-webkit-details-marker { display: none; }
-  .addon-summary:hover { color: var(--cream); }
-  .addon-arrow {
+  .option-summary::-webkit-details-marker { display: none; }
+  .option-summary:hover { color: var(--cream); }
+  .option-arrow {
     font-size: 12px;
     transition: transform 0.2s;
     color: var(--gold-dark);
   }
-  .addons-list {
+  .options-list {
     display: flex;
     flex-direction: column;
     gap: 0;
@@ -363,11 +363,11 @@
     margin: 0;
     background: rgba(0,0,0,0.12);
   }
-  .addon-item {
+  .option-item {
     border-radius: 0;
     transition: background 0.15s;
   }
-  .addon-item label {
+  .option-item label {
     display: flex;
     align-items: center;
     gap: 9px;
@@ -377,11 +377,11 @@
     color: var(--cream-dim);
     user-select: none;
   }
-  .addon-item:hover { background: rgba(255,255,255,0.04); }
-  .addon-item:hover label { color: var(--cream); }
-  .addon-item input[type="checkbox"] { width: 13px; height: 13px; accent-color: var(--gold); cursor: pointer; flex-shrink: 0; }
-  .addon-item.checked label { color: var(--gold-light); }
-  .addon-item.checked { background: rgba(201,169,110,0.06); }
+  .option-item:hover { background: rgba(255,255,255,0.04); }
+  .option-item:hover label { color: var(--cream); }
+  .option-item input[type="checkbox"] { width: 13px; height: 13px; accent-color: var(--gold); cursor: pointer; flex-shrink: 0; }
+  .option-item.checked label { color: var(--gold-light); }
+  .option-item.checked { background: rgba(201,169,110,0.06); }
 
   .btn-add {
     margin-top: auto;
@@ -854,19 +854,19 @@
     align-self: stretch;
   }
 
-  /* ─── ITEM OPTIONS ─── */
-  .item-options {
+  /* ─── ITEM CHOICES ─── */
+  .item-choices {
     display: flex;
     flex-direction: column;
     gap: 8px;
     margin: 10px 0 4px;
   }
-  .option-select-group {
+  .choice-select-group {
     display: flex;
     align-items: center;
     gap: 8px;
   }
-  .option-select-label {
+  .choice-select-label {
     font-family: 'Oswald', sans-serif;
     font-size: 11px;
     letter-spacing: 2px;
@@ -875,7 +875,7 @@
     white-space: nowrap;
     min-width: 60px;
   }
-  .option-select {
+  .choice-select {
     flex: 1;
     background: var(--charcoal-mid);
     border: 1px solid var(--charcoal-border);
@@ -887,10 +887,10 @@
     outline: none;
     cursor: pointer;
   }
-  .option-select:focus { border-color: var(--gold-dark); }
+  .choice-select:focus { border-color: var(--gold-dark); }
 
-  /* ─── READ-ONLY ADD-ONS (shown when ordering is closed) ─── */
-  .addons-display {
+  /* ─── READ-ONLY OPTIONS (shown when ordering is closed) ─── */
+  .options-display {
     display: flex;
     flex-direction: column;
     gap: 4px;
@@ -899,7 +899,7 @@
     border-radius: 2px;
     background: rgba(255,255,255,0.02);
   }
-  .addons-display-label {
+  .options-display-label {
     font-family: 'Oswald', sans-serif;
     font-size: 9px;
     letter-spacing: 3px;
@@ -907,25 +907,25 @@
     color: var(--gold-dark);
     opacity: 0.8;
   }
-  .addons-display-items {
+  .options-display-items {
     font-size: 12px;
     color: var(--cream-dim);
     line-height: 1.55;
   }
 
-  /* ─── READ-ONLY OPTIONS (shown when ordering is closed) ─── */
-  .options-display {
+  /* ─── READ-ONLY CHOICES (shown when ordering is closed) ─── */
+  .choices-display {
     display: flex;
     flex-direction: column;
     gap: 10px;
     margin: 4px 0;
   }
-  .option-display-group {
+  .choice-display-group {
     display: flex;
     flex-direction: column;
     gap: 4px;
   }
-  .option-display-name {
+  .choice-display-name {
     font-family: 'Oswald', sans-serif;
     font-size: 9px;
     letter-spacing: 3px;
@@ -933,14 +933,14 @@
     color: var(--gold-dark);
     opacity: 0.8;
   }
-  .option-display-list {
+  .choice-display-list {
     margin: 0;
     padding-left: 18px;
     display: flex;
     flex-direction: column;
     gap: 2px;
   }
-  .option-display-list li {
+  .choice-display-list li {
     font-size: 12px;
     color: var(--cream-dim);
     line-height: 1.5;

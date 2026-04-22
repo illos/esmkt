@@ -215,7 +215,6 @@
     min-height: 100vh;
     position: relative;
     overflow-x: hidden;
-    font-size: 1.2em;
   }
 
   body::before {

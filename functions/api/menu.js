@@ -30,14 +30,14 @@ const SEED = {
     { id: 0, name: 'Uncategorized',   itemIds: [],            photo: null, description: '' },
   ],
   items: [
-    { id:1, name:'Classic Snackbar Sub',   price:9.50,  photo:null, description:'Stacked high on a fresh hoagie roll with your choice of meats, crisp lettuce, tomato, and our house mustard.', addons:['Avocado +$1','Bacon +$1.50','Extra Cheese +$0.75','Jalapeños +$0.50','Double Meat +$2'], defaultAddons:[], options:[] },
-    { id:2, name:'BLT on Sourdough',   price:8.00,  photo:null, description:'Crispy applewood bacon, heirloom tomato, and romaine on thick-cut grilled sourdough.', addons:['Avocado +$1','Fried Egg +$1','Extra Bacon +$1.50','Hot Sauce +$0'], defaultAddons:[], options:[] },
-    { id:3, name:'Green Chile Burger', price:11.00, photo:null, description:'1/3 lb hand-formed patty smothered in roasted Hatch green chile and pepper jack cheese.', addons:['Extra Patty +$3','Bacon +$1.50','Mushrooms +$0.75','Caramelized Onions +$0.75','Extra Chile +$0.50'], defaultAddons:[], options:[] },
-    { id:4, name:'Breakfast Burrito',  price:8.50,  photo:null, description:'Scrambled eggs, potato, cheese, and salsa wrapped in a grilled flour tortilla. Fuel for the trail.', addons:['Bacon +$1.50','Sausage +$1.50','Avocado +$1','Extra Salsa +$0','Green Chile +$0.75'], defaultAddons:[], options:[] },
-    { id:5, name:'Turkey & Swiss',     price:9.00,  photo:null, description:'Sliced turkey breast, Swiss cheese, honey mustard, and crunchy pickles on a toasted roll.', addons:['Avocado +$1','Bacon +$1.50','Extra Turkey +$2','Sprouts +$0.50'], defaultAddons:[], options:[] },
-    { id:6, name:'Hot Dog',            price:4.50,  photo:null, description:'All-beef frank on a steamed bun. Simple, honest, good.', addons:['Chili +$1','Cheese Sauce +$0.75','Jalapeños +$0.50','Mustard & Relish +$0','Onions +$0'], defaultAddons:[], options:[] },
-    { id:7, name:'Grilled Cheese',     price:6.50,  photo:null, description:'Two kinds of melted cheese on buttered sourdough, griddled golden brown.', addons:['Tomato +$0.50','Bacon +$1.50','Jalapeños +$0.50'], defaultAddons:[], options:[] },
-    { id:8, name:'Green Salad',        price:7.00,  photo:null, description:'Fresh greens, cucumber, cherry tomatoes, and your choice of dressing.', addons:['Grilled Chicken +$3','Avocado +$1','Extra Dressing +$0','Croutons +$0.50'], defaultAddons:[], options:[] },
+    { id:1, name:'Classic Snackbar Sub',   price:9.50,  photo:null, description:'Stacked high on a fresh hoagie roll with your choice of meats, crisp lettuce, tomato, and our house mustard.', options:['Avocado +$1','Bacon +$1.50','Extra Cheese +$0.75','Jalapeños +$0.50','Double Meat +$2'], defaultOptions:[], choices:[] },
+    { id:2, name:'BLT on Sourdough',   price:8.00,  photo:null, description:'Crispy applewood bacon, heirloom tomato, and romaine on thick-cut grilled sourdough.', options:['Avocado +$1','Fried Egg +$1','Extra Bacon +$1.50','Hot Sauce +$0'], defaultOptions:[], choices:[] },
+    { id:3, name:'Green Chile Burger', price:11.00, photo:null, description:'1/3 lb hand-formed patty smothered in roasted Hatch green chile and pepper jack cheese.', options:['Extra Patty +$3','Bacon +$1.50','Mushrooms +$0.75','Caramelized Onions +$0.75','Extra Chile +$0.50'], defaultOptions:[], choices:[] },
+    { id:4, name:'Breakfast Burrito',  price:8.50,  photo:null, description:'Scrambled eggs, potato, cheese, and salsa wrapped in a grilled flour tortilla. Fuel for the trail.', options:['Bacon +$1.50','Sausage +$1.50','Avocado +$1','Extra Salsa +$0','Green Chile +$0.75'], defaultOptions:[], choices:[] },
+    { id:5, name:'Turkey & Swiss',     price:9.00,  photo:null, description:'Sliced turkey breast, Swiss cheese, honey mustard, and crunchy pickles on a toasted roll.', options:['Avocado +$1','Bacon +$1.50','Extra Turkey +$2','Sprouts +$0.50'], defaultOptions:[], choices:[] },
+    { id:6, name:'Hot Dog',            price:4.50,  photo:null, description:'All-beef frank on a steamed bun. Simple, honest, good.', options:['Chili +$1','Cheese Sauce +$0.75','Jalapeños +$0.50','Mustard & Relish +$0','Onions +$0'], defaultOptions:[], choices:[] },
+    { id:7, name:'Grilled Cheese',     price:6.50,  photo:null, description:'Two kinds of melted cheese on buttered sourdough, griddled golden brown.', options:['Tomato +$0.50','Bacon +$1.50','Jalapeños +$0.50'], defaultOptions:[], choices:[] },
+    { id:8, name:'Green Salad',        price:7.00,  photo:null, description:'Fresh greens, cucumber, cherry tomatoes, and your choice of dressing.', options:['Grilled Chicken +$3','Avocado +$1','Extra Dressing +$0','Croutons +$0.50'], defaultOptions:[], choices:[] },
   ],
 };
 
@@ -58,11 +58,11 @@ export async function onRequestPost({ request, env }) {
   const { item, categoryId } = await request.json();
   const data = await getMenuData(env);
 
-  item.id           = data.nextId++;
-  item.photo        = item.photo        || null;
-  item.addons       = item.addons       || [];
-  item.defaultAddons = item.defaultAddons || [];
-  item.options      = item.options      || [];
+  item.id             = data.nextId++;
+  item.photo          = item.photo          || null;
+  item.options        = item.options        || [];
+  item.defaultOptions = item.defaultOptions || [];
+  item.choices        = item.choices        || [];
   data.items.push(item);
 
   // Add item to the requested category, or Uncategorized
@@ -168,8 +168,8 @@ async function getMenuData(env) {
 
   // ── Ensure items have new fields ──────────────────────────────────────────
   data.items = data.items.map(item => ({
-    defaultAddons: [],
-    options: [],
+    defaultOptions: [],
+    choices: [],
     ...item,
   }));
 

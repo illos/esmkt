@@ -211,7 +211,7 @@ function listPrinters(callback) {
 /**
  * Format an order object as plain-text receipt.
  * 40-character width fits standard 80 mm thermal paper.
- * @param {Object} order  The order object from menu.html / order.js.
+ * @param {Object} order  The order object from menu.html / menu.js.
  * @returns {string}      Formatted receipt text ready to print.
  */
 function formatReceipt(order) {
@@ -262,12 +262,12 @@ function formatReceipt(order) {
   // Line items
   order.items.forEach(item => {
     r += row(truncate(item.name, W - 8), `$${Number(item.base_price || 0).toFixed(2)}`) + '\n';
-    // Options (choice selections — no price change)
-    (item.options || []).forEach(opt => {
+    // Choices (dropdown selections — no price change)
+    (item.choices || []).forEach(opt => {
       r += `  > ${opt.name}: ${opt.choice}\n`;
     });
-    // Add-ons (may affect price)
-    (item.addons || []).forEach(addon => {
+    // Options (checkboxes — may affect price)
+    (item.options || []).forEach(addon => {
       const addonName  = addon.replace(/\s*\+\$[\d.]+$/, '');
       const addonPrice = parseAddonPrice(addon);
       if (addonPrice > 0) {

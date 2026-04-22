@@ -103,7 +103,7 @@
   .hero-divider span { color: var(--gold); font-size: 13px; }
 
   .hero-desc {
-    font-size: clamp(14px, 2vw, 17px);
+    font-size: clamp(16px, 2vw, 17px);
     color: var(--cream-dim);
     line-height: 1.75;
     max-width: 500px;
@@ -717,7 +717,7 @@
 }
 
 .hv2-desc {
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1.75;
   color: var(--cream-dim);
   max-width: 360px;

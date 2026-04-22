@@ -475,16 +475,16 @@ function openForm(itemId, defaultCatId) {
     note.textContent = '';
   }
 
-  // Add-ons (with default checkbox state)
+  // Options checkbox editor (with default checkbox state)
   const editor = document.getElementById('addonsEditor');
   editor.innerHTML = '';
-  const defaultSet = new Set(editingItem?.defaultAddons || []);
-  (editingItem?.addons || []).forEach(a => addAddonRow(a, defaultSet.has(a)));
+  const defaultSet = new Set(editingItem?.defaultOptions || []);
+  (editingItem?.options || []).forEach(a => addAddonRow(a, defaultSet.has(a)));
 
-  // Options
+  // Choices
   const optEditor = document.getElementById('optionsEditor');
   optEditor.innerHTML = '';
-  (editingItem?.options || []).forEach(o => addOptionBlock(o));
+  (editingItem?.choices || []).forEach(o => addOptionBlock(o));
 
   showPage('pageForm');
 }
@@ -550,18 +550,18 @@ function addAddonRow(existingValue, isDefault) {
 
 function collectAddons() {
   const rows = document.querySelectorAll('#addonsEditor .addon-row');
-  const addons = [], defaultAddons = [];
+  const options = [], defaultOptions = [];
   rows.forEach(row => {
     const name      = row.querySelector('[data-addon-name]').value.trim();
     const price     = parseFloat(row.querySelector('[data-addon-price]').value) || 0;
     const isDef     = row.querySelector('[data-addon-is-default]').checked;
     if (name) {
       const str = `${name} +$${price % 1 === 0 ? price : price.toFixed(2)}`;
-      addons.push(str);
-      if (isDef) defaultAddons.push(str);
+      options.push(str);
+      if (isDef) defaultOptions.push(str);
     }
   });
-  return { addons, defaultAddons };
+  return { options, defaultOptions };
 }
 
 // ─── OPTIONS EDITOR ──────────────────────────────────────────────────────────
@@ -601,14 +601,14 @@ function addChoiceRow(container, value) {
 
 function collectOptions() {
   const blocks  = document.querySelectorAll('#optionsEditor .option-block');
-  const options = [];
+  const choices = [];
   blocks.forEach(block => {
     const name    = block.querySelector('[data-option-name]').value.trim();
-    const choices = [...block.querySelectorAll('[data-choice]')]
+    const opts    = [...block.querySelectorAll('[data-choice]')]
       .map(i => i.value.trim()).filter(Boolean);
-    if (name && choices.length) options.push({ name, choices });
+    if (name && opts.length) choices.push({ name, choices: opts });
   });
-  return options;
+  return choices;
 }
 
 // ─── SAVE ─────────────────────────────────────────────────────────────────────
@@ -640,13 +640,13 @@ async function saveItem() {
     }
 
     // 2. Build item object
-    const { addons, defaultAddons } = collectAddons();
+    const { options, defaultOptions } = collectAddons();
     const categoryId = parseInt(document.getElementById('fCategory').value) || 0;
     const item = {
       name, price, description: desc,
       photo: photoFilename,
-      addons, defaultAddons,
-      options: collectOptions(),
+      options, defaultOptions,
+      choices: collectOptions(),
     };
     if (editingItem) item.id = editingItem.id;
 

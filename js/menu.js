@@ -1,21 +1,21 @@
 // ─── MENU DATA ────────────────────────────────────────────────────────────────
 // Fallback used only if the API is unreachable
 const MENU_FALLBACK = [
-  { id:1, name:'Classic Snackbar Sub',   price:9.50,  photo:null, description:'Stacked high on a fresh hoagie roll with your choice of meats, crisp lettuce, tomato, and our house mustard.', addons:['Avocado +$1','Bacon +$1.50','Extra Cheese +$0.75','Jalapeños +$0.50','Double Meat +$2'] },
-  { id:2, name:'BLT on Sourdough',   price:8.00,  photo:null, description:'Crispy applewood bacon, heirloom tomato, and romaine on thick-cut grilled sourdough.', addons:['Avocado +$1','Fried Egg +$1','Extra Bacon +$1.50','Hot Sauce +$0'] },
-  { id:3, name:'Green Chile Burger', price:11.00, photo:null, description:'1/3 lb hand-formed patty smothered in roasted Hatch green chile and pepper jack cheese.', addons:['Extra Patty +$3','Bacon +$1.50','Mushrooms +$0.75','Caramelized Onions +$0.75','Extra Chile +$0.50'] },
-  { id:4, name:'Breakfast Burrito',  price:8.50,  photo:null, description:'Scrambled eggs, potato, cheese, and salsa wrapped in a grilled flour tortilla. Fuel for the trail.', addons:['Bacon +$1.50','Sausage +$1.50','Avocado +$1','Extra Salsa +$0','Green Chile +$0.75'] },
-  { id:5, name:'Turkey & Swiss',     price:9.00,  photo:null, description:'Sliced turkey breast, Swiss cheese, honey mustard, and crunchy pickles on a toasted roll.', addons:['Avocado +$1','Bacon +$1.50','Extra Turkey +$2','Sprouts +$0.50'] },
-  { id:6, name:'Hot Dog',            price:4.50,  photo:null, description:'All-beef frank on a steamed bun. Simple, honest, good.', addons:['Chili +$1','Cheese Sauce +$0.75','Jalapeños +$0.50','Mustard & Relish +$0','Onions +$0'] },
-  { id:7, name:'Grilled Cheese',     price:6.50,  photo:null, description:'Two kinds of melted cheese on buttered sourdough, griddled golden brown.', addons:['Tomato +$0.50','Bacon +$1.50','Jalapeños +$0.50'] },
-  { id:8, name:'Green Salad',        price:7.00,  photo:null, description:'Fresh greens, cucumber, cherry tomatoes, and your choice of dressing.', addons:['Grilled Chicken +$3','Avocado +$1','Extra Dressing +$0','Croutons +$0.50'] },
+  { id:1, name:'Classic Snackbar Sub',   price:9.50,  photo:null, description:'Stacked high on a fresh hoagie roll with your choice of meats, crisp lettuce, tomato, and our house mustard.', options:['Avocado +$1','Bacon +$1.50','Extra Cheese +$0.75','Jalapeños +$0.50','Double Meat +$2'] },
+  { id:2, name:'BLT on Sourdough',   price:8.00,  photo:null, description:'Crispy applewood bacon, heirloom tomato, and romaine on thick-cut grilled sourdough.', options:['Avocado +$1','Fried Egg +$1','Extra Bacon +$1.50','Hot Sauce +$0'] },
+  { id:3, name:'Green Chile Burger', price:11.00, photo:null, description:'1/3 lb hand-formed patty smothered in roasted Hatch green chile and pepper jack cheese.', options:['Extra Patty +$3','Bacon +$1.50','Mushrooms +$0.75','Caramelized Onions +$0.75','Extra Chile +$0.50'] },
+  { id:4, name:'Breakfast Burrito',  price:8.50,  photo:null, description:'Scrambled eggs, potato, cheese, and salsa wrapped in a grilled flour tortilla. Fuel for the trail.', options:['Bacon +$1.50','Sausage +$1.50','Avocado +$1','Extra Salsa +$0','Green Chile +$0.75'] },
+  { id:5, name:'Turkey & Swiss',     price:9.00,  photo:null, description:'Sliced turkey breast, Swiss cheese, honey mustard, and crunchy pickles on a toasted roll.', options:['Avocado +$1','Bacon +$1.50','Extra Turkey +$2','Sprouts +$0.50'] },
+  { id:6, name:'Hot Dog',            price:4.50,  photo:null, description:'All-beef frank on a steamed bun. Simple, honest, good.', options:['Chili +$1','Cheese Sauce +$0.75','Jalapeños +$0.50','Mustard & Relish +$0','Onions +$0'] },
+  { id:7, name:'Grilled Cheese',     price:6.50,  photo:null, description:'Two kinds of melted cheese on buttered sourdough, griddled golden brown.', options:['Tomato +$0.50','Bacon +$1.50','Jalapeños +$0.50'] },
+  { id:8, name:'Green Salad',        price:7.00,  photo:null, description:'Fresh greens, cucumber, cherry tomatoes, and your choice of dressing.', options:['Grilled Chicken +$3','Avocado +$1','Extra Dressing +$0','Croutons +$0.50'] },
 ];
 
 let MENU = [];
 let MENU_CATEGORIES = [];
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
-function parseAddonPrice(label) {
+function parseOptionPrice(label) {
   const m = String(label).match(/\+\$(\d+(?:\.\d+)?)/);
   return m ? parseFloat(m[1]) : 0;
 }
@@ -245,39 +245,39 @@ function populatePickupTimes() {
 
 // ─── RENDER MENU ─────────────────────────────────────────────────────────────
 function renderItemCard(item) {
-  const defaultSet = new Set(item.defaultAddons || []);
+  const defaultSet = new Set(item.defaultOptions || []);
 
-  // Add-ons: interactive checkboxes when ordering is open; inline list when closed
-  const addonsHTML = item.addons?.length ? (
+  // Options (checkboxes): interactive checkboxes when ordering is open; inline list when closed
+  const addonsHTML = item.options?.length ? (
     orderingOpen
-      ? `<details class="addon-dropdown">
-          <summary class="addon-summary">Add-ons <span class="addon-arrow">&#9662;</span></summary>
-          <ul class="addons-list">${item.addons.map(a => {
+      ? `<details class="option-dropdown">
+          <summary class="option-summary">Options <span class="option-arrow">&#9662;</span></summary>
+          <ul class="options-list">${item.options.map(a => {
             const isDefault = defaultSet.has(a);
-            return `<li class="addon-item${isDefault?' checked':''}" data-default="${isDefault}"><label><input type="checkbox"${isDefault?' checked':''} onchange="syncAddon(this)"/><span>${a}</span></label></li>`;
+            return `<li class="option-item${isDefault?' checked':''}" data-default="${isDefault}"><label><input type="checkbox"${isDefault?' checked':''} onchange="syncOption(this)"/><span>${a}</span></label></li>`;
           }).join('')}</ul>
         </details>`
-      : `<div class="addons-display">
-          <span class="addons-display-label">Add-ons</span>
-          <span class="addons-display-items">${item.addons.join(' &middot; ')}</span>
+      : `<div class="options-display">
+          <span class="options-display-label">Options</span>
+          <span class="options-display-items">${item.options.join(' &middot; ')}</span>
         </div>`
   ) : '';
 
-  // Options: select dropdowns when ordering is open; ordered list per option when closed
-  const optionsHTML = item.options?.length ? (
+  // Choices: select dropdowns when ordering is open; ordered list per choice when closed
+  const optionsHTML = item.choices?.length ? (
     orderingOpen
-      ? `<div class="item-options">${item.options.map(opt => `
-          <div class="option-select-group">
-            <label class="option-select-label">${opt.name}</label>
-            <select class="option-select" data-option-name="${opt.name}">
+      ? `<div class="item-choices">${item.choices.map(opt => `
+          <div class="choice-select-group">
+            <label class="choice-select-label">${opt.name}</label>
+            <select class="choice-select" data-option-name="${opt.name}">
               ${opt.choices.map(c => `<option value="${c}">${c}</option>`).join('')}
             </select>
           </div>`).join('')}
         </div>`
-      : `<div class="options-display">${item.options.map(opt => `
-          <div class="option-display-group">
-            <span class="option-display-name">${opt.name}</span>
-            <ol class="option-display-list">${opt.choices.map(c => `<li>${c}</li>`).join('')}</ol>
+      : `<div class="choices-display">${item.choices.map(opt => `
+          <div class="choice-display-group">
+            <span class="choice-display-name">${opt.name}</span>
+            <ol class="choice-display-list">${opt.choices.map(c => `<li>${c}</li>`).join('')}</ol>
           </div>`).join('')}
         </div>`
   ) : '';
@@ -379,24 +379,24 @@ function renderMenu() {
   }
 }
 
-// ─── ADDONS ──────────────────────────────────────────────────────────────────
-function syncAddon(cb) {
-  cb.closest('.addon-item').classList.toggle('checked', cb.checked);
+// ─── OPTIONS ─────────────────────────────────────────────────────────────────
+function syncOption(cb) {
+  cb.closest('.option-item').classList.toggle('checked', cb.checked);
 }
 
 // ─── CART ────────────────────────────────────────────────────────────────────
 function addToCart(itemId) {
-  const item   = MENU.find(m => m.id === itemId);
-  const card   = document.getElementById(`card-${itemId}`);
-  const addons = [...card.querySelectorAll('.addon-item.checked span')]
+  const item    = MENU.find(m => m.id === itemId);
+  const card    = document.getElementById(`card-${itemId}`);
+  const options = [...card.querySelectorAll('.option-item.checked span')]
     .map(s => s.textContent)
-    .map(label => ({ label, price: parseAddonPrice(label) }));
+    .map(label => ({ label, price: parseOptionPrice(label) }));
 
-  // Collect selected options (name: choice pairs, no price effect)
-  const options = [...card.querySelectorAll('.option-select')]
+  // Collect selected choices (name: choice pairs, no price effect)
+  const choices = [...card.querySelectorAll('.choice-select')]
     .map(sel => ({ name: sel.dataset.optionName, choice: sel.value }));
 
-  cart.push({ item, addons, options, cartId: Date.now() + Math.random() });
+  cart.push({ item, options, choices, cartId: Date.now() + Math.random() });
   showToast(`${item.name} added to order`);
   renderOrder();
   document.getElementById('orderPanel').classList.add('visible');
@@ -407,8 +407,8 @@ function addToCart(itemId) {
   btn.classList.add('added');
   setTimeout(() => { btn.textContent = '+'; btn.classList.remove('added'); }, 1500);
 
-  // Reset addons to their default state
-  card.querySelectorAll('.addon-item').forEach(el => {
+  // Reset options to their default state
+  card.querySelectorAll('.option-item').forEach(el => {
     const isDef = el.dataset.default === 'true';
     el.classList.toggle('checked', isDef);
     const cb = el.querySelector('input[type="checkbox"]');
@@ -447,15 +447,15 @@ function renderOrder() {
   }
 
   list.innerHTML = cart.map(c => {
-    const addonsTotal = c.addons.reduce((s, a) => s + (a.price || 0), 0);
-    const lineTotal   = c.item.price + addonsTotal;
-    const addonsText  = c.addons.length
-      ? `<div class="order-addons">${c.addons.map(a => a.label).join(', ')}</div>` : '';
-    const optionsText = c.options?.length
-      ? `<div class="order-addons">${c.options.map(o => `${o.name}: ${o.choice}`).join(' &middot; ')}</div>` : '';
+    const optionsTotal = c.options.reduce((s, a) => s + (a.price || 0), 0);
+    const lineTotal    = c.item.price + optionsTotal;
+    const optionsText  = c.options.length
+      ? `<div class="order-addons">${c.options.map(a => a.label).join(', ')}</div>` : '';
+    const choicesText  = c.choices?.length
+      ? `<div class="order-addons">${c.choices.map(o => `${o.name}: ${o.choice}`).join(' &middot; ')}</div>` : '';
     return `<li class="order-item">
       <div class="order-item-info">
-        <div class="order-item-name">${c.item.name}</div>${optionsText}${addonsText}
+        <div class="order-item-name">${c.item.name}</div>${choicesText}${optionsText}
       </div>
       <span class="order-item-price">${fmt(lineTotal)}</span>
       <button class="btn-remove-item" onclick="removeFromCart(${c.cartId})">&#215;</button>
@@ -473,7 +473,7 @@ function renderOrder() {
 }
 
 function calcSubtotal() {
-  return cart.reduce((s, c) => s + c.item.price + c.addons.reduce((a, x) => a + (x.price || 0), 0), 0);
+  return cart.reduce((s, c) => s + c.item.price + c.options.reduce((a, x) => a + (x.price || 0), 0), 0);
 }
 
 function scrollToOrder() {
@@ -506,12 +506,12 @@ function submitOrder() {
     pickup_time:    pickup,
     notes:          notes,
     items: cart.map(c => ({
-      id:           c.item.id,
-      name:         c.item.name,
-      base_price:   c.item.price,
-      options:      c.options || [],
-      addons:       c.addons.map(a => a.label),
-      addons_total: c.addons.reduce((s, a) => s + (a.price || 0), 0),
+      id:            c.item.id,
+      name:          c.item.name,
+      base_price:    c.item.price,
+      choices:       c.choices || [],
+      options:       c.options.map(a => a.label),
+      options_total: c.options.reduce((s, a) => s + (a.price || 0), 0),
     })),
     subtotal, tax, total, taxRate: snackbarTaxRate,
   };
@@ -556,14 +556,14 @@ function buildReceipt(order) {
   // ── Item lines ──
   order.items.forEach(it => {
     html += `<div class="receipt-row item"><span>${it.name}</span><span>${fmt(it.base_price)}</span></div>`;
-    (it.options || []).forEach(o => {
+    (it.choices || []).forEach(o => {
       html += `<div class="receipt-row addon"><span style="color:var(--gold-light)">${o.name}: ${o.choice}</span></div>`;
     });
-    it.addons.forEach(a => {
+    it.options.forEach(a => {
       html += `<div class="receipt-row addon"><span>${a}</span></div>`;
     });
-    if (it.addons_total > 0) {
-      html += `<div class="receipt-row addon"><span style="margin-left:auto">Add-ons</span><span>${fmt(it.addons_total)}</span></div>`;
+    if (it.options_total > 0) {
+      html += `<div class="receipt-row addon"><span style="margin-left:auto">Options</span><span>${fmt(it.options_total)}</span></div>`;
     }
   });
 
@@ -595,10 +595,10 @@ function printMenu() {
   if (!win) { showToast('Please allow pop-ups to print the menu.'); return; }
 
   function piCard(item) {
-    const addonsText = item.addons?.length
-      ? `<div class="pi-addons"><span class="pi-label">Add-ons:</span> ${item.addons.join(' · ')}</div>` : '';
-    const optsText = item.options?.length
-      ? item.options.map(o => `<div class="pi-addons"><span class="pi-label">${o.name}:</span> ${o.choices.join(', ')}</div>`).join('') : '';
+    const addonsText = item.options?.length
+      ? `<div class="pi-addons"><span class="pi-label">Options:</span> ${item.options.join(' · ')}</div>` : '';
+    const optsText = item.choices?.length
+      ? item.choices.map(o => `<div class="pi-addons"><span class="pi-label">${o.name}:</span> ${o.choices.join(', ')}</div>`).join('') : '';
     const descText = item.description ? `<div class="pi-desc">${item.description}</div>` : '';
     const bodyContent = `
       <div class="pi-name-price">
