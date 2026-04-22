@@ -58,7 +58,7 @@ async function submitContact(e) {
     return;
   }
 
-  setError('');
+  showError('');
   btn.disabled    = true;
   btn.textContent = 'Sending\u2026';
 
