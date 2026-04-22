@@ -841,23 +841,12 @@
   flex-shrink: 0;
 }
 
-/* ── Crossfade slideshow ── */
-.explore-slideshow {
-  position: absolute;
-  inset: 0;
-}
-
-.explore-slide-img {
-  position: absolute;
-  inset: 0;
+.explore-hero-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  opacity: 0;
-  transition: opacity 1.4s ease-in-out;
+  display: block;
 }
-
-.explore-slide-img.is-slide-active { opacity: 1; }
 
 .explore-hero-overlay {
   position: absolute;
@@ -1285,17 +1274,11 @@
         <div class="stop-marker"><div class="stop-dot">1</div></div>
         <div class="explore-card explore-card--hero">
 
-          <!-- Crossfade slideshow -->
+          <!-- Hero image -->
           <div class="explore-hero-wrap">
-            <div class="explore-slideshow" id="flvSlideshow">
-              <img class="explore-slide-img is-slide-active" src="assets/fish-lake-valley-1.webp" alt="Fish Lake Valley" loading="lazy"/>
-              <img class="explore-slide-img" src="assets/fish-lake-valley-3.webp" alt="Fish Lake Valley" loading="lazy"/>
-              <img class="explore-slide-img" src="assets/wildlife.webp" alt="Local wildlife" loading="lazy"/>
-              <img class="explore-slide-img" src="assets/mountains.webp" alt="White Mountains" loading="lazy"/>
-              <img class="explore-slide-img" src="assets/sunset-1.webp" alt="Desert sunset" loading="lazy"/>
-            </div>
+            <img class="explore-hero-img" src="assets/fish-lake-valley-1.webp" alt="Fish Lake Valley" loading="lazy"/>
             <div class="explore-hero-overlay">
-              <div class="explore-tag">Come Explore the High Desert</div>
+              <div class="explore-tag">Come Explore The High Desert</div>
               <h3 class="explore-name explore-name--hero">Welcome to Fish Lake Valley</h3>
             </div>
           </div>
@@ -1313,7 +1296,7 @@
         <div class="stop-marker"><div class="stop-dot">2</div></div>
         <div class="explore-card explore-card--left">
           <div class="explore-body">
-            <div class="explore-tag">Hot Springs &middot; Free</div>
+            <div class="explore-tag">Decompress in these beautiful springs</div>
             <h3 class="explore-name">Fish Lake Valley Hot Springs</h3>
             <p class="explore-desc">One of the Great Basin&rsquo;s best-kept secrets &mdash; free, remote, and gloriously uncrowded. These geothermal pools rise right from the desert floor and offer a long, steaming soak beneath an enormous Nevada sky. Best at sunrise or after dark, when warm water meets cool desert air in a way you won&rsquo;t forget.</p>
           </div>
@@ -1331,7 +1314,7 @@
             <img class="explore-img" src="assets/trail-canyon-resevior.webp" alt="Trail Canyon Reservoir" loading="lazy"/>
           </div>
           <div class="explore-body">
-            <div class="explore-tag">Fishing &middot; Alpine</div>
+            <div class="explore-tag">Fishing with a view</div>
             <h3 class="explore-name">Trail Canyon Reservoir</h3>
             <p class="explore-desc">Wind up into the White Mountains and you&rsquo;ll find this quiet alpine pond tucked among juniper and pinyon pine. Stocked with rainbow trout and ringed by sweeping views of the valley floor below, Trail Canyon Reservoir is a perfect half-day escape from the summer heat &mdash; bring a rod and stay a while.</p>
           </div>
@@ -1343,7 +1326,7 @@
         <div class="stop-marker"><div class="stop-dot">4</div></div>
         <div class="explore-card explore-card--left">
           <div class="explore-body">
-            <div class="explore-tag">Summit &middot; 13,147 ft</div>
+            <div class="explore-tag">Brave the climb</div>
             <h3 class="explore-name">Boundary Peak Trailhead</h3>
             <p class="explore-desc">Nevada&rsquo;s highest point at 13,147 feet, Boundary Peak towers over the valley from the White Mountain crest. The trailhead is just up the road &mdash; fuel up and grab a sandwich before setting out on the state&rsquo;s ultimate summit hike. It&rsquo;s roughly 8 miles round trip with 4,000 feet of gain. The views from the top stretch into four states.</p>
           </div>
@@ -1361,7 +1344,7 @@
             <img class="explore-img" src="assets/bristlecone-pine-forest.webp" alt="Bristlecone Pine Forest" loading="lazy"/>
           </div>
           <div class="explore-body">
-            <div class="explore-tag">Ancient Forest &middot; 5,000+ yrs</div>
+            <div class="explore-tag">"If these trees could talk"</div>
             <h3 class="explore-name">Bristlecone Pine Forest</h3>
             <p class="explore-desc">High in the White Mountains live some of the oldest organisms on Earth. The Ancient Bristlecone Pine Forest holds trees more than 5,000 years old &mdash; gnarled, wind-twisted, and achingly beautiful. They were already ancient when the pyramids were built. Standing among them in the alpine quiet puts the scale of human time in sharp, humbling perspective.</p>
           </div>
@@ -1525,19 +1508,6 @@
   });
 }());
 
-// ─── Fish Lake Valley crossfade slideshow ────────────────────────────────────
-(function () {
-  document.addEventListener('DOMContentLoaded', function () {
-    var slides = document.querySelectorAll('#flvSlideshow .explore-slide-img');
-    if (slides.length < 2) return;
-    var idx = 0;
-    setInterval(function () {
-      slides[idx].classList.remove('is-slide-active');
-      idx = (idx + 1) % slides.length;
-      slides[idx].classList.add('is-slide-active');
-    }, 4800);
-  });
-}());
 
 // Patch applySiteInfo: hero bg now drives an <img> src instead of CSS background
 (function () {
