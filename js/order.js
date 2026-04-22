@@ -246,24 +246,41 @@ function populatePickupTimes() {
 // ─── RENDER MENU ─────────────────────────────────────────────────────────────
 function renderItemCard(item) {
   const defaultSet = new Set(item.defaultAddons || []);
-  const addonsHTML = item.addons?.length ? `
-    <details class="addon-dropdown">
-      <summary class="addon-summary">Add-ons <span class="addon-arrow">&#9662;</span></summary>
-      <ul class="addons-list">${item.addons.map(a => {
-        const isDefault = defaultSet.has(a);
-        return `<li class="addon-item${isDefault?' checked':''}" data-default="${isDefault}"><label><input type="checkbox"${isDefault?' checked':''} onchange="syncAddon(this)"/><span>${a}</span></label></li>`;
-      }).join('')}</ul>
-    </details>` : '';
 
-  const optionsHTML = item.options?.length ? `
-    <div class="item-options">${item.options.map(opt => `
-      <div class="option-select-group">
-        <label class="option-select-label">${opt.name}</label>
-        <select class="option-select" data-option-name="${opt.name}">
-          ${opt.choices.map(c => `<option value="${c}">${c}</option>`).join('')}
-        </select>
-      </div>`).join('')}
-    </div>` : '';
+  // Add-ons: interactive checkboxes when ordering is open; inline list when closed
+  const addonsHTML = item.addons?.length ? (
+    orderingOpen
+      ? `<details class="addon-dropdown">
+          <summary class="addon-summary">Add-ons <span class="addon-arrow">&#9662;</span></summary>
+          <ul class="addons-list">${item.addons.map(a => {
+            const isDefault = defaultSet.has(a);
+            return `<li class="addon-item${isDefault?' checked':''}" data-default="${isDefault}"><label><input type="checkbox"${isDefault?' checked':''} onchange="syncAddon(this)"/><span>${a}</span></label></li>`;
+          }).join('')}</ul>
+        </details>`
+      : `<div class="addons-display">
+          <span class="addons-display-label">Add-ons</span>
+          <span class="addons-display-items">${item.addons.join(' &middot; ')}</span>
+        </div>`
+  ) : '';
+
+  // Options: select dropdowns when ordering is open; ordered list per option when closed
+  const optionsHTML = item.options?.length ? (
+    orderingOpen
+      ? `<div class="item-options">${item.options.map(opt => `
+          <div class="option-select-group">
+            <label class="option-select-label">${opt.name}</label>
+            <select class="option-select" data-option-name="${opt.name}">
+              ${opt.choices.map(c => `<option value="${c}">${c}</option>`).join('')}
+            </select>
+          </div>`).join('')}
+        </div>`
+      : `<div class="options-display">${item.options.map(opt => `
+          <div class="option-display-group">
+            <span class="option-display-name">${opt.name}</span>
+            <ol class="option-display-list">${opt.choices.map(c => `<li>${c}</li>`).join('')}</ol>
+          </div>`).join('')}
+        </div>`
+  ) : '';
 
   const card = document.createElement('div');
   card.id = `card-${item.id}`;

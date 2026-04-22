@@ -889,6 +889,63 @@
   }
   .option-select:focus { border-color: var(--gold-dark); }
 
+  /* ─── READ-ONLY ADD-ONS (shown when ordering is closed) ─── */
+  .addons-display {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 12px;
+    border: 1px solid var(--charcoal-border);
+    border-radius: 2px;
+    background: rgba(255,255,255,0.02);
+  }
+  .addons-display-label {
+    font-family: 'Oswald', sans-serif;
+    font-size: 9px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold-dark);
+    opacity: 0.8;
+  }
+  .addons-display-items {
+    font-size: 12px;
+    color: var(--cream-dim);
+    line-height: 1.55;
+  }
+
+  /* ─── READ-ONLY OPTIONS (shown when ordering is closed) ─── */
+  .options-display {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 4px 0;
+  }
+  .option-display-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .option-display-name {
+    font-family: 'Oswald', sans-serif;
+    font-size: 9px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold-dark);
+    opacity: 0.8;
+  }
+  .option-display-list {
+    margin: 0;
+    padding-left: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .option-display-list li {
+    font-size: 12px;
+    color: var(--cream-dim);
+    line-height: 1.5;
+  }
+
   .menu-loading {
     column-span: all;
     text-align: center;
