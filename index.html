@@ -708,14 +708,15 @@
 /* ── Attraction card — image fills full width, text overlays on top ── */
 .explore-card {
   display: grid;
-  grid-template-columns: 1fr;
-  grid-template-rows: 1fr;
-  min-height: 300px;
+  /* Fixed height so images crop rather than expanding the card */
+  height: 320px;
   border: 1px solid var(--charcoal-border);
   border-radius: 4px;
   overflow: hidden;
   background: var(--charcoal-card);
   position: relative;
+  display: flex;
+  align-items: stretch;
 }
 .explore-card::before {
   content: '';
@@ -729,13 +730,10 @@
 }
 .explore-stop.is-active .explore-card::before { opacity: 1; }
 
-.explore-card--left { /* same grid, body aligns left instead */ }
-
-/* ── Image wrapper — occupies the full grid cell ── */
+/* ── Image wrapper — absolutely fills the full card, crops to fit ── */
 .explore-img-wrap {
-  grid-area: 1 / 1;
-  position: relative;
-  overflow: hidden;
+  position: absolute;
+  inset: 0;
 }
 
 .explore-img {
@@ -745,39 +743,38 @@
   display: block;
 }
 
-/* Right cards (default): gradient fades image into card-bg on the right half */
+/* Right cards (default): fade right ~half of image into card bg */
 .explore-card:not(.explore-card--left):not(.explore-card--hero) .explore-img-wrap::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(to right, transparent 30%, var(--charcoal-card) 72%);
+  background: linear-gradient(to right, transparent 28%, var(--charcoal-card) 70%);
   pointer-events: none;
 }
 
-/* Left cards: gradient fades image into card-bg on the left half */
+/* Left cards: fade left ~half of image into card bg */
 .explore-card--left .explore-img-wrap::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(to left, transparent 30%, var(--charcoal-card) 72%);
+  background: linear-gradient(to left, transparent 28%, var(--charcoal-card) 70%);
   pointer-events: none;
 }
 
-/* ── Body — overlays image in the same grid cell ── */
+/* ── Body — sits above the absolute image, right 50% (default) ── */
 .explore-body {
-  grid-area: 1 / 1;
   position: relative;
   z-index: 1;
   width: 50%;
-  margin-left: auto; /* right-side default */
-  padding: 36px 40px;
+  margin-left: auto; /* push to right side */
+  padding: 32px 36px;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 14px;
+  gap: 12px;
 }
 
-/* Left cards: body on the left side */
+/* Left cards: body sits on the left */
 .explore-card--left .explore-body {
   margin-left: 0;
   margin-right: auto;
@@ -811,16 +808,25 @@
   margin: 0;
 }
 
-/* ── Fish Lake Valley hero card ── */
+/* ── Fish Lake Valley hero card — stacks vertically, not the overlay layout ── */
 .explore-card--hero {
-  grid-template-columns: 1fr !important;
-  min-height: 0;
+  height: auto !important;   /* don't constrain to fixed 320px */
+  display: flex !important;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+/* Hero body: full width, no side-margin */
+.explore-card--hero .explore-body {
+  width: 100% !important;
+  margin: 0 !important;
 }
 
 .explore-hero-wrap {
   position: relative;
-  height: 380px;
+  height: 460px;   /* taller slideshow */
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 /* ── Crossfade slideshow ── */
@@ -882,31 +888,28 @@
   .stop-marker { display: none; }
   .explore-stop { margin-bottom: 24px; }
 
-  /* Stack image above text on mobile */
-  .explore-card,
-  .explore-card--left {
-    display: flex !important;
+  /* Revert to stacked layout: image on top, text below */
+  .explore-card:not(.explore-card--hero) {
+    height: auto !important;
     flex-direction: column;
-    min-height: 0;
   }
   .explore-img-wrap {
-    width: 100%;
-    min-height: 200px;
-    max-height: 240px;
-    order: -1;
+    position: relative !important;
+    height: 200px;
+    flex-shrink: 0;
   }
   .explore-img-wrap::after { display: none !important; }
   .explore-body {
     width: 100% !important;
     margin: 0 !important;
-    padding: 22px 20px;
-    gap: 10px;
+    padding: 20px;
+    gap: 8px;
   }
 
   /* Hero card mobile */
-  .explore-hero-wrap { height: 260px; }
-  .explore-hero-overlay { padding: 24px 22px; gap: 6px; }
-  .explore-body--hero { padding: 22px 22px 24px !important; }
+  .explore-hero-wrap { height: 220px; }
+  .explore-hero-overlay { padding: 20px 20px; gap: 6px; }
+  .explore-body--hero { padding: 20px 20px 24px !important; }
 }
 
 
