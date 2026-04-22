@@ -12,12 +12,30 @@
 
 <!-- Site Nav -->
 <nav class="site-nav">
-  <a href="index.html" class="nav-back">&#8592; Home</a>
+  <div class="nav-left">
+    <a href="index.html" class="nav-back">&#8592; Home</a>
+  </div>
   <a href="index.html" class="nav-logo">
     <img src="assets/emskt-logo-inline.webp" alt="Esmeralda Market" class="nav-logo-img"/>
   </a>
-  <a href="tel:7755723200" class="nav-phone" id="navPhone">775-572-3200</a>
+  <div class="nav-right">
+    <button class="nav-hamburger" id="navHamburger" aria-label="Open menu" onclick="toggleNavOverlay()">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
 </nav>
+
+<!-- Nav Overlay -->
+<div class="nav-overlay" id="navOverlay" aria-hidden="true">
+  <div class="nav-overlay-backdrop" onclick="closeNavOverlay()"></div>
+  <div class="nav-overlay-panel">
+    <div class="nav-overlay-header">
+      <span class="nav-overlay-title">Quick Links</span>
+      <button class="nav-overlay-close" onclick="closeNavOverlay()" aria-label="Close menu">&#215;</button>
+    </div>
+    <nav id="navOverlayLinks"></nav>
+  </div>
+</div>
 
 <div class="page-wrap">
 
@@ -173,6 +191,7 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="js/nav.js"></script>
 <script src="js/order.js"></script>
 </body>
 </html>

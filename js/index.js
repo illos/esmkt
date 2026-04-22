@@ -85,12 +85,11 @@
   // ─── Update store open/closed pill ────────────────────────────────────────
   function updateStoreStatus() {
     const today = todayHours(siteSettings.storeHours);
-    const els   = [
-      document.getElementById('storeStatus'),
-      document.getElementById('storeStatusMobile'),
-    ].filter(Boolean);
+    const el    = document.getElementById('storeStatus');
+    if (!el) return;
     if (!today || today.closed || !today.open) {
-      els.forEach(el => { el.textContent = 'Closed Today'; el.className = el.className.replace(/store-status\S*/g,'').trim() + ' store-status is-closed'; });
+      el.textContent = 'Closed Today';
+      el.className   = 'store-status is-closed';
       return;
     }
     const now     = new Date();
@@ -105,12 +104,42 @@
     } else {
       text = `Opens ${fmt12(today.open)} Tomorrow`; state = 'is-closed';
     }
-    els.forEach(el => {
-      el.textContent = text;
-      // preserve the desktop/mobile modifier class
-      const mod = el.classList.contains('store-status--mobile') ? 'store-status--mobile' : 'store-status--desktop';
-      el.className = `store-status ${mod} ${state}`;
-    });
+    el.textContent = text;
+    el.className   = `store-status ${state}`;
+  }
+
+  // ─── Render quick links (hero panel, nav overlay, footer) ────────────────
+  function renderQuickLinks(links) {
+    const ql = (links && links.length) ? links : DEFAULT_QUICK_LINKS;
+
+    // 1. Hero quick-links panel
+    const heroPanel = document.getElementById('heroLinksPanel');
+    if (heroPanel) {
+      const header = heroPanel.querySelector('.hv2-links-header');
+      heroPanel.querySelectorAll('.hv2-link').forEach(el => el.remove());
+      ql.forEach(lk => {
+        const isExt = lk.url.startsWith('http');
+        const a = document.createElement('a');
+        a.href = lk.url;
+        a.className = 'hv2-link';
+        if (isExt) { a.target = '_blank'; a.rel = 'noopener noreferrer'; }
+        a.innerHTML = `${getNavIcon(lk.icon)}<span>${escNavHtml(lk.text)}</span><span class="hv2-arr">&rarr;</span>`;
+        heroPanel.appendChild(a);
+      });
+    }
+
+    // 2. Nav overlay
+    renderNavOverlayLinks(ql);
+
+    // 3. Footer quick links
+    const footerEl = document.getElementById('footerQuickLinks');
+    if (footerEl) {
+      footerEl.innerHTML = ql.map(lk => {
+        const isExt  = lk.url.startsWith('http');
+        const target = isExt ? ' target="_blank" rel="noopener noreferrer"' : '';
+        return `<a href="${escNavHtml(lk.url)}" class="gf-link"${target}>${getNavIcon(lk.icon)}${escNavHtml(lk.text)}</a>`;
+      }).join('');
+    }
   }
 
   // ─── Render hours cards ───────────────────────────────────────────────────
@@ -150,17 +179,15 @@
       }
     }
     if (s.heroBgPhoto) {
-      const hero = document.querySelector('.hero');
-      if (hero) {
-        // Set inline background to override the CSS static fallback.
-        // The gradient overlay lives on .hero::before so only the image changes here.
-        hero.style.background = `url('/images/${s.heroBgPhoto}') center 40% / cover no-repeat`;
-      }
+      const heroBg = document.getElementById('heroBgImg');
+      if (heroBg) heroBg.style.backgroundImage = `url('/images/${s.heroBgPhoto}')`;
     }
   }
 
   // ─── Load settings + events from API ─────────────────────────────────────
   async function initSite() {
+    // Render quick links with defaults immediately so page isn't blank
+    renderQuickLinks(null);
     try {
       const [settingsRes, eventsRes] = await Promise.all([
         fetch('/api/settings'),
@@ -169,6 +196,7 @@
       if (settingsRes.ok) {
         siteSettings = await settingsRes.json();
         applySiteInfo(siteSettings);
+        renderQuickLinks(siteSettings.quickLinks || null);
       }
       if (eventsRes.ok) {
         const eData = await eventsRes.json();

@@ -1,16 +1,6 @@
   /* ─── NAV ─── */
-  .site-nav {
-    position: relative;
-    z-index: 10;
-    background: rgba(26,26,26,0.97);
-    border-bottom: 1px solid var(--charcoal-border);
-    height: 96px;
-    padding: 0 28px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  /* .nav-logo layout handled in base.css */
+  .site-nav { position: relative; z-index: 10; }
+
   .nav-label {
     font-family: 'Oswald', sans-serif;
     font-size: 11px;
@@ -1098,3 +1088,64 @@
   }
   .cat-photo-control:hover .btn-remove-cat-photo { display: flex; }
   .cat-photo-control .btn-remove-cat-photo:hover { color: var(--danger); border-color: var(--danger); }
+
+  /* ─── QUICK LINKS EDITOR ─── */
+  .ql-row {
+    display: grid;
+    grid-template-columns: 44px 130px 1fr 1.4fr 36px;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(58,56,48,0.4);
+  }
+  .ql-row:last-child { border-bottom: none; }
+  @media (max-width: 700px) {
+    .ql-row {
+      grid-template-columns: 44px 1fr 36px;
+      grid-template-rows: auto auto;
+    }
+    .ql-icon  { grid-column: 1; grid-row: 1; }
+    .ql-text  { grid-column: 2; grid-row: 1; }
+    .ql-url   { grid-column: 1 / -1; grid-row: 2; }
+    .ql-move  { grid-column: 3; grid-row: 1; }
+  }
+  .ql-move {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    align-items: center;
+  }
+  .ql-btn-move {
+    background: none;
+    border: 1px solid var(--charcoal-border);
+    color: var(--cream-dim);
+    cursor: pointer;
+    width: 20px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    padding: 0;
+    border-radius: 2px;
+    line-height: 1;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .ql-btn-move:hover { color: var(--gold); border-color: var(--gold-dark); }
+  .ql-btn-remove {
+    background: none;
+    border: 1px solid var(--charcoal-border);
+    color: var(--cream-dim);
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    padding: 0;
+    border-radius: 2px;
+    line-height: 1;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .ql-btn-remove:hover { color: var(--danger); border-color: var(--danger); }

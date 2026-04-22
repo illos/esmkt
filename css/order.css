@@ -1,15 +1,5 @@
   /* ─── SITE NAV ─── */
-  .site-nav {
-    position: relative;
-    z-index: 10;
-    background: rgba(26,26,26,0.97);
-    border-bottom: 1px solid var(--charcoal-border);
-    height: 96px;
-    padding: 0 28px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
+  .site-nav { position: relative; z-index: 10; }
 
   .nav-back {
     font-family: 'Oswald', sans-serif;
@@ -21,20 +11,10 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    white-space: nowrap;
     transition: color 0.2s;
   }
   .nav-back:hover { color: var(--gold); }
-
-  /* .nav-logo layout handled in base.css */
-  .nav-phone {
-    font-family: 'Oswald', sans-serif;
-    font-size: 12px;
-    letter-spacing: 2px;
-    color: var(--cream-dim);
-    text-decoration: none;
-    transition: color 0.2s;
-  }
-  .nav-phone:hover { color: var(--gold); }
 
   /* ─── PAGE ─── */
   .page-wrap {

@@ -12,11 +12,15 @@
 
 <!-- Nav -->
 <nav class="site-nav">
+  <div class="nav-left">
+    <span class="nav-label" id="navLabel">Admin</span>
+  </div>
   <a href="index.html" class="nav-logo">
     <img src="assets/emskt-logo-inline.webp" alt="Esmeralda Market" class="nav-logo-img"/>
   </a>
-  <span class="nav-label" id="navLabel">Admin</span>
-  <button class="nav-logout" id="navLogout" onclick="logout()">Sign Out</button>
+  <div class="nav-right">
+    <button class="nav-logout" id="navLogout" onclick="logout()">Sign Out</button>
+  </div>
 </nav>
 
 <!-- Admin Section Tabs -->
@@ -125,6 +129,22 @@
       <button class="btn-save" id="saveSiteInfoBtn" onclick="saveSiteInfo()">Save Site Info</button>
       <span id="savingSiteInfoIndicator" style="display:none;align-items:center;color:var(--cream-dim);font-size:13px;margin-left:16px">
         <span class="spinner"></span> Saving…
+      </span>
+    </div>
+  </div>
+
+  <!-- ─── QUICK LINKS ─── -->
+  <div class="hours-section-title">Quick Links</div>
+  <div class="form-card" style="margin-bottom:28px">
+    <p style="font-size:12px;color:var(--cream-dim);margin-bottom:16px;line-height:1.6">
+      These links appear in the hamburger menu, the hero panel on the homepage, and the footer. Reorder with ↑↓, pick an icon, set the text and destination URL.
+    </p>
+    <div id="quickLinksList"></div>
+    <button class="btn-add-item" style="margin-top:12px" onclick="addQuickLink()">+ Add Link</button>
+    <div class="form-actions" style="margin-top:16px">
+      <button class="btn-save" id="saveQuickLinksBtn" onclick="saveQuickLinks()">Save Quick Links</button>
+      <span id="savingQuickLinksIndicator" style="display:none;align-items:center;color:var(--cream-dim);font-size:13px;margin-left:16px">
+        <span class="spinner"></span> Saving&hellip;
       </span>
     </div>
   </div>

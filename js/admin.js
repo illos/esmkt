@@ -722,6 +722,7 @@ let settingsData = null;
 async function loadSettings() {
   await loadHours();    // fetches settingsData, renders hours tables, syncs toggle
   loadSiteInfo();       // populates site info fields from settingsData (already cached)
+  renderAdminQuickLinks(settingsData?.quickLinks);
 }
 
 async function loadHours() {
@@ -1152,4 +1153,109 @@ function showToast(msg, isError) {
   el.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ─── QUICK LINKS ADMIN ────────────────────────────────────────────────────────
+const QL_ICON_OPTIONS = [
+  { value:'map',      label:'📍 Map / Directions' },
+  { value:'menu',     label:'🍽 Menu' },
+  { value:'compass',  label:'🧭 Compass / Explore' },
+  { value:'calendar', label:'📅 Calendar / Events' },
+  { value:'clock',    label:'🕐 Clock / Hours' },
+  { value:'phone',    label:'📞 Phone' },
+  { value:'facebook', label:'📘 Facebook' },
+  { value:'home',     label:'🏠 Home' },
+  { value:'star',     label:'⭐ Star' },
+  { value:'gas',      label:'⛽ Gas' },
+  { value:'info',     label:'ℹ Info' },
+  { value:'link',     label:'🔗 Link' },
+];
+
+const DEFAULT_QUICK_LINKS_ADMIN = [
+  { id:'1', icon:'map',      text:'Get Directions', url:'https://maps.app.goo.gl/dhU5oMRYwXpTUhmY9' },
+  { id:'2', icon:'menu',     text:'Snackbar Menu',  url:'menu.html' },
+  { id:'3', icon:'compass',  text:'Explore',        url:'#explore' },
+  { id:'4', icon:'calendar', text:'Events',         url:'#events' },
+  { id:'5', icon:'clock',    text:'Store Hours',    url:'#hours' },
+  { id:'6', icon:'phone',    text:'Call Us',        url:'tel:7755723200' },
+  { id:'7', icon:'facebook', text:'Facebook',       url:'https://www.facebook.com/WhiteMountainsNV' },
+];
+
+function renderAdminQuickLinks(links) {
+  const list = document.getElementById('quickLinksList');
+  if (!list) return;
+  const ql = (links && links.length) ? links : DEFAULT_QUICK_LINKS_ADMIN;
+  list.innerHTML = ql.map((lk, i) => buildQlRow(lk, i, ql.length)).join('');
+}
+
+function buildQlRow(lk, idx, total) {
+  const iconOptions = QL_ICON_OPTIONS.map(o =>
+    `<option value="${o.value}"${o.value === lk.icon ? ' selected' : ''}>${o.label}</option>`
+  ).join('');
+  return `<div class="ql-row" data-idx="${idx}">
+    <div class="ql-move">
+      <button class="ql-btn-move" onclick="moveQuickLink(${idx},-1)" title="Move up" ${idx===0?'disabled':''}>↑</button>
+      <button class="ql-btn-move" onclick="moveQuickLink(${idx},1)"  title="Move down" ${idx===total-1?'disabled':''}>↓</button>
+    </div>
+    <select class="form-select ql-icon" style="font-size:12px;padding:6px 8px">${iconOptions}</select>
+    <input  class="form-input ql-text" type="text" placeholder="Link text" value="${esc(lk.text)}"/>
+    <input  class="form-input ql-url"  type="text" placeholder="URL or #anchor" value="${esc(lk.url)}"/>
+    <button class="ql-btn-remove" onclick="removeQuickLink(${idx})" title="Remove">&#215;</button>
+  </div>`;
+}
+
+function collectAdminQuickLinks() {
+  const rows = document.querySelectorAll('#quickLinksList .ql-row');
+  return Array.from(rows).map((row, i) => ({
+    id:   String(i + 1),
+    icon: row.querySelector('.ql-icon').value,
+    text: row.querySelector('.ql-text').value.trim(),
+    url:  row.querySelector('.ql-url').value.trim(),
+  })).filter(lk => lk.text && lk.url);
+}
+
+function addQuickLink() {
+  const current = collectAdminQuickLinks();
+  current.push({ id: String(Date.now()), icon: 'link', text: '', url: '' });
+  renderAdminQuickLinks(current);
+  // Focus the new text input
+  const rows = document.querySelectorAll('#quickLinksList .ql-row');
+  rows[rows.length - 1]?.querySelector('.ql-text')?.focus();
+}
+
+function removeQuickLink(idx) {
+  const current = collectAdminQuickLinks();
+  current.splice(idx, 1);
+  renderAdminQuickLinks(current);
+}
+
+function moveQuickLink(idx, dir) {
+  const current = collectAdminQuickLinks();
+  const newIdx  = idx + dir;
+  if (newIdx < 0 || newIdx >= current.length) return;
+  [current[idx], current[newIdx]] = [current[newIdx], current[idx]];
+  renderAdminQuickLinks(current);
+}
+
+async function saveQuickLinks() {
+  const btn = document.getElementById('saveQuickLinksBtn');
+  const ind = document.getElementById('savingQuickLinksIndicator');
+  if (btn) btn.disabled = true;
+  if (ind) ind.style.display = 'flex';
+  try {
+    const quickLinks = collectAdminQuickLinks();
+    const res = await apiFetch('/api/settings', {
+      method:  'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ ...settingsData, quickLinks }),
+    });
+    if (!res.ok) throw new Error('Save failed');
+    if (settingsData) settingsData.quickLinks = quickLinks;
+    showToast('Quick links saved.');
+  } catch(e) {
+    showToast(e.message, true);
+  } finally {
+    if (btn) btn.disabled = false;
+    if (ind) ind.style.display = 'none';
+  }
 }
