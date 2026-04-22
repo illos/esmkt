@@ -331,7 +331,7 @@
 
 
 /*Global styles*/
-.topo {
+.topo, .section {
   background-image: url("/assets/topo-white.svg");
   background-repeat: repeat;
   background-size: 500px;
