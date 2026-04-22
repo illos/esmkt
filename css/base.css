@@ -331,8 +331,15 @@
 
 
 /*Global styles*/
-.topo, .card, .section {
+.topo {
   background-image: url("/assets/topo-black.svg") !important;
+  background-repeat: repeat !important;
+  background-size: 500px !important;
+}
+
+
+.topo-light {
+  background-image: url("/assets/topo-dark.svg") !important;
   background-repeat: repeat !important;
   background-size: 500px !important;
 }

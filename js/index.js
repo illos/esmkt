@@ -224,7 +224,7 @@
       const ctaHtml = (ev.ctaText && ev.ctaLink)
         ? `<a class="event-cta-btn" href="${escHtml(ev.ctaLink)}" target="_blank" rel="noopener noreferrer">${escHtml(ev.ctaText)} &rarr;</a>`
         : '';
-      const body = `<div class="event-body">
+      const body = `<div class="event-body topo-light">
           ${dateStr ? `<div class="event-date">${dateStr}</div>` : ''}
           <div class="event-title">${escHtml(ev.title)}</div>
           ${ev.description ? `<div class="event-desc">${escHtml(ev.description)}</div>` : ''}
