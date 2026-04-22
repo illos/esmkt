@@ -479,9 +479,9 @@
   object-fit: contain !important;
   background: var(--charcoal-mid);
   width: 100%;
-  height: 100%;
-  min-height: 220px;
-  max-height: 420px;
+  height: auto;
+  max-height: 480px;
+  display: block;
 }
 
 .event-card--featured .event-body {
@@ -500,10 +500,10 @@
 .event-card--standard .event-img,
 .event-card--standard .event-img-placeholder {
   width: 100%;
-  min-height: 180px;
-  max-height: 240px;
-  object-fit: cover !important;
-  height: 200px;
+  height: auto;
+  object-fit: contain !important;
+  background: var(--charcoal-mid);
+  display: block;
 }
 
 .event-card--standard .event-body {
@@ -522,8 +522,9 @@
   .event-card--featured .event-img,
   .event-card--featured .event-img-placeholder {
     order: 1;
-    min-height: 200px;
-    max-height: 280px;
+    width: 100%;
+    height: auto;
+    max-height: 400px;
   }
 }
 
@@ -774,6 +775,75 @@
   margin: 0;
 }
 
+/* ── Fish Lake Valley hero card ── */
+.explore-card--hero {
+  grid-template-columns: 1fr !important;
+}
+
+.explore-hero-wrap {
+  position: relative;
+  min-height: 360px;
+  overflow: hidden;
+}
+
+.explore-hero-img {
+  width: 100%;
+  height: 100%;
+  min-height: 360px;
+  object-fit: cover;
+  display: block;
+}
+
+.explore-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(10,8,4,0.90) 0%,
+    rgba(10,8,4,0.50) 38%,
+    rgba(10,8,4,0.10) 65%,
+    transparent 100%
+  );
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 40px 44px;
+  gap: 8px;
+}
+
+.explore-hero-overlay .explore-tag {
+  font-size: 10px;
+  letter-spacing: 5px;
+}
+
+.explore-name--hero {
+  font-size: clamp(26px, 4vw, 44px) !important;
+  letter-spacing: 2.5px !important;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.6);
+}
+
+.explore-body--hero {
+  padding: 32px 44px 28px !important;
+}
+
+/* ── Additional photo strip below FLV text ── */
+.explore-photo-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 3px;
+  border-top: 1px solid var(--charcoal-border);
+}
+
+.explore-photo-strip img {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  display: block;
+  transition: opacity 0.25s ease;
+}
+
+.explore-photo-strip img:hover { opacity: 0.82; }
+
 /* ── Mobile ── */
 @media (max-width: 680px) {
   .explore-trail { padding-left: 44px; }
@@ -789,6 +859,16 @@
   /* Image always on top on mobile */
   .explore-img { min-height: 200px; max-height: 260px; order: -1; }
   .explore-body { padding: 22px 20px; gap: 10px; order: 0; }
+
+  /* Hero card mobile */
+  .explore-hero-wrap { min-height: 260px; }
+  .explore-hero-img { min-height: 260px; }
+  .explore-hero-overlay { padding: 24px 22px; gap: 6px; }
+  .explore-body--hero { padding: 22px 22px 18px !important; }
+
+  /* Photo strip: 2 columns on mobile */
+  .explore-photo-strip { grid-template-columns: repeat(2, 1fr); }
+  .explore-photo-strip img { height: 120px; }
 }
 
 
@@ -1137,16 +1217,33 @@
         <div class="trail-line-fill" id="trailFill"></div>
       </div>
 
-      <!-- ① Fish Lake Valley -->
+      <!-- ① Fish Lake Valley — hero card -->
       <div class="explore-stop" data-stop="0">
         <div class="stop-marker"><div class="stop-dot">1</div></div>
-        <div class="explore-card">
-          <img class="explore-img" src="assets/fish-lake-valley-1.webp" alt="Fish Lake Valley" loading="lazy"/>
-          <div class="explore-body">
-            <div class="explore-tag">Valley &middot; OHV Trails</div>
-            <h3 class="explore-name">Fish Lake Valley</h3>
-            <p class="explore-desc">Sprawling across 30 miles of open high desert, Fish Lake Valley is home to free-roaming wild mustang herds, vast alkali flats, and some of the most dramatic big-sky scenery in the American West. Miles of side-by-side and OHV trails wind through the basin, and on a quiet evening out here, the silence is complete.</p>
+        <div class="explore-card explore-card--hero">
+
+          <!-- Full-width hero image with title overlay -->
+          <div class="explore-hero-wrap">
+            <img class="explore-hero-img" src="assets/fish-lake-valley-1.webp" alt="Fish Lake Valley" loading="lazy"/>
+            <div class="explore-hero-overlay">
+              <div class="explore-tag">Valley &middot; OHV Trails &middot; Wild Mustangs</div>
+              <h3 class="explore-name explore-name--hero">Welcome to Fish Lake Valley</h3>
+            </div>
           </div>
+
+          <!-- Description text -->
+          <div class="explore-body explore-body--hero">
+            <p class="explore-desc">Sprawling across 30 miles of open high desert, Fish Lake Valley is home to free-roaming wild mustang herds, vast alkali flats, and some of the most dramatic big-sky scenery in the American West. Miles of side-by-side and OHV trails wind through the basin — and on a quiet evening out here, the silence is complete. Esmeralda Market is your basecamp for all of it.</p>
+          </div>
+
+          <!-- Additional photo strip -->
+          <div class="explore-photo-strip">
+            <img src="assets/fish-lake-valley-3.webp" alt="Fish Lake Valley landscape" loading="lazy"/>
+            <img src="assets/wildlife.webp" alt="Local wildlife" loading="lazy"/>
+            <img src="assets/mountains.webp" alt="White Mountains" loading="lazy"/>
+            <img src="assets/sunset-1.webp" alt="Desert sunset" loading="lazy"/>
+          </div>
+
         </div>
       </div>
 
