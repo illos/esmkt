@@ -204,6 +204,8 @@ function checkDeliHours() {
 
   orderingOpen = deliIsOpen && onlineOrderingEnabled;
   document.getElementById('deliOpenContent').style.display = orderingOpen ? 'block' : 'none';
+  // Floating cart is only meaningful when ordering is available
+  if (!orderingOpen) document.getElementById('floatingCart').classList.remove('visible');
 }
 
 // ─── PICKUP TIME DROPDOWN ────────────────────────────────────────────────────
@@ -381,7 +383,7 @@ function addToCart(itemId) {
   showToast(`${item.name} added to order`);
   renderOrder();
   document.getElementById('orderPanel').classList.add('visible');
-  document.getElementById('floatingCart').classList.add('visible');
+  if (orderingOpen) document.getElementById('floatingCart').classList.add('visible');
 
   const btn = card.querySelector('.btn-add-plus');
   btn.textContent = '✓';
