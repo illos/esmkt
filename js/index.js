@@ -123,7 +123,7 @@
         a.href = lk.url;
         a.className = 'hv2-link';
         if (isExt) { a.target = '_blank'; a.rel = 'noopener noreferrer'; }
-        a.innerHTML = `${getNavIcon(lk.icon)}<span>${escNavHtml(lk.text)}</span><span class="hv2-arr">&rarr;</span>`;
+        a.innerHTML = `<span>${escNavHtml(lk.text)}</span><span class="hv2-arr">&rarr;</span>`;
         heroPanel.appendChild(a);
       });
     }
@@ -137,7 +137,7 @@
       footerEl.innerHTML = ql.map(lk => {
         const isExt  = lk.url.startsWith('http');
         const target = isExt ? ' target="_blank" rel="noopener noreferrer"' : '';
-        return `<a href="${escNavHtml(lk.url)}" class="gf-link"${target}>${getNavIcon(lk.icon)}${escNavHtml(lk.text)}</a>`;
+        return `<a href="${escNavHtml(lk.url)}" class="gf-link"${target}>${escNavHtml(lk.text)}</a>`;
       }).join('');
     }
   }
