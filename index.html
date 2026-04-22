@@ -730,10 +730,22 @@
 }
 .explore-stop.is-active .explore-card::before { opacity: 1; }
 
-/* ── Image wrapper — absolutely fills the full card, crops to fit ── */
+/* ── Image wrapper — 80% width, anchored to the image side ── */
 .explore-img-wrap {
   position: absolute;
-  inset: 0;
+  top: 0; bottom: 0;
+  width: 80%;
+}
+
+/* Right cards: image on the left */
+.explore-card:not(.explore-card--left):not(.explore-card--hero) .explore-img-wrap {
+  left: 0;
+}
+
+/* Left cards: image on the right */
+.explore-card--left .explore-img-wrap {
+  right: 0;
+  left: auto;
 }
 
 .explore-img {
