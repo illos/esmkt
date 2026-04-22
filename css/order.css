@@ -1001,7 +1001,7 @@
 
   @media (max-width: 600px) {
     .menu-grid { columns: 1; }
-    .floating-cart { display: flex; }
+    .floating-cart.visible { display: flex; }
     .nav-phone { display: none; }
   }
 

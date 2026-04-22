@@ -86,6 +86,7 @@ function switchTab(tab) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1))?.classList.add('active');
   if (tab === 'settings') { showPage('pageSettings'); loadSettings(); }
+  if (tab === 'hours')    { showPage('pageHours');    loadHours(); }
   if (tab === 'menu')     { showPage('pageList');     loadMenu(); }
   if (tab === 'events')   { showPage('pageEvents');   loadEvents(); }
 }
@@ -720,9 +721,14 @@ function promptDeleteItem(id, name) {
 let settingsData = null;
 
 async function loadSettings() {
-  await loadHours();         // fetches settingsData, renders hours tables, syncs toggle
-  loadSiteInfo();            // populates site info fields from settingsData (already cached)
-  loadContactSettings();     // populates contactEmail + turnstileSiteKey fields
+  try {
+    const res  = await apiFetch('/api/settings');
+    const data = await res.json();
+    settingsData = data;
+    updateOrderingUI(data.onlineOrdering !== false);
+  } catch(e) { showToast('Could not load settings.', true); return; }
+  loadSiteInfo();
+  loadContactSettings();
   renderAdminQuickLinks(settingsData?.quickLinks);
 }
 
