@@ -166,12 +166,23 @@ async function getMenuData(env) {
   // ── Ensure categories have photo + description fields ────────────────────
   data.categories = data.categories.map(cat => ({ photo: null, description: '', footnotes: '', ...cat }));
 
-  // ── Ensure items have new fields ──────────────────────────────────────────
-  data.items = data.items.map(item => ({
-    defaultOptions: [],
-    choices: [],
-    ...item,
-  }));
+  // ── Migrate items: rename old field names and ensure new fields exist ────
+  // Old schema: addons=string[], defaultAddons=string[], options=object[]
+  // New schema: options=string[], defaultOptions=string[], choices=object[]
+  data.items = data.items.map(item => {
+    const { addons, defaultAddons, options, choices, defaultOptions, ...rest } = item;
+    if (addons !== undefined) {
+      // Old-format item — rename fields
+      return {
+        ...rest,
+        options:        addons        || [],
+        defaultOptions: defaultAddons || [],
+        choices:        options       || [],
+      };
+    }
+    // Already new-format — ensure fields exist
+    return { options: [], defaultOptions: [], choices: [], ...rest };
+  });
 
   return data;
 }

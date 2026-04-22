@@ -538,7 +538,7 @@ function addAddonRow(existingValue, isDefault) {
   const row = document.createElement('div');
   row.className = 'addon-row';
   row.innerHTML = `
-    <input class="form-input" type="text" placeholder="Add-on name (e.g. Avocado)" value="${esc(addonName)}" data-addon-name/>
+    <input class="form-input" type="text" placeholder="Option name (e.g. Avocado)" value="${esc(addonName)}" data-addon-name/>
     <input class="form-input" type="number" placeholder="+$0.00" step="0.01" min="0" value="${addonPrice}" data-addon-price style="padding-left:10px"/>
     <label class="addon-default-wrap" title="Pre-selected for customers by default">
       <input type="checkbox" data-addon-is-default ${chk}/>
