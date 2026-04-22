@@ -60,6 +60,77 @@
     margin-bottom: 32px;
   }
 
+  /* ─── CALL US BANNER ─── */
+  .call-us-banner {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--charcoal-card);
+    border: 1px solid var(--charcoal-border);
+    border-radius: 4px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .call-us-banner::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(to right, var(--gold-dark), var(--gold), var(--gold-dark));
+  }
+  .call-us-icon {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    color: var(--gold);
+    opacity: 0.85;
+  }
+  .call-us-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+  }
+  .call-us-label {
+    font-family: 'Oswald', sans-serif;
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--cream-dim);
+  }
+  .call-us-number {
+    font-family: 'Oswald', sans-serif;
+    font-size: 22px;
+    font-weight: 500;
+    letter-spacing: 2px;
+    color: var(--cream);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .call-us-number:hover { color: var(--gold); }
+  .call-us-btn {
+    background: var(--gold-dark);
+    color: var(--cream);
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    text-decoration: none;
+    padding: 10px 20px;
+    border-radius: 2px;
+    flex-shrink: 0;
+    transition: background 0.2s, color 0.2s;
+  }
+  .call-us-btn:hover { background: var(--gold); color: var(--charcoal); }
+
+  @media (max-width: 480px) {
+    .call-us-banner { flex-wrap: wrap; }
+    .call-us-btn { width: 100%; text-align: center; margin-top: 4px; }
+  }
+
   /* ─── FORM CARD ─── */
   .contact-form {
     background: var(--charcoal-card);

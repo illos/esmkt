@@ -9,6 +9,13 @@ async function initContact() {
   try {
     const res  = await fetch('/api/settings');
     const data = res.ok ? await res.json() : null;
+    if (data?.phone) {
+      const digits = data.phone.replace(/\D/g, '');
+      const numEl  = document.getElementById('callUsBannerPhone');
+      const btnEl  = document.getElementById('callUsBannerBtn');
+      if (numEl) { numEl.textContent = data.phone; numEl.href = `tel:${digits}`; }
+      if (btnEl) { btnEl.href = `tel:${digits}`; }
+    }
     if (data?.turnstileSiteKey) {
       renderTurnstile(data.turnstileSiteKey);
     } else {
