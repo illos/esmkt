@@ -55,18 +55,32 @@ function closeNavOverlay() {
 
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeNavOverlay(); });
 
-// ─── RENDER NAV OVERLAY LINKS ─────────────────────────────────────────────────
+// ─── RENDER QUICK LINKS (overlay + footer) ───────────────────────────────────
 function renderNavOverlayLinks(links) {
-  const el = document.getElementById('navOverlayLinks');
-  if (!el) return;
-  el.innerHTML = (links || DEFAULT_QUICK_LINKS).map(lk => {
-    const icon   = getNavIcon(lk.icon);
-    const isExt  = lk.url.startsWith('http');
-    const target = isExt ? ' target="_blank" rel="noopener noreferrer"' : '';
-    return `<a href="${escNavHtml(lk.url)}" class="nav-overlay-link"${target} onclick="closeNavOverlay()">
-      ${icon}<span>${escNavHtml(lk.text)}</span>
-    </a>`;
-  }).join('');
+  const ql = links || DEFAULT_QUICK_LINKS;
+
+  // Nav overlay
+  const overlayEl = document.getElementById('navOverlayLinks');
+  if (overlayEl) {
+    overlayEl.innerHTML = ql.map(lk => {
+      const icon   = getNavIcon(lk.icon);
+      const isExt  = lk.url.startsWith('http');
+      const target = isExt ? ' target="_blank" rel="noopener noreferrer"' : '';
+      return `<a href="${escNavHtml(lk.url)}" class="nav-overlay-link"${target} onclick="closeNavOverlay()">
+        ${icon}<span>${escNavHtml(lk.text)}</span>
+      </a>`;
+    }).join('');
+  }
+
+  // Footer quick links (present on menu.html and any other page using this script)
+  const footerEl = document.getElementById('footerQuickLinks');
+  if (footerEl) {
+    footerEl.innerHTML = ql.map(lk => {
+      const isExt  = lk.url.startsWith('http');
+      const target = isExt ? ' target="_blank" rel="noopener noreferrer"' : '';
+      return `<a href="${escNavHtml(lk.url)}" class="gf-link"${target}>${getNavIcon(lk.icon)}${escNavHtml(lk.text)}</a>`;
+    }).join('');
+  }
 }
 
 // ─── AUTO-INIT ────────────────────────────────────────────────────────────────
@@ -74,8 +88,8 @@ function renderNavOverlayLinks(links) {
 document.addEventListener('DOMContentLoaded', () => {
   renderNavOverlayLinks(DEFAULT_QUICK_LINKS);
 
-  // index.html manages its own settings fetch and calls renderNavOverlayLinks() from there.
-  // For all other pages (menu, admin), do a quiet fetch here.
+  // index.html manages its own settings fetch and calls renderNavOverlayLinks() from index.js.
+  // For all other pages (menu.html, etc.), fetch settings quietly here.
   if (!document.querySelector('.hero-v2')) {
     fetch('/api/settings')
       .then(r => r.ok ? r.json() : null)
