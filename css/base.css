@@ -37,9 +37,9 @@
 
   @media (max-width: 600px) {
     .nav-logo {
-      position: static;
-      transform: none;
-      order: -1;
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
     }
   }
   html { scroll-behavior: smooth; }
