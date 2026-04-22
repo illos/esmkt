@@ -17,6 +17,16 @@ const CORS = {
 
 const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
+const DEFAULT_QUICK_LINKS = [
+  { id:'1', icon:'map',      text:'Get Directions', url:'https://maps.app.goo.gl/dhU5oMRYwXpTUhmY9' },
+  { id:'2', icon:'menu',     text:'Snackbar Menu',  url:'menu.html' },
+  { id:'3', icon:'compass',  text:'Explore',        url:'#explore' },
+  { id:'4', icon:'calendar', text:'Events',         url:'#events' },
+  { id:'5', icon:'clock',    text:'Store Hours',    url:'#hours' },
+  { id:'6', icon:'phone',    text:'Call Us',        url:'tel:7755723200' },
+  { id:'7', icon:'facebook', text:'Facebook',       url:'https://www.facebook.com/WhiteMountainsNV' },
+];
+
 const DEFAULT_SETTINGS = {
   storeHours: DAYS.map(day => ({ day, open: '08:30', close: '19:30', closed: false })),
   deliHours:  DAYS.map((day, i) => ({
@@ -32,6 +42,7 @@ const DEFAULT_SETTINGS = {
   heroButtonText: 'Order from the Snackbar',
   heroButtonLink: 'menu.html',
   heroBgPhoto: null,
+  quickLinks: DEFAULT_QUICK_LINKS,
 };
 
 export async function onRequestOptions() {
@@ -64,6 +75,7 @@ export async function onRequestPut({ request, env }) {
     ...(body.heroButtonText !== undefined && { heroButtonText: String(body.heroButtonText) }),
     ...(body.heroButtonLink !== undefined && { heroButtonLink: String(body.heroButtonLink) }),
     ...(body.heroBgPhoto      !== undefined && { heroBgPhoto:      body.heroBgPhoto === null ? null : String(body.heroBgPhoto) }),
+    ...(body.quickLinks       !== undefined && { quickLinks:       Array.isArray(body.quickLinks) ? body.quickLinks : existing.quickLinks }),
   };
 
   await env.MENU_KV.put('settings', JSON.stringify(data));
@@ -87,6 +99,7 @@ function migrateSettings(data) {
     heroButtonText: data.heroButtonText ?? DEFAULT_SETTINGS.heroButtonText,
     heroButtonLink: data.heroButtonLink ?? DEFAULT_SETTINGS.heroButtonLink,
     heroBgPhoto: data.heroBgPhoto ?? null,
+    quickLinks:  Array.isArray(data.quickLinks) ? data.quickLinks : DEFAULT_QUICK_LINKS,
   };
 }
 

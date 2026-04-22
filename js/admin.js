@@ -1181,27 +1181,61 @@ const DEFAULT_QUICK_LINKS_ADMIN = [
   { id:'7', icon:'facebook', text:'Facebook',       url:'https://www.facebook.com/WhiteMountainsNV' },
 ];
 
+// ─── QL drag state ────────────────────────────────────────────────────────────
+let qlDragIdx = null;
+
 function renderAdminQuickLinks(links) {
   const list = document.getElementById('quickLinksList');
   if (!list) return;
   const ql = (links && links.length) ? links : DEFAULT_QUICK_LINKS_ADMIN;
-  list.innerHTML = ql.map((lk, i) => buildQlRow(lk, i, ql.length)).join('');
+  list.innerHTML = ql.map((lk, i) => buildQlRow(lk, i)).join('');
 }
 
-function buildQlRow(lk, idx, total) {
+function buildQlRow(lk, idx) {
   const iconOptions = QL_ICON_OPTIONS.map(o =>
     `<option value="${o.value}"${o.value === lk.icon ? ' selected' : ''}>${o.label}</option>`
   ).join('');
-  return `<div class="ql-row" data-idx="${idx}">
-    <div class="ql-move">
-      <button class="ql-btn-move" onclick="moveQuickLink(${idx},-1)" title="Move up" ${idx===0?'disabled':''}>↑</button>
-      <button class="ql-btn-move" onclick="moveQuickLink(${idx},1)"  title="Move down" ${idx===total-1?'disabled':''}>↓</button>
-    </div>
+  return `<div class="ql-row" draggable="true" data-idx="${idx}"
+      ondragstart="onQlDragStart(event,${idx})"
+      ondragover="onQlDragOver(event,${idx})"
+      ondrop="onQlDrop(event,${idx})"
+      ondragend="onQlDragEnd(event)">
+    <span class="ql-drag-handle" title="Drag to reorder">&#8942;&#8942;</span>
     <select class="form-select ql-icon" style="font-size:12px;padding:6px 8px">${iconOptions}</select>
     <input  class="form-input ql-text" type="text" placeholder="Link text" value="${esc(lk.text)}"/>
     <input  class="form-input ql-url"  type="text" placeholder="URL or #anchor" value="${esc(lk.url)}"/>
     <button class="ql-btn-remove" onclick="removeQuickLink(${idx})" title="Remove">&#215;</button>
   </div>`;
+}
+
+// Prevent drag starting from inputs / selects (so typing still works)
+function onQlDragStart(e, idx) {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') { e.preventDefault(); return; }
+  qlDragIdx = idx;
+  e.currentTarget.classList.add('ql-dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', String(idx));
+}
+function onQlDragOver(e, idx) {
+  if (qlDragIdx === null || qlDragIdx === idx) return;
+  e.preventDefault();
+  document.querySelectorAll('.ql-drag-over').forEach(el => el.classList.remove('ql-drag-over'));
+  e.currentTarget.classList.add('ql-drag-over');
+}
+function onQlDrop(e, targetIdx) {
+  if (qlDragIdx === null || qlDragIdx === targetIdx) return;
+  e.preventDefault();
+  const current = collectAdminQuickLinks();
+  const [moved] = current.splice(qlDragIdx, 1);
+  current.splice(targetIdx, 0, moved);
+  qlDragIdx = null;
+  renderAdminQuickLinks(current);
+}
+function onQlDragEnd(e) {
+  qlDragIdx = null;
+  document.querySelectorAll('.ql-dragging,.ql-drag-over').forEach(el =>
+    el.classList.remove('ql-dragging','ql-drag-over')
+  );
 }
 
 function collectAdminQuickLinks() {
@@ -1218,7 +1252,6 @@ function addQuickLink() {
   const current = collectAdminQuickLinks();
   current.push({ id: String(Date.now()), icon: 'link', text: '', url: '' });
   renderAdminQuickLinks(current);
-  // Focus the new text input
   const rows = document.querySelectorAll('#quickLinksList .ql-row');
   rows[rows.length - 1]?.querySelector('.ql-text')?.focus();
 }
@@ -1229,14 +1262,6 @@ function removeQuickLink(idx) {
   renderAdminQuickLinks(current);
 }
 
-function moveQuickLink(idx, dir) {
-  const current = collectAdminQuickLinks();
-  const newIdx  = idx + dir;
-  if (newIdx < 0 || newIdx >= current.length) return;
-  [current[idx], current[newIdx]] = [current[newIdx], current[idx]];
-  renderAdminQuickLinks(current);
-}
-
 async function saveQuickLinks() {
   const btn = document.getElementById('saveQuickLinksBtn');
   const ind = document.getElementById('savingQuickLinksIndicator');
@@ -1244,10 +1269,11 @@ async function saveQuickLinks() {
   if (ind) ind.style.display = 'flex';
   try {
     const quickLinks = collectAdminQuickLinks();
+    if (!quickLinks.length) { showToast('Add at least one link before saving.', true); return; }
     const res = await apiFetch('/api/settings', {
       method:  'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ ...settingsData, quickLinks }),
+      body:    JSON.stringify({ quickLinks }),
     });
     if (!res.ok) throw new Error('Save failed');
     if (settingsData) settingsData.quickLinks = quickLinks;
