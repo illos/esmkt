@@ -1092,7 +1092,7 @@
   /* ─── QUICK LINKS EDITOR ─── */
   .ql-row {
     display: grid;
-    grid-template-columns: 28px 120px 1fr 1.4fr 34px;
+    grid-template-columns: 28px 1fr 1.4fr 34px;
     gap: 8px;
     align-items: center;
     padding: 7px 0;
@@ -1102,15 +1102,14 @@
   .ql-row:last-child { border-bottom: none; }
   .ql-row.ql-dragging { opacity: 0.4; }
   .ql-row.ql-drag-over { background: rgba(201,169,110,0.07); }
-  @media (max-width: 680px) {
+  @media (max-width: 540px) {
     .ql-row {
-      grid-template-columns: 28px 1fr 34px !important;
+      grid-template-columns: 28px 1fr 34px;
       grid-template-rows: auto auto;
     }
-    .ql-icon-picker { grid-column: 1; grid-row: 1; }
-    .ql-text        { grid-column: 2; grid-row: 1; }
-    .ql-url         { grid-column: 1 / -1; grid-row: 2; }
-    .ql-btn-remove  { grid-column: 3; grid-row: 1; }
+    .ql-text       { grid-column: 2; grid-row: 1; }
+    .ql-url        { grid-column: 1 / -1; grid-row: 2; }
+    .ql-btn-remove { grid-column: 3; grid-row: 1; }
   }
   .ql-drag-handle {
     cursor: grab;
@@ -1142,105 +1141,3 @@
   }
   .ql-btn-remove:hover { color: var(--danger); border-color: var(--danger); }
 
-  /* ─── ICON PICKER ─── */
-  .ql-row {
-    grid-template-columns: 28px 148px 1fr 1.4fr 34px;
-  }
-  .ql-icon-picker { position: relative; }
-  .ql-icon-btn {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    background: var(--charcoal-mid);
-    border: 1px solid var(--charcoal-border);
-    color: var(--cream);
-    border-radius: 2px;
-    padding: 6px 10px;
-    cursor: pointer;
-    width: 100%;
-    font-family: 'Source Sans 3', sans-serif;
-    font-size: 13px;
-    transition: border-color 0.2s;
-    overflow: hidden;
-  }
-  .ql-icon-btn:hover { border-color: var(--gold-dark); }
-  .ql-icon-btn svg { flex-shrink: 0; opacity: 0.85; }
-  .ql-icon-name {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: 12px;
-    color: var(--cream-dim);
-    min-width: 0;
-  }
-
-  .icon-picker-popover {
-    position: fixed;
-    z-index: 900;
-    width: 272px;
-    background: var(--charcoal-card);
-    border: 1px solid var(--charcoal-border);
-    border-radius: 4px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.6);
-    overflow: hidden;
-  }
-  .icon-picker-search-wrap {
-    padding: 10px 10px 8px;
-    border-bottom: 1px solid rgba(58,56,48,0.5);
-  }
-  .icon-picker-search {
-    width: 100%;
-    background: var(--charcoal-mid);
-    border: 1px solid var(--charcoal-border);
-    color: var(--cream);
-    font-family: 'Source Sans 3', sans-serif;
-    font-size: 13px;
-    padding: 7px 10px;
-    border-radius: 2px;
-    outline: none;
-    transition: border-color 0.2s;
-    box-sizing: border-box;
-  }
-  .icon-picker-search:focus { border-color: var(--gold-dark); }
-  .icon-picker-grid {
-    display: grid;
-    grid-template-columns: repeat(8, 1fr);
-    gap: 2px;
-    padding: 8px;
-    max-height: 220px;
-    overflow-y: auto;
-  }
-  .icon-picker-grid::-webkit-scrollbar { width: 4px; }
-  .icon-picker-grid::-webkit-scrollbar-track { background: transparent; }
-  .icon-picker-grid::-webkit-scrollbar-thumb { background: var(--charcoal-border); border-radius: 2px; }
-  .icon-picker-item {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: none;
-    border: 1px solid transparent;
-    color: var(--cream-dim);
-    border-radius: 3px;
-    padding: 6px;
-    cursor: pointer;
-    transition: background 0.12s, color 0.12s, border-color 0.12s;
-    aspect-ratio: 1;
-  }
-  .icon-picker-item:hover {
-    background: rgba(201,169,110,0.12);
-    color: var(--gold);
-    border-color: rgba(201,169,110,0.25);
-  }
-  .icon-picker-item.selected {
-    background: rgba(201,169,110,0.18);
-    color: var(--gold);
-    border-color: var(--gold-dark);
-  }
-  .icon-picker-empty {
-    grid-column: 1 / -1;
-    text-align: center;
-    padding: 20px;
-    color: rgba(184,176,160,0.35);
-    font-size: 12px;
-    font-style: italic;
-  }

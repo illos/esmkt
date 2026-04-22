@@ -1,48 +1,12 @@
-// ─── ICON RENDERING (Lucide) ──────────────────────────────────────────────────
-// Map old short names → Lucide names for backwards compatibility
-const NAV_ICON_ALIASES = {
-  map:      'map-pin',
-  menu:     'utensils',
-  compass:  'compass',
-  calendar: 'calendar',
-  clock:    'clock',
-  phone:    'phone',
-  facebook: 'facebook',
-  home:     'home',
-  star:     'star',
-  link:     'link',
-  gas:      'fuel',
-  info:     'info',
-};
-
 const DEFAULT_QUICK_LINKS = [
-  { id:'1', icon:'map-pin',   text:'Get Directions', url:'https://maps.app.goo.gl/dhU5oMRYwXpTUhmY9' },
-  { id:'2', icon:'utensils',  text:'Snackbar Menu',  url:'menu.html' },
-  { id:'3', icon:'compass',   text:'Explore',        url:'#explore' },
-  { id:'4', icon:'calendar',  text:'Events',         url:'#events' },
-  { id:'5', icon:'clock',     text:'Store Hours',    url:'#hours' },
-  { id:'6', icon:'phone',     text:'Call Us',        url:'tel:7755723200' },
-  { id:'7', icon:'facebook',  text:'Facebook',       url:'https://www.facebook.com/WhiteMountainsNV' },
+  { id:'1', text:'Get Directions', url:'https://maps.app.goo.gl/dhU5oMRYwXpTUhmY9' },
+  { id:'2', text:'Snackbar Menu',  url:'menu.html' },
+  { id:'3', text:'Explore',        url:'#explore' },
+  { id:'4', text:'Events',         url:'#events' },
+  { id:'5', text:'Store Hours',    url:'#hours' },
+  { id:'6', text:'Call Us',        url:'tel:7755723200' },
+  { id:'7', text:'Facebook',       url:'https://www.facebook.com/WhiteMountainsNV' },
 ];
-
-// lucide.icons[name] returns [[tag, attrs], ...] — build SVG string from that
-function lucideToSvg(name, size, sw) {
-  try {
-    if (typeof lucide === 'undefined') return null;
-    const nodes = lucide.icons?.[name];
-    if (!Array.isArray(nodes) || !nodes.length) return null;
-    const children = nodes.map(([tag, attrs]) =>
-      `<${tag} ${Object.entries(attrs || {}).map(([k, v]) => `${k}="${v}"`).join(' ')}/>`
-    ).join('');
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">${children}</svg>`;
-  } catch(e) { return null; }
-}
-
-function getNavIcon(name) {
-  const resolved = NAV_ICON_ALIASES[name] || name;
-  return lucideToSvg(resolved, 16, 1.5)
-    || `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>`;
-}
 
 function escNavHtml(s) {
   return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -79,22 +43,21 @@ function renderNavOverlayLinks(links) {
   const overlayEl = document.getElementById('navOverlayLinks');
   if (overlayEl) {
     overlayEl.innerHTML = ql.map(lk => {
-      const icon   = getNavIcon(lk.icon);
       const isExt  = lk.url.startsWith('http');
       const target = isExt ? ' target="_blank" rel="noopener noreferrer"' : '';
       return `<a href="${escNavHtml(lk.url)}" class="nav-overlay-link"${target} onclick="closeNavOverlay()">
-        ${icon}<span>${escNavHtml(lk.text)}</span>
+        <span>${escNavHtml(lk.text)}</span>
       </a>`;
     }).join('');
   }
 
-  // Footer quick links (present on menu.html and any other page using this script)
+  // Footer quick links
   const footerEl = document.getElementById('footerQuickLinks');
   if (footerEl) {
     footerEl.innerHTML = ql.map(lk => {
       const isExt  = lk.url.startsWith('http');
       const target = isExt ? ' target="_blank" rel="noopener noreferrer"' : '';
-      return `<a href="${escNavHtml(lk.url)}" class="gf-link"${target}>${getNavIcon(lk.icon)}${escNavHtml(lk.text)}</a>`;
+      return `<a href="${escNavHtml(lk.url)}" class="gf-link"${target}>${escNavHtml(lk.text)}</a>`;
     }).join('');
   }
 }
