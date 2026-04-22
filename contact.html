@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Esmeralda Market &mdash; Contact</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet"/>
+<!-- Turnstile in explicit-render mode (site key loaded from settings) -->
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
+<link rel="stylesheet" href="css/base.css"/>
+<link rel="stylesheet" href="css/contact.css"/>
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="site-nav">
+  <div class="nav-left">
+    <a href="index.html" class="nav-back">&#8592; Home</a>
+  </div>
+  <a href="index.html" class="nav-logo">
+    <img src="assets/emskt-logo-inline.webp" alt="Esmeralda Market" class="nav-logo-img"/>
+  </a>
+  <div class="nav-right">
+    <button class="nav-hamburger" id="navHamburger" aria-label="Open menu" onclick="toggleNavOverlay()">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+
+<!-- Nav Overlay -->
+<div class="nav-overlay" id="navOverlay" aria-hidden="true">
+  <div class="nav-overlay-backdrop" onclick="closeNavOverlay()"></div>
+  <div class="nav-overlay-panel">
+    <div class="nav-overlay-header">
+      <span class="nav-overlay-title">Quick Links</span>
+      <button class="nav-overlay-close" onclick="closeNavOverlay()" aria-label="Close menu">&#215;</button>
+    </div>
+    <nav id="navOverlayLinks"></nav>
+  </div>
+</div>
+
+<!-- Contact Form -->
+<div class="contact-wrap">
+
+  <div class="contact-header-row">
+    <h1 class="contact-title">Get in Touch</h1>
+    <div class="contact-rule"><span class="contact-star">&#10022;</span></div>
+  </div>
+
+  <p class="contact-intro">Have a question about what&rsquo;s in stock, want to know trail conditions, or just want to say howdy? Drop us a line and we&rsquo;ll get back to you as soon as we can.</p>
+
+  <!-- Form -->
+  <form class="contact-form" id="contactForm" onsubmit="submitContact(event)" novalidate>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="contactName">Name <span class="req">*</span></label>
+        <input class="form-input" type="text" id="contactName" name="name"
+          placeholder="First &amp; Last Name" autocomplete="name" required/>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="contactEmail">Email <span class="req">*</span></label>
+        <input class="form-input" type="email" id="contactEmail" name="email"
+          placeholder="your@email.com" autocomplete="email" required/>
+      </div>
+    </div>
+    <div class="form-group-full">
+      <label class="form-label" for="contactMessage">Message <span class="req">*</span></label>
+      <textarea class="form-textarea" id="contactMessage" name="message"
+        placeholder="What&rsquo;s on your mind?" required></textarea>
+    </div>
+
+    <!-- Cloudflare Turnstile bot check -->
+    <div class="turnstile-wrap">
+      <div id="turnstileWidget"></div>
+    </div>
+
+    <div class="contact-error" id="contactError"></div>
+
+    <button class="btn-send" type="submit" id="sendBtn">Send Message</button>
+  </form>
+
+  <!-- Success state (shown after submit) -->
+  <div class="contact-success" id="contactSuccess" style="display:none">
+    <div class="contact-success-icon">&#10022;</div>
+    <div class="contact-success-title">Message Sent!</div>
+    <div class="contact-success-sub">Thanks for reaching out &mdash; we&rsquo;ll get back to you soon. In the meantime, feel free to call us if it&rsquo;s urgent.</div>
+    <button class="btn-send-another" onclick="resetContactForm()">Send Another Message</button>
+  </div>
+
+</div><!-- /contact-wrap -->
+
+<footer class="site-footer global-footer">
+  <div class="gf-inner">
+
+    <div class="gf-brand">
+      <a href="index.html" class="gf-logo-link">
+        <img src="assets/esmeralda-logo.webp" alt="Esmeralda Market" class="gf-logo gf-logo--full"/>
+      </a>
+      <div class="gf-contact">
+        <a href="tel:7755723200" class="gf-contact-item" id="footerPhone">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24 11.47 11.47 0 003.58.57 1 1 0 011 1V21a1 1 0 01-1 1A17 17 0 013 5a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.58a1 1 0 01-.25 1.01z"/></svg>
+          775-572-3200
+        </a>
+        <a href="https://maps.app.goo.gl/dhU5oMRYwXpTUhmY9" target="_blank" rel="noopener noreferrer" class="gf-contact-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          HWY 264, Mile Marker 8 &middot; Dyer, NV 89010
+        </a>
+        <a href="admin.html" class="gf-contact-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/><path d="M18 14l2 2 4-4" stroke-width="1.5"/></svg>
+          Admin
+        </a>
+      </div>
+    </div>
+
+    <div class="gf-links">
+      <div class="gf-col-label">Quick Links</div>
+      <div id="footerQuickLinks"></div>
+    </div>
+
+    <div class="gf-hours">
+      <div class="gf-col-label">Business Hours</div>
+      <div class="hours-card gf-hours-combined">
+        <div class="gf-hours-row">
+          <span class="gf-hours-label">Market</span>
+          <span class="gf-hours-right">
+            <span class="hours-time">8:30 AM &ndash; 7:30 PM</span>
+            <span class="hours-days">Open Every Day</span>
+          </span>
+        </div>
+        <div class="gf-hours-divider"></div>
+        <div class="gf-hours-row">
+          <span class="gf-hours-label">Snackbar</span>
+          <span class="gf-hours-right">
+            <span class="hours-time">9:00 AM &ndash; 3:00 PM</span>
+            <span class="hours-days">Mon &ndash; Sat</span>
+          </span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <div class="gf-bottom">
+    <span>&copy; <span id="footerYear"></span> Esmeralda Market &middot; Fish Lake Valley, NV</span>
+    <span class="gf-bottom-right">HWY 264 MM8 &middot; Dyer, NV 89010</span>
+  </div>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script src="js/nav.js"></script>
+<script src="js/contact.js"></script>
+</body>
+</html>

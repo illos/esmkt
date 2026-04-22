@@ -720,8 +720,9 @@ function promptDeleteItem(id, name) {
 let settingsData = null;
 
 async function loadSettings() {
-  await loadHours();    // fetches settingsData, renders hours tables, syncs toggle
-  loadSiteInfo();       // populates site info fields from settingsData (already cached)
+  await loadHours();         // fetches settingsData, renders hours tables, syncs toggle
+  loadSiteInfo();            // populates site info fields from settingsData (already cached)
+  loadContactSettings();     // populates contactEmail + turnstileSiteKey fields
   renderAdminQuickLinks(settingsData?.quickLinks);
 }
 
@@ -892,6 +893,45 @@ async function saveSiteInfo() {
       settingsData.heroBgPhoto = heroBgPhoto;
     }
     showToast('Site info saved.');
+  } catch(e) {
+    showToast(e.message, true);
+  } finally {
+    if (btn) btn.disabled = false;
+    if (ind) ind.style.display = 'none';
+  }
+}
+
+// ─── CONTACT SETTINGS ────────────────────────────────────────────────────────
+
+function loadContactSettings() {
+  if (!settingsData) return;
+  const emailEl = document.getElementById('siContactEmail');
+  const keyEl   = document.getElementById('siTurnstileKey');
+  if (emailEl) emailEl.value = settingsData.contactEmail     ?? '';
+  if (keyEl)   keyEl.value   = settingsData.turnstileSiteKey ?? '';
+}
+
+async function saveContactSettings() {
+  const btn = document.getElementById('saveContactSettingsBtn');
+  const ind = document.getElementById('savingContactSettingsIndicator');
+  if (btn) btn.disabled = true;
+  if (ind) ind.style.display = 'flex';
+
+  const contactEmail     = document.getElementById('siContactEmail')?.value.trim() ?? '';
+  const turnstileSiteKey = document.getElementById('siTurnstileKey')?.value.trim()  ?? '';
+
+  try {
+    const res = await apiFetch('/api/settings', {
+      method:  'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ contactEmail, turnstileSiteKey }),
+    });
+    if (!res.ok) throw new Error('Save failed');
+    if (settingsData) {
+      settingsData.contactEmail     = contactEmail;
+      settingsData.turnstileSiteKey = turnstileSiteKey;
+    }
+    showToast('Contact settings saved.');
   } catch(e) {
     showToast(e.message, true);
   } finally {

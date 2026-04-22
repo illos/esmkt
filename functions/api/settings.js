@@ -43,6 +43,8 @@ const DEFAULT_SETTINGS = {
   heroButtonLink: 'menu.html',
   heroBgPhoto: null,
   quickLinks: DEFAULT_QUICK_LINKS,
+  contactEmail:     '',
+  turnstileSiteKey: '',
 };
 
 export async function onRequestOptions() {
@@ -75,7 +77,9 @@ export async function onRequestPut({ request, env }) {
     ...(body.heroButtonText !== undefined && { heroButtonText: String(body.heroButtonText) }),
     ...(body.heroButtonLink !== undefined && { heroButtonLink: String(body.heroButtonLink) }),
     ...(body.heroBgPhoto      !== undefined && { heroBgPhoto:      body.heroBgPhoto === null ? null : String(body.heroBgPhoto) }),
-    ...(body.quickLinks       !== undefined && { quickLinks:       Array.isArray(body.quickLinks) ? body.quickLinks : existing.quickLinks }),
+    ...(body.quickLinks        !== undefined && { quickLinks:        Array.isArray(body.quickLinks) ? body.quickLinks : existing.quickLinks }),
+    ...(body.contactEmail      !== undefined && { contactEmail:      String(body.contactEmail).trim() }),
+    ...(body.turnstileSiteKey  !== undefined && { turnstileSiteKey:  String(body.turnstileSiteKey).trim() }),
   };
 
   await env.MENU_KV.put('settings', JSON.stringify(data));
@@ -99,7 +103,9 @@ function migrateSettings(data) {
     heroButtonText: data.heroButtonText ?? DEFAULT_SETTINGS.heroButtonText,
     heroButtonLink: data.heroButtonLink ?? DEFAULT_SETTINGS.heroButtonLink,
     heroBgPhoto: data.heroBgPhoto ?? null,
-    quickLinks:  Array.isArray(data.quickLinks) ? data.quickLinks : DEFAULT_QUICK_LINKS,
+    quickLinks:       Array.isArray(data.quickLinks) ? data.quickLinks : DEFAULT_QUICK_LINKS,
+    contactEmail:     data.contactEmail     ?? '',
+    turnstileSiteKey: data.turnstileSiteKey ?? '',
   };
 }
 
