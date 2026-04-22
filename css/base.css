@@ -76,7 +76,7 @@
     margin: 0 auto;
     padding: 56px 32px 40px;
     display: grid;
-    grid-template-columns: 1.1fr 2fr 0.9fr;
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 48px;
     align-items: start;
   }
