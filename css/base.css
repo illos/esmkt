@@ -327,3 +327,12 @@
     .gf-bottom { padding: 14px 20px; font-size: 10px; }
     .gf-bottom-right { display: none; }
   }
+
+
+
+/*Global styles*/
+.topo {
+  background-image: url("assets/topo-white.svg");
+  background-repeat: repeat;
+  background-size: 500px;
+}
