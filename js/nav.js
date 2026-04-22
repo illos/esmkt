@@ -1,4 +1,4 @@
-const DEFAULT_QUICK_LINKS = [
+const DEFAULT_LINKS = [
   { id:'1', text:'Get Directions', url:'https://maps.app.goo.gl/dhU5oMRYwXpTUhmY9' },
   { id:'2', text:'Snackbar Menu',  url:'menu.html' },
   { id:'3', text:'Explore',        url:'#explore' },
@@ -35,9 +35,9 @@ function closeNavOverlay() {
 
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeNavOverlay(); });
 
-// ─── RENDER QUICK LINKS (overlay + footer) ───────────────────────────────────
-function renderNavOverlayLinks(links) {
-  const ql = links || DEFAULT_QUICK_LINKS;
+// ─── RENDER LINKS (overlay + footer) ─────────────────────────────────────────
+function renderNavLinks(links) {
+  const ql = links || DEFAULT_LINKS;
 
   // Nav overlay
   const overlayEl = document.getElementById('navOverlayLinks');
@@ -65,14 +65,14 @@ function renderNavOverlayLinks(links) {
 // ─── AUTO-INIT ────────────────────────────────────────────────────────────────
 // Render defaults immediately; non-index pages also fetch settings for fresh links.
 document.addEventListener('DOMContentLoaded', () => {
-  renderNavOverlayLinks(DEFAULT_QUICK_LINKS);
+  renderNavLinks(DEFAULT_LINKS);
 
-  // index.html manages its own settings fetch and calls renderNavOverlayLinks() from index.js.
+  // index.html manages its own settings fetch and calls renderNavLinks() from index.js.
   // For all other pages (menu.html, etc.), fetch settings quietly here.
   if (!document.querySelector('.hero-v2')) {
     fetch('/api/settings')
       .then(r => r.ok ? r.json() : null)
-      .then(data => { if (data?.quickLinks?.length) renderNavOverlayLinks(data.quickLinks); })
+      .then(data => { if (data?.quickLinks?.length) renderNavLinks(data.quickLinks); })
       .catch(() => {});
   }
 });

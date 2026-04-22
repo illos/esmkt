@@ -1,9 +1,12 @@
 /**
- * GET  /api/settings  — public, returns { storeHours, deliHours }
- * PUT  /api/settings  — save hours (auth required)
+ * GET  /api/settings  — public, returns { storeHours, deliHours (snackbar hours), deliTax (snackbar tax), ... }
+ * PUT  /api/settings  — save settings (auth required)
  *
  * Hours array: 7 entries Mon(0)–Sun(6)
  *   [{ day: "Mon", open: "08:30", close: "19:30", closed: false }, ...]
+ *
+ * NOTE: KV keys "deliHours" and "deliTax" are preserved for backward compatibility.
+ * They are displayed in the UI as "Snackbar Hours" and "Snackbar Tax" respectively.
  *
  * Required KV binding:  MENU_KV  (same namespace, key "settings")
  * Required env var:     AUTH_SECRET

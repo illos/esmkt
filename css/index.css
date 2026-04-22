@@ -548,3 +548,1017 @@
     .btn-call, .btn-order { width: 100%; max-width: 320px; justify-content: center; }
     .services-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
   }
+
+/* ══════════════════════════════════════════════════════════════
+   TOPO TEXTURE — applied to hero + all sections below
+   Uses ::before with z-index:-1 inside isolation:isolate so it
+   sits over the background colour but under all content.
+   ══════════════════════════════════════════════════════════════ */
+
+/* Hero topo lives on ::after so it doesn't conflict with right-
+   column gradients that use ::before / ::after on child divs */
+.hero-v2::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url('assets/topo-white.svg');
+  background-size: 520px;
+  background-repeat: repeat;
+  opacity: 0.045;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* All page sections + banners + footer */
+.section,
+.service-banner,
+.site-footer {
+  position: relative;
+  isolation: isolate;
+}
+
+.section::before,
+.service-banner::before,
+.site-footer::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url('assets/topo-white.svg');
+  background-size: 480px;
+  background-repeat: repeat;
+  opacity: 0.04;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* ── Hero bottom trail strip ── */
+.hero-trail-strip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 22px 40px 28px;
+  border-top: 1px solid rgba(201,169,110,0.15);
+  text-align: center;
+}
+
+.hero-trail-text {
+  font-family: 'Oswald', sans-serif;
+  font-size: 13px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--cream-dim);
+  font-weight: 400;
+  max-width: 680px;
+  line-height: 1.6;
+}
+
+.hero-trail-star {
+  color: var(--gold);
+  opacity: 0.5;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 600px) {
+  .hero-trail-strip { padding: 18px 24px 22px; gap: 12px; }
+  .hero-trail-text { font-size: 11px; letter-spacing: 1.5px; }
+  .hero-trail-star { display: none; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   HERO V2 — two-column split
+   ══════════════════════════════════════════════════════════════ */
+.hero-v2 {
+  position: relative;
+  min-height: 100vh;
+  padding-top: 96px;
+  background: var(--charcoal);
+  overflow: hidden;
+}
+
+.hero-v2-inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 72px);
+}
+
+/* ── LEFT column ── */
+.hero-v2-left {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 52px 40px 52px 52px;
+  gap: 22px;
+}
+
+.hv2-logo {
+  width: min(260px, 56vw);
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 2px 16px rgba(0,0,0,0.8));
+}
+
+.hv2-headline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.hv2-eyebrow {
+  font-family: 'Oswald', sans-serif;
+  font-size: 10px;
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 8px;
+  opacity: 0.9;
+}
+
+.hv2-name {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 700;
+  font-size: clamp(54px, 6vw, 84px);
+  line-height: 0.9;
+  color: var(--cream);
+  text-transform: uppercase;
+  letter-spacing: 3px;
+}
+
+.hv2-market {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 400;
+  font-size: clamp(28px, 3.5vw, 50px);
+  line-height: 1.2;
+  color: var(--gold-dark);
+  text-transform: uppercase;
+  letter-spacing: 8px;
+}
+
+.hv2-tagline {
+  font-family: 'Oswald', sans-serif;
+  font-size: 9px;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  color: rgba(184,176,160,0.38);
+  margin-top: 14px;
+}
+
+.hv2-divider {
+  width: 48px;
+  height: 1px;
+  background: linear-gradient(to right, var(--gold-dark), transparent);
+}
+
+.hv2-desc {
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--cream-dim);
+  max-width: 360px;
+  margin: 0;
+  font-weight: 300;
+}
+
+.hv2-ctas {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* ── RIGHT column — photo frame ── */
+.hero-v2-right {
+  flex: 1;
+  position: relative;
+  min-height: 340px;
+  overflow: hidden;
+}
+
+.hv2-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 35%;
+  display: block;
+}
+
+/* Gradient: very gradual left-edge fade into the dark bg */
+.hero-v2-right::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  width: 70%;
+  background: linear-gradient(
+    to right,
+    var(--charcoal)       0%,
+    rgba(26,26,24,0.80)  20%,
+    rgba(26,26,24,0.45)  50%,
+    rgba(26,26,24,0.10)  80%,
+    transparent          100%
+  );
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Gradient: bottom edge fades out */
+.hero-v2-right::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 80px;
+  background: linear-gradient(to bottom, transparent, var(--charcoal));
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* ── Quick-links panel — floating card with topo bg ── */
+.hv2-links-panel {
+  position: absolute;
+  top: 50%;
+  right: 24px;
+  transform: translateY(-50%);
+  width: 270px;
+  background: rgba(12, 12, 10, 0.88);
+  border: 1px solid rgba(160,120,64,0.35);
+  backdrop-filter: blur(10px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  z-index: 5;
+  overflow: hidden; /* clip the topo pseudo-element */
+}
+
+/* Topo texture inside the links panel */
+.hv2-links-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url('assets/topo-white.svg');
+  background-size: 300px;
+  background-repeat: repeat;
+  opacity: 0.07;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.hv2-links-header {
+  position: relative;
+  z-index: 1;
+  font-family: 'Oswald', sans-serif;
+  font-size: 9px;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  color: var(--gold);
+  padding: 16px 24px 14px;
+  border-bottom: 1px solid rgba(160,120,64,0.2);
+}
+
+.hv2-link {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 14px 24px;
+  color: var(--cream);
+  text-decoration: none;
+  font-family: 'Oswald', sans-serif;
+  font-size: 12px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  transition: background 0.15s, color 0.15s, padding-left 0.15s;
+}
+
+.hv2-link:last-child { border-bottom: none; }
+
+.hv2-link svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  color: var(--gold);
+  opacity: 0.75;
+}
+
+.hv2-link:hover {
+  background: rgba(200,169,110,0.08);
+  color: var(--gold);
+  padding-left: 30px;
+}
+
+.hv2-link:hover svg { opacity: 1; }
+
+.hv2-arr {
+  margin-left: auto;
+  color: var(--gold);
+  opacity: 0.4;
+  font-size: 14px;
+  transition: opacity 0.15s;
+}
+
+.hv2-link:hover .hv2-arr { opacity: 0.9; }
+
+/* ── Store photo — always visible, 80% larger than original ── */
+.hv2-store-pop {
+  position: absolute;
+  bottom: 52px;
+  left: 0;
+  width: 470px;
+  z-index: 3;
+  border: 2px solid var(--gold-dark);
+  box-shadow:
+    0 0 0 1px rgba(20,20,18,0.7),
+    0 16px 48px rgba(0,0,0,0.75);
+  overflow: hidden;
+}
+
+.hv2-store-pop img {
+  width: 100%;
+  height: auto;
+  display: block;
+  aspect-ratio: 3/2;
+  object-fit: cover;
+}
+
+/* ── Desktop: side-by-side ── */
+@media (min-width: 860px) {
+  .hero-v2-inner {
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  .hero-v2-left {
+    flex: 0 0 40%;
+    padding: 80px 56px 80px 64px;
+  }
+
+  .hero-v2-right {
+    flex: 1;
+    min-height: 100%;
+  }
+
+  .hv2-store-pop {
+    left: 0;
+    bottom: 60px;
+    width: 504px;
+  }
+}
+
+/* ── Mobile ── */
+@media (max-width: 859px) {
+  /* Reorder hero sections: photo first, text second, quick links last */
+  .hero-v2-right { order: -1; }
+  /* hero-v2-left stays at default order: 0, comes after hero-v2-right */
+  /* hv2-links-panel is after hero-v2-left in DOM, so also order: 0 → sorts after */
+
+  .hero-v2-left {
+    padding: 32px 28px 28px;
+    gap: 16px;
+  }
+
+  .hero-v2-right {
+    min-height: 60vw;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* Store pop: full width, fills the right column */
+  .hv2-store-pop {
+    position: relative;
+    bottom: auto;
+    left: auto;
+    width: 100%;
+    margin: 0;
+    z-index: 3;
+  }
+
+  /* Photo on mobile — cover fill, no fixed attachment */
+  .hv2-photo {
+    background-size: cover;
+    background-position: center 35%;
+    background-attachment: scroll;
+  }
+
+  /* Quick links: 2-column grid, centered, below the text */
+  .hv2-links-panel {
+    position: relative;
+    top: auto;
+    right: auto;
+    transform: none;
+    width: 90%;
+    margin: 0 auto 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .hv2-links-header {
+    grid-column: 1 / -1;
+    padding: 12px 16px 10px;
+  }
+
+  .hv2-link {
+    padding: 11px 16px;
+    font-size: 10px;
+    gap: 8px;
+    letter-spacing: 1.5px;
+  }
+
+  /* CTA buttons: inline row — call icon + order button side by side */
+  .hv2-ctas { flex-wrap: nowrap; }
+  #callBtnPhone { display: none; }
+  #callBtn  { width: auto !important; padding: 14px 16px; flex-shrink: 0; }
+  #heroBtn  { width: auto !important; flex: 1; min-width: 0; font-size: 13px; padding: 14px 16px; }
+}
+
+/* ── Hero photo — 100% height, proportional width, right-aligned ── */
+.hv2-photo {
+  background-size: 100%;
+  background-position: right center;
+  background-attachment: scroll;
+  background-repeat: no-repeat;
+  position: absolute;
+  inset: 0;
+}
+
+/* ── Topo texture on hours cards + service items ── */
+.hours-card,
+.service-item {
+  position: relative;
+  isolation: isolate;
+}
+
+/* ::before on .hours-card is taken by the gold top-border in index.css,
+   so we use ::after for the topo texture */
+.hours-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url('assets/black-topo.svg');
+  background-size: 300px;
+  background-repeat: repeat;
+  opacity: 0.12;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Ensure card content sits above the topo layer */
+.hours-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.service-item::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url('assets/topo-white.svg');
+  background-size: 300px;
+  background-repeat: repeat;
+  opacity: 0.09;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   EVENTS — new layout
+   ══════════════════════════════════════════════════════════════ */
+
+/* Grid: auto-fill so featured spans full width, standards flow into columns */
+.events-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)) !important;
+  gap: 20px;
+}
+
+/* ── Featured first event: spans full width, text left / image right ── */
+.event-card--featured {
+  grid-column: 1 / -1 !important;
+  display: grid !important;
+  grid-template-columns: 1fr 40% !important;
+  min-height: 260px;
+}
+
+.event-card--featured .event-img,
+.event-card--featured .event-img-placeholder {
+  object-fit: contain !important;
+  background: var(--charcoal-mid);
+  width: 100%;
+  height: auto;
+  max-height: 480px;
+  display: block;
+}
+
+.event-card--featured .event-body {
+  padding: 36px 40px !important;
+  justify-content: center;
+}
+
+/* ── Standard cards: image on top, text below ── */
+.event-card--standard {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  grid-template-rows: auto 1fr;
+  align-content: start;
+}
+
+.event-card--standard .event-img,
+.event-card--standard .event-img-placeholder {
+  width: 100%;
+  height: auto;
+  object-fit: contain !important;
+  background: var(--charcoal-mid);
+  display: block;
+}
+
+.event-card--standard .event-body {
+  padding: 20px 22px !important;
+}
+
+/* ── Mobile: featured stacks image on top, text below ── */
+@media (max-width: 600px) {
+  .event-card--featured {
+    grid-template-columns: 1fr !important;
+  }
+  .event-card--featured .event-body {
+    padding: 24px 20px !important;
+    order: 2;
+  }
+  .event-card--featured .event-img,
+  .event-card--featured .event-img-placeholder {
+    order: 1;
+    width: 100%;
+    height: auto;
+    max-height: 400px;
+  }
+}
+
+/* ── Snackbar banner menu button ── */
+.banner-menu-btn {
+  margin-left: auto;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 22px;
+  border: 1px solid rgba(255,255,255,0.35);
+  border-radius: 3px;
+  background: rgba(255,255,255,0.10);
+  color: var(--cream);
+  font-family: 'Oswald', sans-serif;
+  font-size: 11px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.banner-menu-btn:hover {
+  background: rgba(255,255,255,0.18);
+  border-color: rgba(255,255,255,0.6);
+}
+
+/* ── Facebook follow strip ── */
+.fb-follow-strip {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-top: 32px;
+  padding: 22px 28px;
+  background: rgba(24, 119, 242, 0.10);
+  border: 1px solid rgba(24, 119, 242, 0.25);
+  border-radius: 4px;
+  flex-wrap: wrap;
+}
+
+.fb-follow-icon {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  color: #4a90d9;
+  opacity: 0.85;
+}
+
+.fb-follow-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 180px;
+}
+
+.fb-follow-title {
+  font-family: 'Oswald', sans-serif;
+  font-size: 15px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--cream);
+}
+
+.fb-follow-sub {
+  font-size: 12px;
+  color: var(--cream-dim);
+  font-weight: 300;
+}
+
+.fb-follow-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 22px;
+  border: 1px solid rgba(24, 119, 242, 0.5);
+  border-radius: 3px;
+  background: rgba(24, 119, 242, 0.15);
+  color: #8ab8f5;
+  font-family: 'Oswald', sans-serif;
+  font-size: 11px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.fb-follow-btn:hover {
+  background: rgba(24, 119, 242, 0.30);
+  border-color: rgba(24, 119, 242, 0.7);
+  color: #c5d9f7;
+}
+
+/* ── See You Soon banner — purple/indigo ── */
+.see-you-banner {
+  background: linear-gradient(100deg, rgba(100,60,200,0.70) 0%, rgba(70,30,150,0.35) 45%, rgba(12,6,28,1) 78%) !important;
+}
+
+/* ── Exploring Esmeralda banner — deep sky / mountain slate ── */
+.explore-banner {
+  background: linear-gradient(100deg, rgba(35,90,140,0.72) 0%, rgba(20,55,90,0.38) 45%, rgba(4,12,22,1) 78%) !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   EXPLORING ESMERALDA
+   ══════════════════════════════════════════════════════════════ */
+.explore-section .section-inner { max-width: 1060px; }
+
+/* ── Section lede text ── */
+.explore-lede {
+  max-width: 640px;
+  margin: 0 auto 52px;
+  text-align: center;
+  font-size: 16px;
+  line-height: 1.8;
+  color: var(--cream-dim);
+  font-weight: 300;
+}
+
+/* ── Trail container ── */
+.explore-trail {
+  position: relative;
+  padding-left: 64px;
+}
+
+/* ── Vertical animated line ── */
+.trail-line-track {
+  position: absolute;
+  left: 19px;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  background: rgba(201,169,110,0.12);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.trail-line-fill {
+  width: 100%;
+  height: 0%;
+  background: linear-gradient(to bottom, var(--gold-dark), var(--gold), var(--gold-dark));
+  border-radius: 2px;
+}
+
+/* ── Each stop ── */
+.explore-stop {
+  position: relative;
+  margin-bottom: 56px;
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.65s ease, transform 0.65s ease;
+}
+.explore-stop:last-child { margin-bottom: 0; }
+.explore-stop.is-active { opacity: 1; transform: none; }
+
+/* Stagger children slightly */
+.explore-stop:nth-child(2) { transition-delay: 0.05s; }
+.explore-stop:nth-child(3) { transition-delay: 0.10s; }
+
+/* ── Dot marker on the line ── */
+/* padding-left:64px on trail + left:-59px + dot half-width 15px = 20px = line centre (left:19px + 1px) */
+.stop-marker {
+  position: absolute;
+  left: -59px;
+  top: 32px;
+  z-index: 2;
+}
+.stop-dot {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--charcoal-mid);
+  border: 2px solid rgba(201,169,110,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Oswald', sans-serif;
+  font-size: 11px;
+  letter-spacing: 0;
+  color: var(--cream-dim);
+  transition: background 0.5s ease, border-color 0.5s ease, color 0.5s ease, box-shadow 0.5s ease;
+}
+.explore-stop.is-active .stop-dot {
+  background: var(--gold-dark);
+  border-color: var(--gold);
+  color: var(--charcoal);
+  box-shadow: 0 0 0 5px rgba(201,169,110,0.15), 0 0 18px rgba(201,169,110,0.25);
+}
+
+/* ── Attraction card — image fills full width, text overlays on top ── */
+.explore-card {
+  display: grid;
+  /* Fixed height so images crop rather than expanding the card */
+  height: 500px;
+  border: 1px solid var(--charcoal-border);
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--charcoal-card);
+  position: relative;
+  display: flex;
+  align-items: stretch;
+}
+.explore-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(to right, var(--gold-dark), var(--gold), var(--gold-dark));
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  z-index: 3;
+}
+.explore-stop.is-active .explore-card::before { opacity: 1; }
+
+/* Topo texture over the card (visible mainly on the dark text side) */
+.explore-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url('assets/topo-white.svg');
+  background-size: 320px;
+  background-repeat: repeat;
+  opacity: 0.055;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Raise body above topo layer */
+.explore-body { z-index: 2; }
+
+/* ── Image wrapper — 80% width, anchored to the image side ── */
+.explore-img-wrap {
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 80%;
+}
+
+/* Right cards: image on the left */
+.explore-card:not(.explore-card--left):not(.explore-card--hero) .explore-img-wrap {
+  left: 0;
+}
+
+/* Left cards: image on the right */
+.explore-card--left .explore-img-wrap {
+  right: 0;
+  left: auto;
+}
+
+.explore-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Right cards (default): fade right ~half of image into card bg */
+.explore-card:not(.explore-card--left):not(.explore-card--hero) .explore-img-wrap::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to right, transparent 28%, var(--charcoal-card) 70%);
+  pointer-events: none;
+}
+
+/* Left cards: fade left ~half of image into card bg */
+.explore-card--left .explore-img-wrap::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to left, transparent 28%, var(--charcoal-card) 70%);
+  pointer-events: none;
+}
+
+/* ── Body — sits above the absolute image, right 50% (default) ── */
+.explore-body {
+  position: relative;
+  z-index: 1;
+  width: 50%;
+  margin-left: auto; /* push to right side */
+  padding: 32px 36px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+}
+
+/* Left cards: body sits on the left */
+.explore-card--left .explore-body {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+.explore-tag {
+  font-family: 'Oswald', sans-serif;
+  font-size: 9px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--gold);
+  opacity: 0.85;
+}
+
+.explore-name {
+  font-family: 'Oswald', sans-serif;
+  font-size: clamp(18px, 2.5vw, 26px);
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--cream);
+  line-height: 1.1;
+  margin: 0;
+}
+
+.explore-desc {
+  font-size: 14px;
+  line-height: 1.8;
+  color: var(--cream-dim);
+  font-weight: 300;
+  margin: 0;
+}
+
+/* ── Fish Lake Valley hero card — stacks vertically, not the overlay layout ── */
+.explore-card--hero {
+  height: auto !important;   /* don't constrain to fixed 320px */
+  display: flex !important;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+/* Hero body: full width, no side-margin */
+.explore-card--hero .explore-body {
+  width: 100% !important;
+  margin: 0 !important;
+}
+
+.explore-hero-wrap {
+  position: relative;
+  height: 460px;   /* taller slideshow */
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.explore-hero-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.explore-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(10,8,4,0.90) 0%,
+    rgba(10,8,4,0.50) 38%,
+    rgba(10,8,4,0.10) 65%,
+    transparent 100%
+  );
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 40px 44px;
+  gap: 8px;
+  z-index: 1;
+}
+
+.explore-hero-overlay .explore-tag {
+  font-size: 10px;
+  letter-spacing: 5px;
+}
+
+.explore-name--hero {
+  font-size: clamp(26px, 4vw, 44px) !important;
+  letter-spacing: 2.5px !important;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.6);
+}
+
+.explore-body--hero {
+  padding: 32px 44px 36px !important;
+}
+
+/* ── Mobile ── */
+@media (max-width: 680px) {
+  /* No side line or dots — cards go full width */
+  .explore-trail { padding-left: 0; }
+  .trail-line-track { display: none; }
+  .stop-marker { display: none; }
+  .explore-stop { margin-bottom: 24px; }
+
+  /* Stacked layout: full-width image on top, text below */
+  .explore-card:not(.explore-card--hero) {
+    height: auto !important;
+    flex-direction: column;
+  }
+  .explore-img-wrap {
+    position: relative !important;
+    inset: auto !important;
+    width: 100% !important;
+    height: 240px;
+    flex-shrink: 0;
+  }
+  .explore-img-wrap::after { display: none !important; }
+  /* Left cards have body first in DOM — force image to render first */
+  .explore-card--left .explore-img-wrap { order: -1; }
+  .explore-body {
+    display: flex !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 20px 20px 24px;
+    gap: 8px;
+  }
+
+  /* Hero card mobile */
+  .explore-hero-wrap { height: 220px; }
+  .explore-hero-overlay { padding: 20px 20px; gap: 6px; }
+  .explore-body--hero { padding: 20px 20px 24px !important; }
+}
+
+
+/* ── Event CTA button ── */
+.event-cta-btn {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 9px 20px;
+  border: 1px solid var(--gold-dark);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--gold);
+  font-family: 'Oswald', sans-serif;
+  font-size: 11px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+  align-self: flex-start;
+}
+.event-cta-btn:hover {
+  background: var(--gold-dark);
+  color: var(--charcoal);
+}
+
+/* ── Service + event cards — no hover lift ── */
+.service-item {
+  padding: 32px 20px 28px !important;
+  min-height: 130px !important;
+}
+
+.service-item:hover,
+.event-card:hover {
+  transform: none !important;
+  border-color: var(--charcoal-border) !important;
+  cursor: default;
+}
+
+/* ── Banner gradients — muted tinted dark ends ── */
+.fuel-banner {
+  background: linear-gradient(100deg, rgba(210,140,20,0.65) 0%, rgba(150,85,10,0.32) 45%, rgba(26,17,4,1) 78%) !important;
+}
+
+.fireworks-banner {
+  background: linear-gradient(100deg, rgba(210,45,45,0.65) 0%, rgba(155,18,18,0.32) 45%, rgba(26,6,6,1) 78%) !important;
+}
+
+/* ── Snackbar banner — teal/green food color ── */
+.snackbar-banner {
+  background: linear-gradient(100deg, rgba(30,155,95,0.65) 0%, rgba(18,110,65,0.32) 45%, rgba(5,22,12,1) 78%) !important;
+}

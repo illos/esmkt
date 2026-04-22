@@ -30,7 +30,7 @@
   <div class="nav-overlay-backdrop" onclick="closeNavOverlay()"></div>
   <div class="nav-overlay-panel">
     <div class="nav-overlay-header">
-      <span class="nav-overlay-title">Quick Links</span>
+      <span class="nav-overlay-title">Links</span>
       <button class="nav-overlay-close" onclick="closeNavOverlay()" aria-label="Close menu">&#215;</button>
     </div>
     <nav id="navOverlayLinks"></nav>
@@ -52,7 +52,7 @@
   <div class="menu-grid" id="menuGrid"></div>
 
   <!-- ORDER PANEL — hidden when snackbar is closed -->
-  <div id="deliOpenContent">
+  <div id="snackbarOpenContent">
   <p class="section-title" id="orderSectionTitle" style="display:none;">Your Order</p>
   <div class="order-panel" id="orderPanel">
     <div class="order-panel-header">
@@ -106,7 +106,7 @@
       </div>
     </div>
   </div>
-  </div><!-- /deliOpenContent -->
+  </div><!-- /snackbarOpenContent -->
 
   </div><!-- /page-wrap -->
 
@@ -133,10 +133,10 @@
       </div>
     </div>
 
-    <!-- Col 2: Quick links -->
-    <!-- Quick Links — dynamically populated by nav.js -->
+    <!-- Col 2: Links -->
+    <!-- Links — dynamically populated by nav.js -->
     <div class="gf-links">
-      <div class="gf-col-label">Quick Links</div>
+      <div class="gf-col-label">Links</div>
       <div id="footerQuickLinks"></div>
     </div>
 

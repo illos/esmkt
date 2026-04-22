@@ -729,7 +729,7 @@ async function loadSettings() {
   } catch(e) { showToast('Could not load settings.', true); return; }
   loadSiteInfo();
   loadContactSettings();
-  renderAdminQuickLinks(settingsData?.quickLinks);
+  renderAdminLinks(settingsData?.quickLinks);
 }
 
 async function loadHours() {
@@ -738,8 +738,8 @@ async function loadHours() {
     const data = await res.json();
     settingsData = data;
     updateOrderingUI(data.onlineOrdering !== false);
-    renderHoursTable('storeHoursBody', data.storeHours);
-    renderHoursTable('deliHoursBody',  data.deliHours);
+    renderHoursTable('storeHoursBody',   data.storeHours);
+    renderHoursTable('snackbarHoursBody', data.deliHours);
   } catch(e) { showToast('Could not load hours.', true); }
 }
 
@@ -804,16 +804,16 @@ async function saveHours() {
   const ind = document.getElementById('savingHoursIndicator');
   btn.disabled = true; ind.style.display = 'flex';
   try {
-    const storeHours = collectHours('storeHoursBody', settingsData.storeHours);
-    const deliHours  = collectHours('deliHoursBody',  settingsData.deliHours);
+    const storeHours   = collectHours('storeHoursBody',   settingsData.storeHours);
+    const snackbarHours = collectHours('snackbarHoursBody', settingsData.deliHours);
     const onlineOrdering = document.getElementById('onlineOrderingToggle')?.checked ?? (settingsData.onlineOrdering !== false);
     const res = await apiFetch('/api/settings', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ storeHours, deliHours, onlineOrdering }),
+      body: JSON.stringify({ storeHours, deliHours: snackbarHours, onlineOrdering }),
     });
     if (!res.ok) throw new Error('Save failed');
-    settingsData = { storeHours, deliHours, onlineOrdering };
+    settingsData = { storeHours, deliHours: snackbarHours, onlineOrdering };
     showToast('Hours saved.');
   } catch(e) { showToast(e.message, true); }
   finally { btn.disabled = false; ind.style.display = 'none'; }
@@ -1201,8 +1201,8 @@ function showToast(msg, isError) {
   toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
 }
 
-// ─── QUICK LINKS ADMIN ────────────────────────────────────────────────────────
-const DEFAULT_QUICK_LINKS_ADMIN = [
+// ─── LINKS ADMIN ─────────────────────────────────────────────────────────────
+const DEFAULT_LINKS = [
   { id:'1', text:'Get Directions', url:'https://maps.app.goo.gl/dhU5oMRYwXpTUhmY9' },
   { id:'2', text:'Snackbar Menu',  url:'menu.html' },
   { id:'3', text:'Explore',        url:'#explore' },
@@ -1215,10 +1215,10 @@ const DEFAULT_QUICK_LINKS_ADMIN = [
 // ─── QL drag state ────────────────────────────────────────────────────────────
 let qlDragIdx = null;
 
-function renderAdminQuickLinks(links) {
+function renderAdminLinks(links) {
   const list = document.getElementById('quickLinksList');
   if (!list) return;
-  const ql = (links && links.length) ? links : DEFAULT_QUICK_LINKS_ADMIN;
+  const ql = (links && links.length) ? links : DEFAULT_LINKS;
   list.innerHTML = ql.map((lk, i) => buildQlRow(lk, i)).join('');
 }
 
@@ -1231,7 +1231,7 @@ function buildQlRow(lk, idx) {
     <span class="ql-drag-handle" title="Drag to reorder">&#8942;&#8942;</span>
     <input  class="form-input ql-text" type="text" placeholder="Link text" value="${esc(lk.text)}"/>
     <input  class="form-input ql-url"  type="text" placeholder="URL or #anchor" value="${esc(lk.url)}"/>
-    <button class="ql-btn-remove" onclick="removeQuickLink(${idx})" title="Remove">&#215;</button>
+    <button class="ql-btn-remove" onclick="removeLink(${idx})" title="Remove">&#215;</button>
   </div>`;
 }
 
@@ -1253,11 +1253,11 @@ function onQlDragOver(e, idx) {
 function onQlDrop(e, targetIdx) {
   if (qlDragIdx === null || qlDragIdx === targetIdx) return;
   e.preventDefault();
-  const current = collectAdminQuickLinks();
+  const current = collectAdminLinks();
   const [moved] = current.splice(qlDragIdx, 1);
   current.splice(targetIdx, 0, moved);
   qlDragIdx = null;
-  renderAdminQuickLinks(current);
+  renderAdminLinks(current);
 }
 function onQlDragEnd(e) {
   qlDragIdx = null;
@@ -1266,7 +1266,7 @@ function onQlDragEnd(e) {
   );
 }
 
-function collectAdminQuickLinks() {
+function collectAdminLinks() {
   const rows = document.querySelectorAll('#quickLinksList .ql-row');
   return Array.from(rows).map((row, i) => ({
     id:   String(i + 1),
@@ -1275,27 +1275,27 @@ function collectAdminQuickLinks() {
   })).filter(lk => lk.text && lk.url);
 }
 
-function addQuickLink() {
-  const current = collectAdminQuickLinks();
+function addLink() {
+  const current = collectAdminLinks();
   current.push({ id: String(Date.now()), text: '', url: '' });
-  renderAdminQuickLinks(current);
+  renderAdminLinks(current);
   const rows = document.querySelectorAll('#quickLinksList .ql-row');
   rows[rows.length - 1]?.querySelector('.ql-text')?.focus();
 }
 
-function removeQuickLink(idx) {
-  const current = collectAdminQuickLinks();
+function removeLink(idx) {
+  const current = collectAdminLinks();
   current.splice(idx, 1);
-  renderAdminQuickLinks(current);
+  renderAdminLinks(current);
 }
 
-async function saveQuickLinks() {
+async function saveLinks() {
   const btn = document.getElementById('saveQuickLinksBtn');
   const ind = document.getElementById('savingQuickLinksIndicator');
   if (btn) btn.disabled = true;
   if (ind) ind.style.display = 'flex';
   try {
-    const quickLinks = collectAdminQuickLinks();
+    const quickLinks = collectAdminLinks();
     if (!quickLinks.length) { showToast('Add at least one link before saving.', true); return; }
     const res = await apiFetch('/api/settings', {
       method:  'PUT',
@@ -1304,7 +1304,7 @@ async function saveQuickLinks() {
     });
     if (!res.ok) throw new Error('Save failed');
     if (settingsData) settingsData.quickLinks = quickLinks;
-    showToast('Quick links saved.');
+    showToast('Links saved.');
   } catch(e) {
     showToast(e.message, true);
   } finally {

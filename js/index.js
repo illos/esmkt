@@ -4,7 +4,7 @@
   const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
   let siteSettings = {
     storeHours: DAYS.map(d => ({ day:d, open:'08:30', close:'19:30', closed:false })),
-    deliHours:  DAYS.map((d,i) => ({ day:d, open:i<6?'09:00':null, close:i<6?'15:00':null, closed:i===6 })),
+    snackbarHours:  DAYS.map((d,i) => ({ day:d, open:i<6?'09:00':null, close:i<6?'15:00':null, closed:i===6 })),
   };
 
   // ─── Time helpers ─────────────────────────────────────────────────────────
@@ -108,9 +108,9 @@
     el.className   = `store-status ${state}`;
   }
 
-  // ─── Render quick links (hero panel, nav overlay, footer) ────────────────
-  function renderQuickLinks(links) {
-    const ql = (links && links.length) ? links : DEFAULT_QUICK_LINKS;
+  // ─── Render links (hero panel, nav overlay, footer) ──────────────────────
+  function renderLinks(links) {
+    const ql = (links && links.length) ? links : DEFAULT_LINKS;
 
     // 1. Hero quick-links panel
     const heroPanel = document.getElementById('heroLinksPanel');
@@ -129,7 +129,7 @@
     }
 
     // 2. Nav overlay
-    renderNavOverlayLinks(ql);
+    renderNavLinks(ql);
 
     // 3. Footer quick links
     const footerEl = document.getElementById('footerQuickLinks');
@@ -144,12 +144,12 @@
 
   // ─── Render hours cards ───────────────────────────────────────────────────
   function renderHoursCards() {
-    renderHoursCard(siteSettings.storeHours, 'storeHoursTime',       'storeHoursDays',       'storeHoursSchedule');
-    renderHoursCard(siteSettings.deliHours,  'deliHoursTime',        'deliHoursDays',        'deliHoursSchedule');
+    renderHoursCard(siteSettings.storeHours,   'storeHoursTime',           'storeHoursDays',           'storeHoursSchedule');
+    renderHoursCard(siteSettings.snackbarHours,'snackbarHoursTime',        'snackbarHoursDays',        'snackbarHoursSchedule');
     // Footer copies
     if (document.getElementById('footerStoreHoursTime')) {
-      renderHoursCard(siteSettings.storeHours, 'footerStoreHoursTime', 'footerStoreHoursDays', 'footerStoreHoursSchedule');
-      renderHoursCard(siteSettings.deliHours,  'footerDeliHoursTime',  'footerDeliHoursDays',  'footerDeliHoursSchedule');
+      renderHoursCard(siteSettings.storeHours,    'footerStoreHoursTime',    'footerStoreHoursDays',    'footerStoreHoursSchedule');
+      renderHoursCard(siteSettings.snackbarHours, 'footerSnackbarHoursTime', 'footerSnackbarHoursDays', 'footerSnackbarHoursSchedule');
     }
   }
 
@@ -186,17 +186,19 @@
 
   // ─── Load settings + events from API ─────────────────────────────────────
   async function initSite() {
-    // Render quick links with defaults immediately so page isn't blank
-    renderQuickLinks(null);
+    // Render links with defaults immediately so page isn't blank
+    renderLinks(null);
     try {
       const [settingsRes, eventsRes] = await Promise.all([
         fetch('/api/settings'),
         fetch('/api/events'),
       ]);
       if (settingsRes.ok) {
-        siteSettings = await settingsRes.json();
+        const sData = await settingsRes.json();
+        // sData.deliHours is the KV field name — copy to snackbarHours for local use
+        siteSettings = { ...sData, snackbarHours: sData.deliHours };
         applySiteInfo(siteSettings);
-        renderQuickLinks(siteSettings.quickLinks || null);
+        renderLinks(siteSettings.quickLinks || null);
       }
       if (eventsRes.ok) {
         const eData = await eventsRes.json();
@@ -250,3 +252,69 @@
 
   initSite();
   setInterval(updateStoreStatus, 60_000);
+
+// ─── Exploring Esmeralda — scroll-driven trail animation ─────────────────────
+(function () {
+  var trail  = null;
+  var fill   = null;
+  var stops  = null;
+  var ticking = false;
+
+  function getProgress() {
+    var rect  = trail.getBoundingClientRect();
+    var viewH = window.innerHeight;
+    // 0 when trail top hits 80% down screen → 1 when trail bottom leaves top of screen
+    var start = viewH * 0.8;
+    var total = rect.height + start;
+    var done  = start - rect.top;
+    return Math.max(0, Math.min(1, done / total));
+  }
+
+  function update() {
+    ticking = false;
+    var prog = getProgress();
+    fill.style.height = (prog * 100) + '%';
+
+    // Activate each stop when its marker crosses 68% down the viewport
+    stops.forEach(function (stop) {
+      var sr = stop.getBoundingClientRect();
+      if (sr.top < window.innerHeight * 0.68) {
+        stop.classList.add('is-active');
+      }
+    });
+  }
+
+  function onScroll() {
+    if (!ticking) {
+      ticking = true;
+      requestAnimationFrame(update);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    trail = document.getElementById('exploreTrail');
+    fill  = document.getElementById('trailFill');
+    stops = document.querySelectorAll('.explore-stop');
+    if (!trail || !fill || !stops.length) return;
+    window.addEventListener('scroll', onScroll, { passive: true });
+    update(); // run once on load in case already scrolled
+  });
+}());
+
+
+// Patch applySiteInfo: hero bg now drives an <img> src instead of CSS background
+(function () {
+  var _orig = applySiteInfo;
+  applySiteInfo = function (s) {
+    _orig(s); // handles phone, heroDesc, heroBtn
+    if (s && s.heroBgPhoto) {
+      var photo = document.getElementById('heroBgImg');
+      if (photo) photo.style.backgroundImage = "url('/images/" + s.heroBgPhoto + "')";
+    }
+    // Mirror phone to the Call Us quick-link
+    if (s && s.phone) {
+      var el = document.getElementById('heroCallLink');
+      if (el) el.href = 'tel:' + s.phone.replace(/\D/g, '');
+    }
+  };
+}());

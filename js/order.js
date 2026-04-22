@@ -28,12 +28,12 @@ let slideshowTimers = {};
 let orderingOpen = false;          // true only when deli is open AND online ordering is enabled
 let onlineOrderingEnabled = true;  // loaded from /api/settings
 let sitePhone = '775-572-3200';    // loaded from /api/settings
-let deliTaxRate = 0;               // loaded from /api/settings (0–100, percent)
+let snackbarTaxRate = 0;            // loaded from /api/settings (0–100, percent)
 
 // ─── BOOT ────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('footerYear').textContent = new Date().getFullYear();
-  // checkDeliHours and populatePickupTimes are called inside initMenu()
+  // checkSnackbarHours and populatePickupTimes are called inside initMenu()
   // after loading snackbar hours from the API
   await initMenu();
 });
@@ -41,14 +41,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 // ─── SNACKBAR HOURS ──────────────────────────────────────────────────────────
 // Fallback snackbar hours (Mon-Sat 9am-3pm, Sun closed)
 const DAYS_ARR = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-let deliHours = DAYS_ARR.map((d,i) => ({ day:d, open:i<6?'09:00':null, close:i<6?'15:00':null, closed:i===6 }));
+let snackbarHours = DAYS_ARR.map((d,i) => ({ day:d, open:i<6?'09:00':null, close:i<6?'15:00':null, closed:i===6 }));
 
 function toMins(t) { if (!t) return null; const [h,m]=t.split(':').map(Number); return h*60+m; }
 
-function getTodayDeliHours() {
+function getTodaySnackbarHours() {
   const jsDay = new Date().getDay(); // 0=Sun
   const idx   = jsDay === 0 ? 6 : jsDay - 1;
-  return deliHours[idx] || null;
+  return snackbarHours[idx] || null;
 }
 
 // ─── LOAD MENU + SETTINGS FROM API ───────────────────────────────────────────
@@ -70,11 +70,11 @@ async function initMenu() {
     if (settingsRes.ok) {
       const sData = await settingsRes.json();
       if (Array.isArray(sData.deliHours) && sData.deliHours.length === 7) {
-        deliHours = sData.deliHours;
+        snackbarHours = sData.deliHours;
       }
       onlineOrderingEnabled = sData.onlineOrdering !== false;
-      if (sData.phone)    sitePhone   = sData.phone;
-      if (typeof sData.deliTax === 'number') deliTaxRate = sData.deliTax;
+      if (sData.phone)    sitePhone       = sData.phone;
+      if (typeof sData.deliTax === 'number') snackbarTaxRate = sData.deliTax;
 
       // Apply dynamic phone to nav link
       const navPhone = document.getElementById('navPhone');
@@ -88,7 +88,7 @@ async function initMenu() {
     MENU = MENU_FALLBACK;
   }
   populatePickupTimes();
-  checkDeliHours();
+  checkSnackbarHours();
   renderMenu();
 }
 
@@ -101,16 +101,16 @@ function fmt12(t) {
   return `${h12}:${String(m).padStart(2,'0')} ${ampm}`;
 }
 
-function deliHoursVary() {
-  const open = deliHours.filter(h => !h.closed);
+function snackbarHoursVary() {
+  const open = snackbarHours.filter(h => !h.closed);
   if (!open.length) return false;
   const first = `${open[0].open}|${open[0].close}`;
   return open.some(h => `${h.open}|${h.close}` !== first);
 }
 
-function summarizeDeliDays() {
-  const open   = deliHours.filter(h => !h.closed);
-  const closed = deliHours.filter(h => h.closed);
+function summarizeSnackbarDays() {
+  const open   = snackbarHours.filter(h => !h.closed);
+  const closed = snackbarHours.filter(h => h.closed);
   if (!closed.length) return 'Open Every Day';
   if (closed.length === 1) return `Closed ${closed[0].day}`;
   if (!open.length) return 'Closed Every Day';
@@ -120,7 +120,7 @@ function summarizeDeliDays() {
 function renderBannerHours() {
   const simpleEl   = document.getElementById('closedHoursSimple');
   const schedEl    = document.getElementById('closedHoursSchedule');
-  const openDays   = deliHours.filter(h => !h.closed);
+  const openDays   = snackbarHours.filter(h => !h.closed);
 
   if (!openDays.length) {
     document.getElementById('closedHoursTime').textContent = 'Closed';
@@ -129,12 +129,12 @@ function renderBannerHours() {
     return;
   }
 
-  if (deliHoursVary()) {
+  if (snackbarHoursVary()) {
     simpleEl.style.display = 'none';
     schedEl.style.display  = '';
     const now      = new Date();
     const todayIdx = now.getDay() === 0 ? 6 : now.getDay() - 1;
-    schedEl.innerHTML = deliHours.map((h, i) => {
+    schedEl.innerHTML = snackbarHours.map((h, i) => {
       const timeStr = h.closed ? 'Closed' : `${fmt12(h.open)} \u2013 ${fmt12(h.close)}`;
       const cls = [
         i === todayIdx ? 'sch-today' : '',
@@ -149,41 +149,41 @@ function renderBannerHours() {
     schedEl.style.display  = 'none';
     simpleEl.style.display = '';
     document.getElementById('closedHoursTime').textContent = `${fmt12(openDays[0].open)} \u2013 ${fmt12(openDays[0].close)}`;
-    document.getElementById('closedHoursDays').textContent = summarizeDeliDays();
+    document.getElementById('closedHoursDays').textContent = summarizeSnackbarDays();
   }
 }
 
 // Returns a short hours summary, e.g. "Mon \u2013 Sat \u00a0 9:00 AM \u2013 3:00 PM"
-function deliHoursShortSummary() {
-  const openDays = deliHours.filter(h => !h.closed);
+function snackbarHoursShortSummary() {
+  const openDays = snackbarHours.filter(h => !h.closed);
   if (!openDays.length) return '';
-  const days = summarizeDeliDays();
-  if (deliHoursVary()) return days;
+  const days = summarizeSnackbarDays();
+  if (snackbarHoursVary()) return days;
   return `${days} &nbsp; ${fmt12(openDays[0].open)} &ndash; ${fmt12(openDays[0].close)}`;
 }
 
 // Returns just today's hours, e.g. "9:00 AM \u2013 3:00 PM" or "Closed Today"
 function todayHoursText() {
-  const today = getTodayDeliHours();
+  const today = getTodaySnackbarHours();
   if (!today || today.closed || !today.open || !today.close) return 'Closed Today';
   return `${fmt12(today.open)} &ndash; ${fmt12(today.close)}`;
 }
 
-function checkDeliHours() {
-  const today = getTodayDeliHours();
+function checkSnackbarHours() {
+  const today = getTodaySnackbarHours();
   const now   = new Date();
   const mins  = now.getHours() * 60 + now.getMinutes();
-  let deliIsOpen = false;
+  let snackbarIsOpen = false;
   if (today && !today.closed && today.open && today.close) {
-    deliIsOpen = mins >= toMins(today.open) && mins < toMins(today.close);
+    snackbarIsOpen = mins >= toMins(today.open) && mins < toMins(today.close);
   }
 
   const statusEl   = document.getElementById('headerStatus');
   const orderingEl = document.getElementById('orderingStatus');
 
-  // Always show deli open/closed state
+  // Always show snackbar open/closed state
   if (statusEl) {
-    if (deliIsOpen) {
+    if (snackbarIsOpen) {
       statusEl.className = 'header-status status-open';
       statusEl.innerHTML = `<span class="status-card-icon">&#10022;</span><span class="status-card-title">Snackbar Open</span><span class="status-card-sub">${todayHoursText()}</span>`;
     } else {
@@ -202,8 +202,8 @@ function checkDeliHours() {
     }
   }
 
-  orderingOpen = deliIsOpen && onlineOrderingEnabled;
-  document.getElementById('deliOpenContent').style.display = orderingOpen ? 'block' : 'none';
+  orderingOpen = snackbarIsOpen && onlineOrderingEnabled;
+  document.getElementById('snackbarOpenContent').style.display = orderingOpen ? 'block' : 'none';
   // Floating cart is only meaningful when ordering is available
   if (!orderingOpen) document.getElementById('floatingCart').classList.remove('visible');
 }
@@ -214,7 +214,7 @@ function populatePickupTimes() {
   if (!select) return;
   while (select.options.length > 1) select.remove(1);
 
-  const today  = getTodayDeliHours();
+  const today  = getTodaySnackbarHours();
   const START  = today && !today.closed && today.open  ? toMins(today.open)  : 9  * 60;
   const END    = today && !today.closed && today.close ? toMins(today.close) : 15 * 60;
   const STEP   = 30;
@@ -412,7 +412,7 @@ function renderOrder() {
   const taxEl     = document.getElementById('taxAmount');
   const taxLabelEl = document.getElementById('taxLabel');
   const grandEl   = document.getElementById('orderGrandTotal');
-  if (taxLabelEl) taxLabelEl.textContent = deliTaxRate ? `Tax (${deliTaxRate}%)` : 'Tax';
+  if (taxLabelEl) taxLabelEl.textContent = snackbarTaxRate ? `Tax (${snackbarTaxRate}%)` : 'Tax';
   const badge     = document.getElementById('cartBadge');
   const float     = document.getElementById('cartBubbleFloat');
   const secTitle  = document.getElementById('orderSectionTitle');
@@ -446,7 +446,7 @@ function renderOrder() {
   }).join('');
 
   const subtotal  = calcSubtotal();
-  const taxFrac   = deliTaxRate / 100;
+  const taxFrac   = snackbarTaxRate / 100;
   const tax       = Math.round(subtotal * taxFrac * 100) / 100;
   const grand     = Math.round((subtotal + tax) * 100) / 100;
 
@@ -475,7 +475,7 @@ function submitOrder() {
   if (!cart.length) { showToast('Your order is empty');            return; }
 
   const subtotal = calcSubtotal();
-  const tax      = Math.round(subtotal * (deliTaxRate / 100) * 100) / 100;
+  const tax      = Math.round(subtotal * (snackbarTaxRate / 100) * 100) / 100;
   const total    = Math.round((subtotal + tax) * 100) / 100;
   const orderId  = 'ESM-' + Date.now().toString(36).toUpperCase();
   const ts       = new Date();
@@ -496,7 +496,7 @@ function submitOrder() {
       addons:       c.addons.map(a => a.label),
       addons_total: c.addons.reduce((s, a) => s + (a.price || 0), 0),
     })),
-    subtotal, tax, total, taxRate: deliTaxRate,
+    subtotal, tax, total, taxRate: snackbarTaxRate,
   };
 
   // ─────────────────────────────────────────────────────────────────────────
