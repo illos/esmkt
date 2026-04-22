@@ -624,6 +624,173 @@
   background: linear-gradient(100deg, rgba(100,60,200,0.70) 0%, rgba(70,30,150,0.35) 45%, rgba(12,6,28,1) 78%) !important;
 }
 
+/* ══════════════════════════════════════════════════════════════
+   EXPLORING ESMERALDA
+   ══════════════════════════════════════════════════════════════ */
+.explore-section .section-inner { max-width: 1060px; }
+
+.explore-intro {
+  max-width: 680px;
+  color: var(--cream-dim);
+  font-size: 16px;
+  line-height: 1.8;
+  margin: 0 auto 72px;
+  text-align: center;
+}
+
+/* ── Trail container ── */
+.explore-trail {
+  position: relative;
+  padding-left: 64px;
+}
+
+/* ── Vertical animated line ── */
+.trail-line-track {
+  position: absolute;
+  left: 19px;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  background: rgba(201,169,110,0.12);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.trail-line-fill {
+  width: 100%;
+  height: 0%;
+  background: linear-gradient(to bottom, var(--gold-dark), var(--gold), var(--gold-dark));
+  border-radius: 2px;
+}
+
+/* ── Each stop ── */
+.explore-stop {
+  position: relative;
+  margin-bottom: 56px;
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.65s ease, transform 0.65s ease;
+}
+.explore-stop:last-child { margin-bottom: 0; }
+.explore-stop.is-active { opacity: 1; transform: none; }
+
+/* Stagger children slightly */
+.explore-stop:nth-child(2) { transition-delay: 0.05s; }
+.explore-stop:nth-child(3) { transition-delay: 0.10s; }
+
+/* ── Dot marker on the line ── */
+.stop-marker {
+  position: absolute;
+  left: -53px;
+  top: 32px;
+  z-index: 2;
+}
+.stop-dot {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--charcoal-mid);
+  border: 2px solid rgba(201,169,110,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Oswald', sans-serif;
+  font-size: 11px;
+  letter-spacing: 0;
+  color: var(--cream-dim);
+  transition: background 0.5s ease, border-color 0.5s ease, color 0.5s ease, box-shadow 0.5s ease;
+}
+.explore-stop.is-active .stop-dot {
+  background: var(--gold-dark);
+  border-color: var(--gold);
+  color: var(--charcoal);
+  box-shadow: 0 0 0 5px rgba(201,169,110,0.15), 0 0 18px rgba(201,169,110,0.25);
+}
+
+/* ── Attraction card ── */
+.explore-card {
+  display: grid;
+  grid-template-columns: 45% 55%;
+  border: 1px solid var(--charcoal-border);
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--charcoal-card);
+  position: relative;
+}
+.explore-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(to right, var(--gold-dark), var(--gold), var(--gold-dark));
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+.explore-stop.is-active .explore-card::before { opacity: 1; }
+
+.explore-card--left { grid-template-columns: 55% 45%; }
+
+.explore-img {
+  width: 100%;
+  height: 100%;
+  min-height: 240px;
+  object-fit: cover;
+  display: block;
+}
+
+.explore-body {
+  padding: 36px 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 14px;
+}
+
+.explore-tag {
+  font-family: 'Oswald', sans-serif;
+  font-size: 9px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--gold);
+  opacity: 0.85;
+}
+
+.explore-name {
+  font-family: 'Oswald', sans-serif;
+  font-size: clamp(18px, 2.5vw, 26px);
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--cream);
+  line-height: 1.1;
+  margin: 0;
+}
+
+.explore-desc {
+  font-size: 14px;
+  line-height: 1.8;
+  color: var(--cream-dim);
+  font-weight: 300;
+  margin: 0;
+}
+
+/* ── Mobile ── */
+@media (max-width: 680px) {
+  .explore-trail { padding-left: 44px; }
+  .trail-line-track { left: 13px; }
+  .stop-marker { left: -36px; top: 24px; }
+  .stop-dot { width: 24px; height: 24px; font-size: 9px; }
+  .explore-stop { margin-bottom: 32px; }
+
+  .explore-card,
+  .explore-card--left {
+    grid-template-columns: 1fr !important;
+  }
+  /* Image always on top on mobile */
+  .explore-img { min-height: 200px; max-height: 260px; order: -1; }
+  .explore-body { padding: 22px 20px; gap: 10px; order: 0; }
+}
+
 
 /* ── Event CTA button ── */
 .event-cta-btn {
@@ -741,6 +908,12 @@
       <a href="menu.html" class="hv2-link">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 17h7M17 14v7"/></svg>
         <span>Snackbar Menu</span>
+        <span class="hv2-arr">&rarr;</span>
+      </a>
+
+      <a href="#explore" class="hv2-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+        <span>Explore</span>
         <span class="hv2-arr">&rarr;</span>
       </a>
 
@@ -950,6 +1123,89 @@
   </div>
 </section>
 
+<!-- ─── EXPLORING ESMERALDA ─── -->
+<section class="section explore-section" id="explore">
+  <div class="section-inner">
+    <div class="section-label">Off the Beaten Path</div>
+    <h2 class="section-heading">Exploring Esmeralda</h2>
+    <p class="explore-intro">Fish Lake Valley sits at the crossroads of some of Nevada's most extraordinary and least-visited landscapes. Fill your tank, grab a sandwich, and head out — wild mustangs roam free across the flats, ancient trees grip mountain ridgelines, and hot springs rise from the desert floor. This is the real Nevada.</p>
+
+    <div class="explore-trail" id="exploreTrail">
+
+      <!-- Animated trail line -->
+      <div class="trail-line-track">
+        <div class="trail-line-fill" id="trailFill"></div>
+      </div>
+
+      <!-- ① Fish Lake Valley -->
+      <div class="explore-stop" data-stop="0">
+        <div class="stop-marker"><div class="stop-dot">1</div></div>
+        <div class="explore-card">
+          <img class="explore-img" src="assets/fish-lake-valley-1.webp" alt="Fish Lake Valley" loading="lazy"/>
+          <div class="explore-body">
+            <div class="explore-tag">Valley &middot; OHV Trails</div>
+            <h3 class="explore-name">Fish Lake Valley</h3>
+            <p class="explore-desc">Sprawling across 30 miles of open high desert, Fish Lake Valley is home to free-roaming wild mustang herds, vast alkali flats, and some of the most dramatic big-sky scenery in the American West. Miles of side-by-side and OHV trails wind through the basin, and on a quiet evening out here, the silence is complete.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ② FLV Hot Springs -->
+      <div class="explore-stop" data-stop="1">
+        <div class="stop-marker"><div class="stop-dot">2</div></div>
+        <div class="explore-card explore-card--left">
+          <div class="explore-body">
+            <div class="explore-tag">Hot Springs &middot; Free</div>
+            <h3 class="explore-name">Fish Lake Valley Hot Springs</h3>
+            <p class="explore-desc">One of the Great Basin&rsquo;s best-kept secrets &mdash; free, remote, and gloriously uncrowded. These geothermal pools rise right from the desert floor and offer a long, steaming soak beneath an enormous Nevada sky. Best at sunrise or after dark, when warm water meets cool desert air in a way you won&rsquo;t forget.</p>
+          </div>
+          <img class="explore-img" src="assets/hotsprings.webp" alt="Fish Lake Valley Hot Springs" loading="lazy"/>
+        </div>
+      </div>
+
+      <!-- ③ Trail Canyon Reservoir -->
+      <div class="explore-stop" data-stop="2">
+        <div class="stop-marker"><div class="stop-dot">3</div></div>
+        <div class="explore-card">
+          <img class="explore-img" src="assets/trail-canyon-resevior.webp" alt="Trail Canyon Reservoir" loading="lazy"/>
+          <div class="explore-body">
+            <div class="explore-tag">Fishing &middot; Alpine</div>
+            <h3 class="explore-name">Trail Canyon Reservoir</h3>
+            <p class="explore-desc">Wind up into the White Mountains and you&rsquo;ll find this quiet alpine pond tucked among juniper and pinyon pine. Stocked with rainbow trout and ringed by sweeping views of the valley floor below, Trail Canyon Reservoir is a perfect half-day escape from the summer heat &mdash; bring a rod and stay a while.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ④ Boundary Peak -->
+      <div class="explore-stop" data-stop="3">
+        <div class="stop-marker"><div class="stop-dot">4</div></div>
+        <div class="explore-card explore-card--left">
+          <div class="explore-body">
+            <div class="explore-tag">Summit &middot; 13,147 ft</div>
+            <h3 class="explore-name">Boundary Peak Trailhead</h3>
+            <p class="explore-desc">Nevada&rsquo;s highest point at 13,147 feet, Boundary Peak towers over the valley from the White Mountain crest. The trailhead is just up the road &mdash; fuel up and grab a sandwich before setting out on the state&rsquo;s ultimate summit hike. It&rsquo;s roughly 8 miles round trip with 4,000 feet of gain. The views from the top stretch into four states.</p>
+          </div>
+          <img class="explore-img" src="assets/boundery-1.webp" alt="Boundary Peak" loading="lazy"/>
+        </div>
+      </div>
+
+      <!-- ⑤ Bristlecone Pine Forest -->
+      <div class="explore-stop" data-stop="4">
+        <div class="stop-marker"><div class="stop-dot">5</div></div>
+        <div class="explore-card">
+          <img class="explore-img" src="assets/bristlecone-pine-forest.webp" alt="Bristlecone Pine Forest" loading="lazy"/>
+          <div class="explore-body">
+            <div class="explore-tag">Ancient Forest &middot; 5,000+ yrs</div>
+            <h3 class="explore-name">Bristlecone Pine Forest</h3>
+            <p class="explore-desc">High in the White Mountains live some of the oldest organisms on Earth. The Ancient Bristlecone Pine Forest holds trees more than 5,000 years old &mdash; gnarled, wind-twisted, and achingly beautiful. They were already ancient when the pyramids were built. Standing among them in the alpine quiet puts the scale of human time in sharp, humbling perspective.</p>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /explore-trail -->
+  </div>
+</section>
+
 <!-- ─── SEE YOU SOON BANNER ─── -->
 <div class="service-banner see-you-banner">
   <div class="service-banner-inner">
@@ -999,6 +1255,10 @@
       <a href="menu.html" class="gf-link">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 17h7M17 14v7"/></svg>
         Snackbar Menu
+      </a>
+      <a href="#explore" class="gf-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+        Explore
       </a>
       <a href="#events" class="gf-link">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -1051,6 +1311,54 @@
 
 <script src="js/index.js"></script>
 <script>
+// ─── Exploring Esmeralda — scroll-driven trail animation ─────────────────────
+(function () {
+  var trail  = null;
+  var fill   = null;
+  var stops  = null;
+  var ticking = false;
+
+  function getProgress() {
+    var rect  = trail.getBoundingClientRect();
+    var viewH = window.innerHeight;
+    // 0 when trail top hits 80% down screen → 1 when trail bottom leaves top of screen
+    var start = viewH * 0.8;
+    var total = rect.height + start;
+    var done  = start - rect.top;
+    return Math.max(0, Math.min(1, done / total));
+  }
+
+  function update() {
+    ticking = false;
+    var prog = getProgress();
+    fill.style.height = (prog * 100) + '%';
+
+    // Activate each stop when its marker crosses 68% down the viewport
+    stops.forEach(function (stop) {
+      var sr = stop.getBoundingClientRect();
+      if (sr.top < window.innerHeight * 0.68) {
+        stop.classList.add('is-active');
+      }
+    });
+  }
+
+  function onScroll() {
+    if (!ticking) {
+      ticking = true;
+      requestAnimationFrame(update);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    trail = document.getElementById('exploreTrail');
+    fill  = document.getElementById('trailFill');
+    stops = document.querySelectorAll('.explore-stop');
+    if (!trail || !fill || !stops.length) return;
+    window.addEventListener('scroll', onScroll, { passive: true });
+    update(); // run once on load in case already scrolled
+  });
+}());
+
 // Patch applySiteInfo: hero bg now drives an <img> src instead of CSS background
 (function () {
   var _orig = applySiteInfo;
