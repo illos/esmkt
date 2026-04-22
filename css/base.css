@@ -227,7 +227,7 @@
   }
 
   a:visited {
-    color: --cream-dim; /* Default browser color is typically #800080 */
+    color: var(--cream-dim); /* Default browser color is typically #800080 */
   }
 
 
