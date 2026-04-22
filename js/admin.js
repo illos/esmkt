@@ -1244,11 +1244,11 @@ function renderAdminQuickLinks(links) {
   if (!list) return;
   const ql = (links && links.length) ? links : DEFAULT_QUICK_LINKS_ADMIN;
   list.innerHTML = ql.map((lk, i) => buildQlRow(lk, i)).join('');
+  applyLucideIcons(list, 15);
 }
 
 function buildQlRow(lk, idx) {
   const iconName = lk.icon || 'link';
-  const iconSvg  = lucideToSvg(iconName, 15, 1.5) || '';
   return `<div class="ql-row" draggable="true" data-idx="${idx}"
       ondragstart="onQlDragStart(event,${idx})"
       ondragover="onQlDragOver(event,${idx})"
@@ -1257,7 +1257,8 @@ function buildQlRow(lk, idx) {
     <span class="ql-drag-handle" title="Drag to reorder">&#8942;&#8942;</span>
     <div class="ql-icon-picker">
       <button class="ql-icon-btn" type="button" onclick="toggleIconPicker(this)" title="Choose icon">
-        ${iconSvg}<span class="ql-icon-name">${esc(iconName)}</span>
+        <i data-lucide="${esc(iconName)}"></i>
+        <span class="ql-icon-name">${esc(iconName)}</span>
       </button>
       <input type="hidden" class="ql-icon-value" value="${esc(iconName)}"/>
     </div>
@@ -1268,17 +1269,16 @@ function buildQlRow(lk, idx) {
 }
 
 // ─── LUCIDE HELPER ────────────────────────────────────────────────────────────
-// lucide.icons[name] is [[tag, attrs], ...] — not an object with .toSvg()
-function lucideToSvg(name, size, sw) {
-  try {
-    if (typeof lucide === 'undefined') return null;
-    const nodes = lucide.icons?.[name];
-    if (!Array.isArray(nodes) || !nodes.length) return null;
-    const children = nodes.map(([tag, attrs]) =>
-      `<${tag} ${Object.entries(attrs || {}).map(([k, v]) => `${k}="${v}"`).join(' ')}/>`
-    ).join('');
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">${children}</svg>`;
-  } catch(e) { return null; }
+// Use Lucide's createIcons() API — the official browser approach.
+// Pass an elements array to scope it to just the new nodes.
+function applyLucideIcons(container, size) {
+  if (typeof lucide === 'undefined') return;
+  const els = Array.from(container.querySelectorAll('[data-lucide]'));
+  if (!els.length) return;
+  lucide.createIcons({
+    attrs: { width: size, height: size, 'stroke-width': 1.5 },
+    elements: els,
+  });
 }
 
 // ─── ICON PICKER ──────────────────────────────────────────────────────────────
@@ -1337,10 +1337,10 @@ function renderIconGrid(icons, selected) {
     return;
   }
   grid.innerHTML = icons.map(name => {
-    const svg = lucideToSvg(name, 17, 1.5) || '';
     const sel = name === selected ? ' selected' : '';
-    return `<button class="icon-picker-item${sel}" type="button" title="${name}" onclick="selectIcon('${name}')">${svg}</button>`;
+    return `<button class="icon-picker-item${sel}" type="button" title="${name}" onclick="selectIcon('${name}')"><i data-lucide="${name}"></i></button>`;
   }).join('');
+  applyLucideIcons(grid, 17);
 }
 
 function filterIconPicker(query) {
@@ -1355,8 +1355,8 @@ function selectIcon(name) {
   if (!activePickerBtn) return;
   const wrap = activePickerBtn.closest('.ql-icon-picker');
   wrap.querySelector('.ql-icon-value').value = name;
-  const svg = lucideToSvg(name, 15, 1.5) || '';
-  activePickerBtn.innerHTML = svg + `<span class="ql-icon-name">${esc(name)}</span>`;
+  activePickerBtn.innerHTML = `<i data-lucide="${name}"></i><span class="ql-icon-name">${esc(name)}</span>`;
+  applyLucideIcons(activePickerBtn, 15);
   closeIconPicker();
 }
 
