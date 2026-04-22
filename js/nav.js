@@ -25,13 +25,23 @@ const DEFAULT_QUICK_LINKS = [
   { id:'7', icon:'facebook',  text:'Facebook',       url:'https://www.facebook.com/WhiteMountainsNV' },
 ];
 
+// lucide.icons[name] returns [[tag, attrs], ...] — build SVG string from that
+function lucideToSvg(name, size, sw) {
+  try {
+    if (typeof lucide === 'undefined') return null;
+    const nodes = lucide.icons?.[name];
+    if (!Array.isArray(nodes) || !nodes.length) return null;
+    const children = nodes.map(([tag, attrs]) =>
+      `<${tag} ${Object.entries(attrs || {}).map(([k, v]) => `${k}="${v}"`).join(' ')}/>`
+    ).join('');
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">${children}</svg>`;
+  } catch(e) { return null; }
+}
+
 function getNavIcon(name) {
   const resolved = NAV_ICON_ALIASES[name] || name;
-  if (typeof lucide !== 'undefined' && lucide.icons[resolved]) {
-    return lucide.icons[resolved].toSvg({ width: 16, height: 16, 'stroke-width': 1.5 });
-  }
-  // Fallback: generic link icon
-  return `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>`;
+  return lucideToSvg(resolved, 16, 1.5)
+    || `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>`;
 }
 
 function escNavHtml(s) {

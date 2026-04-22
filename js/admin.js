@@ -1248,9 +1248,7 @@ function renderAdminQuickLinks(links) {
 
 function buildQlRow(lk, idx) {
   const iconName = lk.icon || 'link';
-  const iconSvg  = (typeof lucide !== 'undefined' && lucide.icons[iconName])
-    ? lucide.icons[iconName].toSvg({ width: 15, height: 15, 'stroke-width': 1.5 })
-    : '';
+  const iconSvg  = lucideToSvg(iconName, 15, 1.5) || '';
   return `<div class="ql-row" draggable="true" data-idx="${idx}"
       ondragstart="onQlDragStart(event,${idx})"
       ondragover="onQlDragOver(event,${idx})"
@@ -1267,6 +1265,20 @@ function buildQlRow(lk, idx) {
     <input  class="form-input ql-url"  type="text" placeholder="URL or #anchor" value="${esc(lk.url)}"/>
     <button class="ql-btn-remove" onclick="removeQuickLink(${idx})" title="Remove">&#215;</button>
   </div>`;
+}
+
+// ─── LUCIDE HELPER ────────────────────────────────────────────────────────────
+// lucide.icons[name] is [[tag, attrs], ...] — not an object with .toSvg()
+function lucideToSvg(name, size, sw) {
+  try {
+    if (typeof lucide === 'undefined') return null;
+    const nodes = lucide.icons?.[name];
+    if (!Array.isArray(nodes) || !nodes.length) return null;
+    const children = nodes.map(([tag, attrs]) =>
+      `<${tag} ${Object.entries(attrs || {}).map(([k, v]) => `${k}="${v}"`).join(' ')}/>`
+    ).join('');
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">${children}</svg>`;
+  } catch(e) { return null; }
 }
 
 // ─── ICON PICKER ──────────────────────────────────────────────────────────────
@@ -1325,9 +1337,7 @@ function renderIconGrid(icons, selected) {
     return;
   }
   grid.innerHTML = icons.map(name => {
-    const svg = (typeof lucide !== 'undefined' && lucide.icons[name])
-      ? lucide.icons[name].toSvg({ width: 17, height: 17, 'stroke-width': 1.5 })
-      : '';
+    const svg = lucideToSvg(name, 17, 1.5) || '';
     const sel = name === selected ? ' selected' : '';
     return `<button class="icon-picker-item${sel}" type="button" title="${name}" onclick="selectIcon('${name}')">${svg}</button>`;
   }).join('');
@@ -1345,9 +1355,7 @@ function selectIcon(name) {
   if (!activePickerBtn) return;
   const wrap = activePickerBtn.closest('.ql-icon-picker');
   wrap.querySelector('.ql-icon-value').value = name;
-  const svg = (typeof lucide !== 'undefined' && lucide.icons[name])
-    ? lucide.icons[name].toSvg({ width: 15, height: 15, 'stroke-width': 1.5 })
-    : '';
+  const svg = lucideToSvg(name, 15, 1.5) || '';
   activePickerBtn.innerHTML = svg + `<span class="ql-icon-name">${esc(name)}</span>`;
   closeIconPicker();
 }
