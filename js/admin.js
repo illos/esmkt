@@ -1196,29 +1196,44 @@ function showToast(msg, isError) {
 }
 
 // ─── QUICK LINKS ADMIN ────────────────────────────────────────────────────────
-const QL_ICON_OPTIONS = [
-  { value:'map',      label:'📍 Map / Directions' },
-  { value:'menu',     label:'🍽 Menu' },
-  { value:'compass',  label:'🧭 Compass / Explore' },
-  { value:'calendar', label:'📅 Calendar / Events' },
-  { value:'clock',    label:'🕐 Clock / Hours' },
-  { value:'phone',    label:'📞 Phone' },
-  { value:'facebook', label:'📘 Facebook' },
-  { value:'home',     label:'🏠 Home' },
-  { value:'star',     label:'⭐ Star' },
-  { value:'gas',      label:'⛽ Gas' },
-  { value:'info',     label:'ℹ Info' },
-  { value:'link',     label:'🔗 Link' },
+const LUCIDE_ICON_LIST = [
+  // Location & navigation
+  'map-pin','navigation','compass','route','map','locate',
+  // Communication
+  'phone','mail','message-circle','message-square','send',
+  // Social
+  'facebook','instagram','twitter','youtube','twitch',
+  // Food & drink
+  'utensils','coffee','beer','pizza','sandwich','salad','ice-cream','shopping-cart','shopping-bag',
+  // Time & calendar
+  'clock','calendar','calendar-days','alarm-clock','timer',
+  // Info & status
+  'info','help-circle','alert-circle','check-circle','star','heart','thumbs-up',
+  // Transport
+  'car','truck','fuel','bus','bike','plane',
+  // Nature & outdoor
+  'mountain','sun','cloud','moon','tent','trees','leaf','flower-2','waves','wind',
+  // Business & general
+  'home','building','store','landmark','link','external-link','globe','wifi',
+  // People
+  'user','users','user-check',
+  // Media & misc
+  'music','camera','image','video','mic','volume-2',
+  'zap','shield','gift','tag','bookmark','flag','award','trophy',
+  'dollar-sign','credit-card','ticket','percent','receipt',
+  'newspaper','file-text','book-open','clipboard',
+  'settings','tool','wrench','flashlight','key',
+  'arrow-right','chevron-right','plus','minus','x',
 ];
 
 const DEFAULT_QUICK_LINKS_ADMIN = [
-  { id:'1', icon:'map',      text:'Get Directions', url:'https://maps.app.goo.gl/dhU5oMRYwXpTUhmY9' },
-  { id:'2', icon:'menu',     text:'Snackbar Menu',  url:'menu.html' },
-  { id:'3', icon:'compass',  text:'Explore',        url:'#explore' },
-  { id:'4', icon:'calendar', text:'Events',         url:'#events' },
-  { id:'5', icon:'clock',    text:'Store Hours',    url:'#hours' },
-  { id:'6', icon:'phone',    text:'Call Us',        url:'tel:7755723200' },
-  { id:'7', icon:'facebook', text:'Facebook',       url:'https://www.facebook.com/WhiteMountainsNV' },
+  { id:'1', icon:'map-pin',   text:'Get Directions', url:'https://maps.app.goo.gl/dhU5oMRYwXpTUhmY9' },
+  { id:'2', icon:'utensils',  text:'Snackbar Menu',  url:'menu.html' },
+  { id:'3', icon:'compass',   text:'Explore',        url:'#explore' },
+  { id:'4', icon:'calendar',  text:'Events',         url:'#events' },
+  { id:'5', icon:'clock',     text:'Store Hours',    url:'#hours' },
+  { id:'6', icon:'phone',     text:'Call Us',        url:'tel:7755723200' },
+  { id:'7', icon:'facebook',  text:'Facebook',       url:'https://www.facebook.com/WhiteMountainsNV' },
 ];
 
 // ─── QL drag state ────────────────────────────────────────────────────────────
@@ -1232,25 +1247,114 @@ function renderAdminQuickLinks(links) {
 }
 
 function buildQlRow(lk, idx) {
-  const iconOptions = QL_ICON_OPTIONS.map(o =>
-    `<option value="${o.value}"${o.value === lk.icon ? ' selected' : ''}>${o.label}</option>`
-  ).join('');
+  const iconName = lk.icon || 'link';
+  const iconSvg  = (typeof lucide !== 'undefined' && lucide.icons[iconName])
+    ? lucide.icons[iconName].toSvg({ width: 15, height: 15, 'stroke-width': 1.5 })
+    : '';
   return `<div class="ql-row" draggable="true" data-idx="${idx}"
       ondragstart="onQlDragStart(event,${idx})"
       ondragover="onQlDragOver(event,${idx})"
       ondrop="onQlDrop(event,${idx})"
       ondragend="onQlDragEnd(event)">
     <span class="ql-drag-handle" title="Drag to reorder">&#8942;&#8942;</span>
-    <select class="form-select ql-icon" style="font-size:12px;padding:6px 8px">${iconOptions}</select>
+    <div class="ql-icon-picker">
+      <button class="ql-icon-btn" type="button" onclick="toggleIconPicker(this)" title="Choose icon">
+        ${iconSvg}<span class="ql-icon-name">${esc(iconName)}</span>
+      </button>
+      <input type="hidden" class="ql-icon-value" value="${esc(iconName)}"/>
+    </div>
     <input  class="form-input ql-text" type="text" placeholder="Link text" value="${esc(lk.text)}"/>
     <input  class="form-input ql-url"  type="text" placeholder="URL or #anchor" value="${esc(lk.url)}"/>
     <button class="ql-btn-remove" onclick="removeQuickLink(${idx})" title="Remove">&#215;</button>
   </div>`;
 }
 
+// ─── ICON PICKER ──────────────────────────────────────────────────────────────
+let activePickerBtn = null;
+
+function toggleIconPicker(btn) {
+  const popover = document.getElementById('iconPickerPopover');
+  if (activePickerBtn === btn && popover.style.display !== 'none') {
+    closeIconPicker(); return;
+  }
+  activePickerBtn = btn;
+
+  // Highlight current selection
+  const currentIcon = btn.closest('.ql-icon-picker').querySelector('.ql-icon-value').value;
+
+  // Render grid
+  renderIconGrid(LUCIDE_ICON_LIST, currentIcon);
+  document.getElementById('iconPickerSearch').value = '';
+
+  // Position below the button
+  popover.style.display = 'block';
+  const rect = btn.getBoundingClientRect();
+  let top  = rect.bottom + window.scrollY + 4;
+  let left = rect.left  + window.scrollX;
+  popover.style.top  = top  + 'px';
+  popover.style.left = left + 'px';
+
+  // Clamp to viewport
+  requestAnimationFrame(() => {
+    const pr = popover.getBoundingClientRect();
+    if (pr.right > window.innerWidth - 8)
+      popover.style.left = (window.innerWidth - pr.width - 8) + 'px';
+    if (pr.bottom > window.innerHeight - 8)
+      popover.style.top = (rect.top + window.scrollY - pr.height - 4) + 'px';
+  });
+
+  setTimeout(() => document.addEventListener('click', onPickerOutsideClick), 0);
+}
+
+function onPickerOutsideClick(e) {
+  const popover = document.getElementById('iconPickerPopover');
+  if (!popover.contains(e.target) && !activePickerBtn?.contains(e.target))
+    closeIconPicker();
+}
+
+function closeIconPicker() {
+  document.getElementById('iconPickerPopover').style.display = 'none';
+  document.removeEventListener('click', onPickerOutsideClick);
+  activePickerBtn = null;
+}
+
+function renderIconGrid(icons, selected) {
+  const grid = document.getElementById('iconPickerGrid');
+  if (!icons.length) {
+    grid.innerHTML = '<div class="icon-picker-empty">No icons found</div>';
+    return;
+  }
+  grid.innerHTML = icons.map(name => {
+    const svg = (typeof lucide !== 'undefined' && lucide.icons[name])
+      ? lucide.icons[name].toSvg({ width: 17, height: 17, 'stroke-width': 1.5 })
+      : '';
+    const sel = name === selected ? ' selected' : '';
+    return `<button class="icon-picker-item${sel}" type="button" title="${name}" onclick="selectIcon('${name}')">${svg}</button>`;
+  }).join('');
+}
+
+function filterIconPicker(query) {
+  const current = activePickerBtn?.closest('.ql-icon-picker')?.querySelector('.ql-icon-value')?.value;
+  const filtered = query.trim()
+    ? LUCIDE_ICON_LIST.filter(n => n.includes(query.toLowerCase().trim()))
+    : LUCIDE_ICON_LIST;
+  renderIconGrid(filtered, current);
+}
+
+function selectIcon(name) {
+  if (!activePickerBtn) return;
+  const wrap = activePickerBtn.closest('.ql-icon-picker');
+  wrap.querySelector('.ql-icon-value').value = name;
+  const svg = (typeof lucide !== 'undefined' && lucide.icons[name])
+    ? lucide.icons[name].toSvg({ width: 15, height: 15, 'stroke-width': 1.5 })
+    : '';
+  activePickerBtn.innerHTML = svg + `<span class="ql-icon-name">${esc(name)}</span>`;
+  closeIconPicker();
+}
+
 // Prevent drag starting from inputs / selects (so typing still works)
 function onQlDragStart(e, idx) {
-  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') { e.preventDefault(); return; }
+  if (['INPUT','BUTTON','SVG','PATH','LINE','CIRCLE','POLYLINE','RECT','POLYGON'].includes(e.target.tagName.toUpperCase())) { e.preventDefault(); return; }
   qlDragIdx = idx;
   e.currentTarget.classList.add('ql-dragging');
   e.dataTransfer.effectAllowed = 'move';
@@ -1282,7 +1386,7 @@ function collectAdminQuickLinks() {
   const rows = document.querySelectorAll('#quickLinksList .ql-row');
   return Array.from(rows).map((row, i) => ({
     id:   String(i + 1),
-    icon: row.querySelector('.ql-icon').value,
+    icon: row.querySelector('.ql-icon-value').value || 'link',
     text: row.querySelector('.ql-text').value.trim(),
     url:  row.querySelector('.ql-url').value.trim(),
   })).filter(lk => lk.text && lk.url);

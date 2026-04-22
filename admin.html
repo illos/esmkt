@@ -361,6 +361,15 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- Icon Picker Popover -->
+<div class="icon-picker-popover" id="iconPickerPopover" style="display:none" onclick="event.stopPropagation()">
+  <div class="icon-picker-search-wrap">
+    <input class="icon-picker-search" type="text" id="iconPickerSearch"
+      placeholder="Search icons…" oninput="filterIconPicker(this.value)" autocomplete="off"/>
+  </div>
+  <div class="icon-picker-grid" id="iconPickerGrid"></div>
+</div>
+
 <script src="js/admin.js"></script>
 </body>
 </html>
