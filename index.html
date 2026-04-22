@@ -705,16 +705,17 @@
   box-shadow: 0 0 0 5px rgba(201,169,110,0.15), 0 0 18px rgba(201,169,110,0.25);
 }
 
-/* ── Attraction card ── */
+/* ── Attraction card — image fills full width, text overlays on top ── */
 .explore-card {
   display: grid;
-  grid-template-columns: 45% 55%;
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
+  min-height: 300px;
   border: 1px solid var(--charcoal-border);
   border-radius: 4px;
   overflow: hidden;
   background: var(--charcoal-card);
   position: relative;
-  min-height: 300px;
 }
 .explore-card::before {
   content: '';
@@ -724,14 +725,15 @@
   background: linear-gradient(to right, var(--gold-dark), var(--gold), var(--gold-dark));
   opacity: 0;
   transition: opacity 0.5s ease;
-  z-index: 2;
+  z-index: 3;
 }
 .explore-stop.is-active .explore-card::before { opacity: 1; }
 
-.explore-card--left { grid-template-columns: 55% 45%; }
+.explore-card--left { /* same grid, body aligns left instead */ }
 
-/* ── Image wrapper with edge-fade into text ── */
+/* ── Image wrapper — occupies the full grid cell ── */
 .explore-img-wrap {
+  grid-area: 1 / 1;
   position: relative;
   overflow: hidden;
 }
@@ -743,32 +745,42 @@
   display: block;
 }
 
-/* Right cards (image left): fade the image's right edge into the card bg */
+/* Right cards (default): gradient fades image into card-bg on the right half */
 .explore-card:not(.explore-card--left):not(.explore-card--hero) .explore-img-wrap::after {
   content: '';
   position: absolute;
-  top: 0; right: 0; bottom: 0;
-  width: 55%;
-  background: linear-gradient(to right, transparent 0%, var(--charcoal-card) 100%);
+  inset: 0;
+  background: linear-gradient(to right, transparent 30%, var(--charcoal-card) 72%);
   pointer-events: none;
 }
 
-/* Left cards (image right): fade the image's left edge into the card bg */
+/* Left cards: gradient fades image into card-bg on the left half */
 .explore-card--left .explore-img-wrap::after {
   content: '';
   position: absolute;
-  top: 0; left: 0; bottom: 0;
-  width: 55%;
-  background: linear-gradient(to left, transparent 0%, var(--charcoal-card) 100%);
+  inset: 0;
+  background: linear-gradient(to left, transparent 30%, var(--charcoal-card) 72%);
   pointer-events: none;
 }
 
+/* ── Body — overlays image in the same grid cell ── */
 .explore-body {
+  grid-area: 1 / 1;
+  position: relative;
+  z-index: 1;
+  width: 50%;
+  margin-left: auto; /* right-side default */
   padding: 36px 40px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: 14px;
+}
+
+/* Left cards: body on the left side */
+.explore-card--left .explore-body {
+  margin-left: 0;
+  margin-right: auto;
 }
 
 .explore-tag {
@@ -870,15 +882,26 @@
   .stop-marker { display: none; }
   .explore-stop { margin-bottom: 24px; }
 
+  /* Stack image above text on mobile */
   .explore-card,
   .explore-card--left {
-    grid-template-columns: 1fr !important;
+    display: flex !important;
+    flex-direction: column;
     min-height: 0;
   }
-  /* On mobile, img-wrap stacks above body */
-  .explore-img-wrap { min-height: 200px; max-height: 260px; order: -1; }
-  .explore-img-wrap::after { display: none !important; } /* no edge fade when stacked */
-  .explore-body { padding: 22px 20px; gap: 10px; order: 0; }
+  .explore-img-wrap {
+    width: 100%;
+    min-height: 200px;
+    max-height: 240px;
+    order: -1;
+  }
+  .explore-img-wrap::after { display: none !important; }
+  .explore-body {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 22px 20px;
+    gap: 10px;
+  }
 
   /* Hero card mobile */
   .explore-hero-wrap { height: 260px; }
