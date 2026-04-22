@@ -339,7 +339,7 @@
 
 
 .topo-light {
-  background-image: url("/assets/topo-dark.svg") !important;
+  background-image: url("/assets/topo-grey.svg") !important;
   background-repeat: repeat !important;
   background-size: 500px !important;
 }
