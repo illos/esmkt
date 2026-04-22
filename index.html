@@ -625,19 +625,15 @@
   background: linear-gradient(100deg, rgba(100,60,200,0.70) 0%, rgba(70,30,150,0.35) 45%, rgba(12,6,28,1) 78%) !important;
 }
 
+/* ── Exploring Esmeralda banner — deep sky / mountain slate ── */
+.explore-banner {
+  background: linear-gradient(100deg, rgba(35,90,140,0.72) 0%, rgba(20,55,90,0.38) 45%, rgba(4,12,22,1) 78%) !important;
+}
+
 /* ══════════════════════════════════════════════════════════════
    EXPLORING ESMERALDA
    ══════════════════════════════════════════════════════════════ */
 .explore-section .section-inner { max-width: 1060px; }
-
-.explore-intro {
-  max-width: 680px;
-  color: var(--cream-dim);
-  font-size: 16px;
-  line-height: 1.8;
-  margin: 0 auto 72px;
-  text-align: center;
-}
 
 /* ── Trail container ── */
 .explore-trail {
@@ -680,9 +676,10 @@
 .explore-stop:nth-child(3) { transition-delay: 0.10s; }
 
 /* ── Dot marker on the line ── */
+/* padding-left:64px on trail + left:-59px + dot half-width 15px = 20px = line centre (left:19px + 1px) */
 .stop-marker {
   position: absolute;
-  left: -53px;
+  left: -59px;
   top: 32px;
   z-index: 2;
 }
@@ -717,6 +714,7 @@
   overflow: hidden;
   background: var(--charcoal-card);
   position: relative;
+  min-height: 300px;
 }
 .explore-card::before {
   content: '';
@@ -726,17 +724,43 @@
   background: linear-gradient(to right, var(--gold-dark), var(--gold), var(--gold-dark));
   opacity: 0;
   transition: opacity 0.5s ease;
+  z-index: 2;
 }
 .explore-stop.is-active .explore-card::before { opacity: 1; }
 
 .explore-card--left { grid-template-columns: 55% 45%; }
 
+/* ── Image wrapper with edge-fade into text ── */
+.explore-img-wrap {
+  position: relative;
+  overflow: hidden;
+}
+
 .explore-img {
   width: 100%;
   height: 100%;
-  min-height: 240px;
   object-fit: cover;
   display: block;
+}
+
+/* Right cards (image left): fade the image's right edge into the card bg */
+.explore-card:not(.explore-card--left):not(.explore-card--hero) .explore-img-wrap::after {
+  content: '';
+  position: absolute;
+  top: 0; right: 0; bottom: 0;
+  width: 55%;
+  background: linear-gradient(to right, transparent 0%, var(--charcoal-card) 100%);
+  pointer-events: none;
+}
+
+/* Left cards (image right): fade the image's left edge into the card bg */
+.explore-card--left .explore-img-wrap::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  width: 55%;
+  background: linear-gradient(to left, transparent 0%, var(--charcoal-card) 100%);
+  pointer-events: none;
 }
 
 .explore-body {
@@ -778,21 +802,32 @@
 /* ── Fish Lake Valley hero card ── */
 .explore-card--hero {
   grid-template-columns: 1fr !important;
+  min-height: 0;
 }
 
 .explore-hero-wrap {
   position: relative;
-  min-height: 360px;
+  height: 380px;
   overflow: hidden;
 }
 
-.explore-hero-img {
+/* ── Crossfade slideshow ── */
+.explore-slideshow {
+  position: absolute;
+  inset: 0;
+}
+
+.explore-slide-img {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
-  min-height: 360px;
   object-fit: cover;
-  display: block;
+  opacity: 0;
+  transition: opacity 1.4s ease-in-out;
 }
+
+.explore-slide-img.is-slide-active { opacity: 1; }
 
 .explore-hero-overlay {
   position: absolute;
@@ -809,6 +844,7 @@
   justify-content: flex-end;
   padding: 40px 44px;
   gap: 8px;
+  z-index: 1;
 }
 
 .explore-hero-overlay .explore-tag {
@@ -823,52 +859,31 @@
 }
 
 .explore-body--hero {
-  padding: 32px 44px 28px !important;
+  padding: 32px 44px 36px !important;
 }
-
-/* ── Additional photo strip below FLV text ── */
-.explore-photo-strip {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 3px;
-  border-top: 1px solid var(--charcoal-border);
-}
-
-.explore-photo-strip img {
-  width: 100%;
-  height: 160px;
-  object-fit: cover;
-  display: block;
-  transition: opacity 0.25s ease;
-}
-
-.explore-photo-strip img:hover { opacity: 0.82; }
 
 /* ── Mobile ── */
 @media (max-width: 680px) {
-  .explore-trail { padding-left: 44px; }
-  .trail-line-track { left: 13px; }
-  .stop-marker { left: -36px; top: 24px; }
-  .stop-dot { width: 24px; height: 24px; font-size: 9px; }
-  .explore-stop { margin-bottom: 32px; }
+  /* No side line or dots — cards go full width */
+  .explore-trail { padding-left: 0; }
+  .trail-line-track { display: none; }
+  .stop-marker { display: none; }
+  .explore-stop { margin-bottom: 24px; }
 
   .explore-card,
   .explore-card--left {
     grid-template-columns: 1fr !important;
+    min-height: 0;
   }
-  /* Image always on top on mobile */
-  .explore-img { min-height: 200px; max-height: 260px; order: -1; }
+  /* On mobile, img-wrap stacks above body */
+  .explore-img-wrap { min-height: 200px; max-height: 260px; order: -1; }
+  .explore-img-wrap::after { display: none !important; } /* no edge fade when stacked */
   .explore-body { padding: 22px 20px; gap: 10px; order: 0; }
 
   /* Hero card mobile */
-  .explore-hero-wrap { min-height: 260px; }
-  .explore-hero-img { min-height: 260px; }
+  .explore-hero-wrap { height: 260px; }
   .explore-hero-overlay { padding: 24px 22px; gap: 6px; }
-  .explore-body--hero { padding: 22px 22px 18px !important; }
-
-  /* Photo strip: 2 columns on mobile */
-  .explore-photo-strip { grid-template-columns: repeat(2, 1fr); }
-  .explore-photo-strip img { height: 120px; }
+  .explore-body--hero { padding: 22px 22px 24px !important; }
 }
 
 
@@ -1203,12 +1218,22 @@
   </div>
 </section>
 
-<!-- ─── EXPLORING ESMERALDA ─── -->
+<!-- ─── EXPLORING ESMERALDA BANNER ─── -->
+<div class="service-banner explore-banner">
+  <div class="service-banner-inner">
+    <div class="service-banner-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+    </div>
+    <div class="service-banner-body">
+      <span class="service-banner-title">Exploring Esmeralda</span>
+      <span class="service-banner-sub">Off the Beaten Path &nbsp;&middot;&nbsp; Fish Lake Valley, NV</span>
+    </div>
+  </div>
+</div>
+
+<!-- ─── EXPLORING ESMERALDA SECTION ─── -->
 <section class="section explore-section" id="explore">
   <div class="section-inner">
-    <div class="section-label">Off the Beaten Path</div>
-    <h2 class="section-heading">Exploring Esmeralda</h2>
-    <p class="explore-intro">Fish Lake Valley sits at the crossroads of some of Nevada's most extraordinary and least-visited landscapes. Fill your tank, grab a sandwich, and head out — wild mustangs roam free across the flats, ancient trees grip mountain ridgelines, and hot springs rise from the desert floor. This is the real Nevada.</p>
 
     <div class="explore-trail" id="exploreTrail">
 
@@ -1222,11 +1247,17 @@
         <div class="stop-marker"><div class="stop-dot">1</div></div>
         <div class="explore-card explore-card--hero">
 
-          <!-- Full-width hero image with title overlay -->
+          <!-- Crossfade slideshow -->
           <div class="explore-hero-wrap">
-            <img class="explore-hero-img" src="assets/fish-lake-valley-1.webp" alt="Fish Lake Valley" loading="lazy"/>
+            <div class="explore-slideshow" id="flvSlideshow">
+              <img class="explore-slide-img is-slide-active" src="assets/fish-lake-valley-1.webp" alt="Fish Lake Valley" loading="lazy"/>
+              <img class="explore-slide-img" src="assets/fish-lake-valley-3.webp" alt="Fish Lake Valley" loading="lazy"/>
+              <img class="explore-slide-img" src="assets/wildlife.webp" alt="Local wildlife" loading="lazy"/>
+              <img class="explore-slide-img" src="assets/mountains.webp" alt="White Mountains" loading="lazy"/>
+              <img class="explore-slide-img" src="assets/sunset-1.webp" alt="Desert sunset" loading="lazy"/>
+            </div>
             <div class="explore-hero-overlay">
-              <div class="explore-tag">Valley &middot; OHV Trails &middot; Wild Mustangs</div>
+              <div class="explore-tag">Come Explore the High Desert</div>
               <h3 class="explore-name explore-name--hero">Welcome to Fish Lake Valley</h3>
             </div>
           </div>
@@ -1234,14 +1265,6 @@
           <!-- Description text -->
           <div class="explore-body explore-body--hero">
             <p class="explore-desc">Sprawling across 30 miles of open high desert, Fish Lake Valley is home to free-roaming wild mustang herds, vast alkali flats, and some of the most dramatic big-sky scenery in the American West. Miles of side-by-side and OHV trails wind through the basin — and on a quiet evening out here, the silence is complete. Esmeralda Market is your basecamp for all of it.</p>
-          </div>
-
-          <!-- Additional photo strip -->
-          <div class="explore-photo-strip">
-            <img src="assets/fish-lake-valley-3.webp" alt="Fish Lake Valley landscape" loading="lazy"/>
-            <img src="assets/wildlife.webp" alt="Local wildlife" loading="lazy"/>
-            <img src="assets/mountains.webp" alt="White Mountains" loading="lazy"/>
-            <img src="assets/sunset-1.webp" alt="Desert sunset" loading="lazy"/>
           </div>
 
         </div>
@@ -1256,7 +1279,9 @@
             <h3 class="explore-name">Fish Lake Valley Hot Springs</h3>
             <p class="explore-desc">One of the Great Basin&rsquo;s best-kept secrets &mdash; free, remote, and gloriously uncrowded. These geothermal pools rise right from the desert floor and offer a long, steaming soak beneath an enormous Nevada sky. Best at sunrise or after dark, when warm water meets cool desert air in a way you won&rsquo;t forget.</p>
           </div>
-          <img class="explore-img" src="assets/hotsprings.webp" alt="Fish Lake Valley Hot Springs" loading="lazy"/>
+          <div class="explore-img-wrap">
+            <img class="explore-img" src="assets/hotsprings.webp" alt="Fish Lake Valley Hot Springs" loading="lazy"/>
+          </div>
         </div>
       </div>
 
@@ -1264,7 +1289,9 @@
       <div class="explore-stop" data-stop="2">
         <div class="stop-marker"><div class="stop-dot">3</div></div>
         <div class="explore-card">
-          <img class="explore-img" src="assets/trail-canyon-resevior.webp" alt="Trail Canyon Reservoir" loading="lazy"/>
+          <div class="explore-img-wrap">
+            <img class="explore-img" src="assets/trail-canyon-resevior.webp" alt="Trail Canyon Reservoir" loading="lazy"/>
+          </div>
           <div class="explore-body">
             <div class="explore-tag">Fishing &middot; Alpine</div>
             <h3 class="explore-name">Trail Canyon Reservoir</h3>
@@ -1282,7 +1309,9 @@
             <h3 class="explore-name">Boundary Peak Trailhead</h3>
             <p class="explore-desc">Nevada&rsquo;s highest point at 13,147 feet, Boundary Peak towers over the valley from the White Mountain crest. The trailhead is just up the road &mdash; fuel up and grab a sandwich before setting out on the state&rsquo;s ultimate summit hike. It&rsquo;s roughly 8 miles round trip with 4,000 feet of gain. The views from the top stretch into four states.</p>
           </div>
-          <img class="explore-img" src="assets/boundery-1.webp" alt="Boundary Peak" loading="lazy"/>
+          <div class="explore-img-wrap">
+            <img class="explore-img" src="assets/boundery-1.webp" alt="Boundary Peak" loading="lazy"/>
+          </div>
         </div>
       </div>
 
@@ -1290,7 +1319,9 @@
       <div class="explore-stop" data-stop="4">
         <div class="stop-marker"><div class="stop-dot">5</div></div>
         <div class="explore-card">
-          <img class="explore-img" src="assets/bristlecone-pine-forest.webp" alt="Bristlecone Pine Forest" loading="lazy"/>
+          <div class="explore-img-wrap">
+            <img class="explore-img" src="assets/bristlecone-pine-forest.webp" alt="Bristlecone Pine Forest" loading="lazy"/>
+          </div>
           <div class="explore-body">
             <div class="explore-tag">Ancient Forest &middot; 5,000+ yrs</div>
             <h3 class="explore-name">Bristlecone Pine Forest</h3>
@@ -1453,6 +1484,20 @@
     if (!trail || !fill || !stops.length) return;
     window.addEventListener('scroll', onScroll, { passive: true });
     update(); // run once on load in case already scrolled
+  });
+}());
+
+// ─── Fish Lake Valley crossfade slideshow ────────────────────────────────────
+(function () {
+  document.addEventListener('DOMContentLoaded', function () {
+    var slides = document.querySelectorAll('#flvSlideshow .explore-slide-img');
+    if (slides.length < 2) return;
+    var idx = 0;
+    setInterval(function () {
+      slides[idx].classList.remove('is-slide-active');
+      idx = (idx + 1) % slides.length;
+      slides[idx].classList.add('is-slide-active');
+    }, 4800);
   });
 }());
 
