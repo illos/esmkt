@@ -403,10 +403,11 @@
     z-index: 3;
   }
 
-  /* Photo fills behind store pop */
+  /* Photo fills behind store pop on mobile — full width */
   .hv2-photo {
     position: absolute;
-    inset: 0;
+    top: 0; right: 0; bottom: 0; left: 0;
+    width: 100%;
     background-attachment: scroll;
   }
 
@@ -441,14 +442,16 @@
   #heroBtn  { width: auto !important; flex: 1; min-width: 0; font-size: 13px; padding: 14px 16px; }
 }
 
-/* ── Hero photo as fixed background ── */
+/* ── Hero photo — 80% width, right-aligned ── */
 .hv2-photo {
   background-size: cover;
   background-position: center 35%;
   background-attachment: fixed;
   background-repeat: no-repeat;
   position: absolute;
-  inset: 0;
+  top: 0; right: 0; bottom: 0;
+  width: 80%;
+  left: auto;
 }
 
 /* ── Topo texture on hours cards + service items ── */
