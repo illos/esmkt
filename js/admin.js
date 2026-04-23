@@ -1223,16 +1223,75 @@ function renderAdminLinks(links) {
 }
 
 function buildQlRow(lk, idx) {
+  const iconName = lk.icon || '';
+  const iconSvg  = iconName && ADMIN_LINK_ICONS[iconName] ? ADMIN_LINK_ICONS[iconName] : '';
+  const iconPickerGrid = Object.entries(ADMIN_LINK_ICONS).map(([name, svg]) =>
+    `<button type="button" class="ql-icon-opt${name === iconName ? ' selected' : ''}"
+       data-icon-name="${name}" title="${name}"
+       onclick="selectLinkIcon(this)">${svg}</button>`
+  ).join('');
+
   return `<div class="ql-row" draggable="true" data-idx="${idx}"
       ondragstart="onQlDragStart(event,${idx})"
       ondragover="onQlDragOver(event,${idx})"
       ondrop="onQlDrop(event,${idx})"
       ondragend="onQlDragEnd(event)">
     <span class="ql-drag-handle" title="Drag to reorder">&#8942;&#8942;</span>
+    <button type="button" class="ql-icon-btn" data-icon="${iconName}"
+      onclick="toggleIconPicker(this)" title="Set icon">
+      ${iconSvg || '<span class="ql-icon-none">&#8212;</span>'}
+    </button>
     <input  class="form-input ql-text" type="text" placeholder="Link text" value="${esc(lk.text)}"/>
     <input  class="form-input ql-url"  type="text" placeholder="URL or #anchor" value="${esc(lk.url)}"/>
     <button class="ql-btn-remove" onclick="removeLink(${idx})" title="Remove">&#215;</button>
+    <div class="ql-icon-picker" style="display:none">
+      <button type="button" class="ql-icon-opt ql-icon-none-opt${!iconName ? ' selected' : ''}"
+        data-icon-name="" title="No icon" onclick="selectLinkIcon(this)">&#8212;</button>
+      ${iconPickerGrid}
+    </div>
   </div>`;
+}
+
+// Icon dict mirrored from nav.js so admin.js stays self-contained
+const ADMIN_LINK_ICONS = {
+  'map-pin':      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>`,
+  'utensils':     `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 002-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 00-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/></svg>`,
+  'compass':      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>`,
+  'star':         `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
+  'clock':        `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
+  'phone':        `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24 11.47 11.47 0 003.58.57 1 1 0 011 1V21a1 1 0 01-1 1A17 17 0 013 5a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.58a1 1 0 01-.25 1.01z"/></svg>`,
+  'mail':         `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>`,
+  'home':         `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`,
+  'shopping-bag': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>`,
+  'calendar':     `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
+  'zap':          `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`,
+  'info':         `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
+  'globe':        `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>`,
+  'share':        `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`,
+  'tag':          `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>`,
+  'arrow-right':  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>`,
+};
+
+function toggleIconPicker(btn) {
+  const picker = btn.closest('.ql-row').querySelector('.ql-icon-picker');
+  const isOpen = picker.style.display !== 'none';
+  // Close all other open pickers first
+  document.querySelectorAll('.ql-icon-picker').forEach(p => { p.style.display = 'none'; });
+  picker.style.display = isOpen ? 'none' : '';
+}
+
+function selectLinkIcon(optBtn) {
+  const picker  = optBtn.closest('.ql-icon-picker');
+  const row     = optBtn.closest('.ql-row');
+  const iconBtn = row.querySelector('.ql-icon-btn');
+  const name    = optBtn.dataset.iconName || '';
+  const svg     = name ? (ADMIN_LINK_ICONS[name] || '') : '';
+
+  iconBtn.dataset.icon = name;
+  iconBtn.innerHTML    = svg || '<span class="ql-icon-none">&#8212;</span>';
+  picker.querySelectorAll('.ql-icon-opt').forEach(b => b.classList.remove('selected'));
+  optBtn.classList.add('selected');
+  picker.style.display = 'none';
 }
 
 
@@ -1272,6 +1331,7 @@ function collectAdminLinks() {
     id:   String(i + 1),
     text: row.querySelector('.ql-text').value.trim(),
     url:  row.querySelector('.ql-url').value.trim(),
+    icon: row.querySelector('.ql-icon-btn')?.dataset.icon || '',
   })).filter(lk => lk.text && lk.url);
 }
 

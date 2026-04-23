@@ -1092,7 +1092,7 @@
   /* ─── QUICK LINKS EDITOR ─── */
   .ql-row {
     display: grid;
-    grid-template-columns: 28px 1fr 1.4fr 34px;
+    grid-template-columns: 28px 34px 1fr 1.4fr 34px;
     gap: 8px;
     align-items: center;
     padding: 7px 0;
@@ -1102,14 +1102,66 @@
   .ql-row:last-child { border-bottom: none; }
   .ql-row.ql-dragging { opacity: 0.4; }
   .ql-row.ql-drag-over { background: rgba(201,169,110,0.07); }
+
+  /* Icon picker spans the full row width below the inputs */
+  .ql-icon-picker {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 8px 10px;
+    background: rgba(0,0,0,0.15);
+    border: 1px solid var(--charcoal-border);
+    border-radius: 2px;
+    margin-top: -2px;
+  }
+  .ql-icon-opt {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 2px;
+    color: var(--cream-dim);
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+  }
+  .ql-icon-opt svg { width: 15px; height: 15px; }
+  .ql-icon-opt:hover { color: var(--gold); border-color: var(--gold-dark); background: rgba(201,169,110,0.08); }
+  .ql-icon-opt.selected { color: var(--gold); border-color: var(--gold-dark); background: rgba(201,169,110,0.12); }
+  .ql-icon-none-opt { font-size: 14px; color: var(--cream-dim); letter-spacing: 0; }
+
+  /* Icon toggle button in each row */
+  .ql-icon-btn {
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--charcoal-border);
+    border-radius: 2px;
+    color: var(--gold);
+    cursor: pointer;
+    padding: 0;
+    transition: border-color 0.15s, background 0.15s;
+    flex-shrink: 0;
+  }
+  .ql-icon-btn svg { width: 15px; height: 15px; }
+  .ql-icon-btn:hover { border-color: var(--gold-dark); background: rgba(201,169,110,0.08); }
+  .ql-icon-none { color: var(--cream-dim); font-size: 14px; opacity: 0.5; }
+
   @media (max-width: 540px) {
     .ql-row {
-      grid-template-columns: 28px 1fr 34px;
+      grid-template-columns: 28px 34px 1fr 34px;
       grid-template-rows: auto auto;
     }
-    .ql-text       { grid-column: 2; grid-row: 1; }
+    .ql-text       { grid-column: 3; grid-row: 1; }
     .ql-url        { grid-column: 1 / -1; grid-row: 2; }
-    .ql-btn-remove { grid-column: 3; grid-row: 1; }
+    .ql-btn-remove { grid-column: 4; grid-row: 1; }
   }
   .ql-drag-handle {
     cursor: grab;
