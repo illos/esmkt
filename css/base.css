@@ -326,8 +326,9 @@
   @media (max-width: 900px) {
     .gf-inner { grid-template-columns: 1fr 1fr; gap: 32px; }
     .gf-hours  { grid-column: 1 / -1; }
-    .gf-contact {
+    .gf-contact a{
       text-align: center;
+      display: block;
     }
     .gf-logo {
       max-width: 200px;
