@@ -891,6 +891,8 @@
   .hero-v2-inner {
     flex-direction: row;
     align-items: stretch;
+    max-width: 1700px;
+    margin: auto;
   }
 
   .hero-v2-left {
@@ -974,7 +976,7 @@
   .hv2-ctas { flex-wrap: nowrap; }
   #callBtnPhone { display: none; }
   #callBtn  { width: auto !important; padding: 14px 16px; flex-shrink: 0; }
-  #heroBtn  { width: auto !important; flex: 1; min-width: 0; font-size: 13px; padding: 14px 16px; }
+  #heroBtn  { width: auto !important; flex: 1; min-width: 0; font-size: 13px; padding: 14px 16px; color: black}
 }
 
 /* ── Hero photo — 100% height, proportional width, right-aligned ── */

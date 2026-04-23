@@ -326,6 +326,12 @@
   @media (max-width: 900px) {
     .gf-inner { grid-template-columns: 1fr 1fr; gap: 32px; }
     .gf-hours  { grid-column: 1 / -1; }
+    .gf-brand {
+      text-align: center;
+    }
+    .gf-logo {
+      max-width: 160px;
+    }
   }
   @media (max-width: 560px) {
     .gf-inner { grid-template-columns: 1fr; padding: 40px 20px 28px; gap: 32px; }

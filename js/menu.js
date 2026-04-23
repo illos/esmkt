@@ -642,7 +642,8 @@ function printMenu() {
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 @page{margin:0.4cm 0.5cm}
-body{background:#F5F3EF;color:#1A1A18;font-family:'Source Sans 3',sans-serif;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+body{background:#F5F3EF;color:#1A1A18;font-family:'Source Sans 3',sans-serif;print-color-adjust:exact;-webkit-print-color-adjust:exact,}
+.menu-wrapper{display: block; max-wdith:1200px; margin:auto}
 .pm-header{text-align:center;padding:12px 0 10px;border-bottom:2px solid #C9A96E;margin-bottom:14px}
 .pm-header-name{font-family:'Oswald',sans-serif;font-size:28px;font-weight:700;letter-spacing:8px;text-transform:uppercase;color:#1A1A18;display:block;line-height:1}
 .pm-header-name span{color:#7A5C28}
@@ -672,11 +673,12 @@ body{background:#F5F3EF;color:#1A1A18;font-family:'Source Sans 3',sans-serif;pri
 @media print{*{print-color-adjust:exact;-webkit-print-color-adjust:exact}}
 </style>
 </head><body>
+<div class="menu-wrapper"
 <div class="pm-header">
   <span class="pm-header-name">ESMERALDA Market</span>
   <span class="pm-header-sub">Snackbar Menu &nbsp;&middot;&nbsp; Call to Order &nbsp;&middot;&nbsp; ${sitePhone}</span>
 </div>
-<div class="pm-grid">${html}</div>
+<div class="pm-grid">${html}</div></div>
 </body></html>`);
   win.document.close();
   setTimeout(() => { win.focus(); win.print(); }, 600);
