@@ -326,11 +326,11 @@
   @media (max-width: 900px) {
     .gf-inner { grid-template-columns: 1fr 1fr; gap: 32px; }
     .gf-hours  { grid-column: 1 / -1; }
-    .gf-brand {
+    .gf-contact {
       text-align: center;
     }
     .gf-logo {
-      max-width: 160px;
+      max-width: 200px;
     }
   }
   @media (max-width: 560px) {
