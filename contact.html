@@ -8,11 +8,12 @@
 <!-- Turnstile in explicit-render mode (site key loaded from settings) -->
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 <link rel="stylesheet" href="css/base.css"/>
+<link rel="stylesheet" href="css/index.css"/>
 <link rel="stylesheet" href="css/contact.css"/>
 </head>
-<body>
+<body class="topo">
 
-<!-- Nav -->
+<!-- ─── STICKY NAV ─── -->
 <nav class="site-nav">
   <div class="nav-left">
     <a href="index.html" class="nav-back">&#8592; Home</a>
@@ -27,7 +28,7 @@
   </div>
 </nav>
 
-<!-- Nav Overlay -->
+<!-- ─── NAV OVERLAY ─── -->
 <div class="nav-overlay" id="navOverlay" aria-hidden="true">
   <div class="nav-overlay-backdrop" onclick="closeNavOverlay()"></div>
   <div class="nav-overlay-panel">
@@ -39,65 +40,12 @@
   </div>
 </div>
 
-<!-- Contact Form -->
-<div class="contact-wrap">
+<!-- ─── PAGE SECTIONS ───
+     Populated by js/contact.js after it fetches /api/pages/contact.
+     See js/sections.js for the type registry and render functions. -->
+<main id="sections"></main>
 
-  <div class="contact-header-row">
-    <h1 class="contact-title">Get in Touch</h1>
-    <div class="contact-rule"><span class="contact-star">&#10022;</span></div>
-  </div>
-
-  <p class="contact-intro">Have questions about our business, interested in hosting an event, or need us to cater a large group? Drop us a line bellow and we will get back to you!</p>  
-
-  <!-- Call Us Banner -->
-  <div class="call-us-banner">
-    <svg class="call-us-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24 11.47 11.47 0 003.58.57 1 1 0 011 1V21a1 1 0 01-1 1A17 17 0 013 5a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.58a1 1 0 01-.25 1.01z"/></svg>
-    <div class="call-us-text">
-      <span class="call-us-label">Have a quick question?</span>
-      <a class="call-us-number" id="callUsBannerPhone" href="tel:7755723200">775-572-3200</a> - Business line.
-    </div>
-  </div>
-
-  <!-- Form -->
-  <form class="contact-form" id="contactForm" onsubmit="submitContact(event)" novalidate>
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label" for="contactName">Name <span class="req">*</span></label>
-        <input class="form-input" type="text" id="contactName" name="name"
-          placeholder="First &amp; Last Name" autocomplete="name" required/>
-      </div>
-      <div class="form-group">
-        <label class="form-label" for="contactEmail">Email <span class="req">*</span></label>
-        <input class="form-input" type="email" id="contactEmail" name="email"
-          placeholder="your@email.com" autocomplete="email" required/>
-      </div>
-    </div>
-    <div class="form-group-full">
-      <label class="form-label" for="contactMessage">Message <span class="req">*</span></label>
-      <textarea class="form-textarea" id="contactMessage" name="message"
-        placeholder="What&rsquo;s on your mind?" required></textarea>
-    </div>
-
-    <!-- Cloudflare Turnstile bot check -->
-    <div class="turnstile-wrap">
-      <div id="turnstileWidget"></div>
-    </div>
-
-    <div class="contact-error" id="contactError"></div>
-
-    <button class="btn-send" type="submit" id="sendBtn">Send Message</button>
-  </form>
-
-  <!-- Success state (shown after submit) -->
-  <div class="contact-success" id="contactSuccess" style="display:none">
-    <div class="contact-success-icon">&#10022;</div>
-    <div class="contact-success-title">Message Sent!</div>
-    <div class="contact-success-sub">Thanks for reaching out &mdash; we&rsquo;ll get back to you soon. In the meantime, feel free to call us if it&rsquo;s urgent.</div>
-    <button class="btn-send-another" onclick="resetContactForm()">Send Another Message</button>
-  </div>
-
-</div><!-- /contact-wrap -->
-
+<!-- ─── FOOTER ─── -->
 <footer class="site-footer global-footer">
   <div class="gf-inner">
 
@@ -128,20 +76,20 @@
 
     <div class="gf-hours">
       <div class="gf-col-label">Business Hours</div>
-      <div class="hours-card gf-hours-combined">
+      <div class="hours-card gf-hours-combined topo-light">
         <div class="gf-hours-row">
           <span class="gf-hours-label">Market</span>
           <span class="gf-hours-right">
-            <span class="hours-time">8:30 AM &ndash; 7:30 PM</span>
-            <span class="hours-days">Open Every Day</span>
+            <span class="hours-time" id="footerStoreHoursTime">8:30 AM &ndash; 7:30 PM</span>
+            <span class="hours-days" id="footerStoreHoursDays">Every Day</span>
           </span>
         </div>
         <div class="gf-hours-divider"></div>
         <div class="gf-hours-row">
           <span class="gf-hours-label">Snackbar</span>
           <span class="gf-hours-right">
-            <span class="hours-time">9:00 AM &ndash; 3:00 PM</span>
-            <span class="hours-days">Mon &ndash; Sat</span>
+            <span class="hours-time" id="footerSnackbarHoursTime">9:00 AM &ndash; 3:00 PM</span>
+            <span class="hours-days" id="footerSnackbarHoursDays">Mon &ndash; Sat</span>
           </span>
         </div>
       </div>
@@ -157,6 +105,7 @@
 <div class="toast" id="toast"></div>
 
 <script src="js/nav.js"></script>
+<script src="js/sections.js"></script>
 <script src="js/contact.js"></script>
 </body>
 </html>

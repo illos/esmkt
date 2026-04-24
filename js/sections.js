@@ -27,7 +27,7 @@
   // ─── SVG ICON LIBRARY ─────────────────────────────────────────────────────
   // Inner markup for each named icon. Wrapped in an <svg> by svgIcon().
   var SVG_ICONS = {
-    // Banner icons (lucide-style)
+    // Banner / action icons (lucide-style)
     'send':      '<path d="M3 11l19-9-9 19-2-8-8-2z"/>',
     'sparkles':  '<path d="M12 2v4"/><path d="M12 18v4"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="M4.93 4.93l2.83 2.83"/><path d="M16.24 16.24l2.83 2.83"/><path d="M19.07 4.93l-2.83 2.83"/><path d="M7.76 16.24l-2.83 2.83"/><circle cx="12" cy="12" r="3"/>',
     'fuel':      '<path d="M3 22V6a2 2 0 012-2h8a2 2 0 012 2v16"/><path d="M3 22h12"/><path d="M9 6v4"/><path d="M15 10h2a2 2 0 012 2v2a2 2 0 002 2v0a2 2 0 002-2V8l-3-3"/><path d="M19 5v0a1 1 0 011 1v1"/>',
@@ -41,7 +41,7 @@
     'bell':      '<path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/>',
     'gift':      '<polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/>',
 
-    // Service icons (the existing 10 on the current homepage, in order)
+    // Service icons
     'drink':        '<path d="M7 3h10l-1.5 9H8.5L7 3z"/><path d="M8.5 12v7a1 1 0 001 1h5a1 1 0 001-1v-7"/><path d="M5 7h14"/><path d="M10 16h4"/>',
     'shopping-bag': '<path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/>',
     'box':          '<path d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/>',
@@ -51,7 +51,18 @@
     'leaf':         '<path d="M12 2a9 9 0 00-6.36 15.36C7.24 19 9.5 20 12 20s4.76-1 6.36-2.64A9 9 0 0012 2z"/><path d="M12 2c0 4-2 7-2 10s2 6 2 8"/><path d="M6.5 8c2 1 5 1.5 5.5 4"/><path d="M17.5 8c-2 1-5 1.5-5.5 4"/>',
     'mountains':    '<path d="M3 11l4-4 4 4 4-4 4 4"/><path d="M3 18l4-4 4 4 4-4 4 4"/>',
     'restroom':     '<circle cx="9" cy="4" r="1.5"/><path d="M6 8h6l-1 5H7L6 8z"/><path d="M7 13l-1 5h4l.5-2.5"/><path d="M10 13l1 5h-1"/><circle cx="17" cy="4" r="1.5"/><path d="M14.5 8h5l-1 5h-3l-1-5z"/><path d="M15.5 13l-1 5h4l-1-5"/>',
-    'wifi':         '<path d="M5 12.55a11 11 0 0114.08 0"/><path d="M1.42 9a16 16 0 0121.16 0"/><path d="M8.53 16.11a6 6 0 016.95 0"/><circle cx="12" cy="20" r="1" fill="currentColor" stroke="none"/>'
+    'wifi':         '<path d="M5 12.55a11 11 0 0114.08 0"/><path d="M1.42 9a16 16 0 0121.16 0"/><path d="M8.53 16.11a6 6 0 016.95 0"/><circle cx="12" cy="20" r="1" fill="currentColor" stroke="none"/>',
+
+    // Link / navigation icons (previously in admin + nav.js)
+    'utensils':    '<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 002-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 00-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/>',
+    'phone':       '<path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24 11.47 11.47 0 003.58.57 1 1 0 011 1V21a1 1 0 01-1 1A17 17 0 013 5a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.58a1 1 0 01-.25 1.01z"/>',
+    'mail':        '<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>',
+    'home':        '<path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
+    'zap':         '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+    'info':        '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>',
+    'globe':       '<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>',
+    'share':       '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>',
+    'arrow-right': '<line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>'
   };
 
   function svgIcon(name) {
@@ -234,6 +245,32 @@
           '<div class="' + classes + '">',
             '<h2 class="section-heading-text">' + esc(text) + '</h2>',
             ruleHtml,
+          '</div>',
+        '</div>',
+      '</section>'
+    ].join('');
+  }
+
+  function renderInfoCard(d) {
+    // A bordered card with an icon on the left and a subtitle/title/body
+    // stack on the right. Visual vocabulary matches the existing "Have a
+    // quick question?" card on the contact page. Body may contain inline
+    // HTML (e.g. <a href="tel:..."> links) since this is hand-authored copy.
+    var iconHtml = d.icon ? svgIcon(d.icon) : '';
+    var subHtml   = d.subtitle ? '<span class="info-card-subtitle">' + esc(d.subtitle) + '</span>' : '';
+    var titleHtml = d.title    ? '<span class="info-card-title">'    + esc(d.title)    + '</span>' : '';
+    var bodyHtml  = d.body     ? '<span class="info-card-body">'     + d.body + '</span>' : '';
+    if (!titleHtml && !bodyHtml && !subHtml) return '';
+    return [
+      '<section class="section section-info-card-section">',
+        '<div class="section-inner">',
+          '<div class="info-card">',
+            iconHtml ? '<div class="info-card-icon">' + iconHtml + '</div>' : '',
+            '<div class="info-card-text">',
+              subHtml,
+              titleHtml,
+              bodyHtml,
+            '</div>',
           '</div>',
         '</div>',
       '</section>'
@@ -486,14 +523,46 @@
   }
 
   function renderContactForm(d) {
+    // Real contact form. Submit + Turnstile wiring is in contact.js (which
+    // looks up #contactForm by ID). Keep the markup identical to what was
+    // on the old static contact.html so nothing else needs to change.
+    var sectionLabel = d.section_label || '';
+    var heading      = d.heading       || '';
+    var successTitle = d.success_title || 'Message Sent!';
+    var successSub   = d.success_sub   || 'Thanks for reaching out \u2014 we\u2019ll get back to you soon. In the meantime, feel free to call us if it\u2019s urgent.';
     return [
       '<section class="section contact-section">',
         '<div class="section-inner">',
-          '<div class="section-label">' + esc(d.section_label || 'Get in Touch') + '</div>',
-          '<h2 class="section-heading">' + esc(d.heading || 'Contact Us') + '</h2>',
-          '<p style="text-align:center;color:var(--cream-dim);padding:40px 0">',
-            'Contact form is on the <a href="contact.html" style="color:var(--gold)">Contact page</a>.',
-          '</p>',
+          sectionLabel ? '<div class="section-label">' + esc(sectionLabel) + '</div>' : '',
+          heading      ? '<h2 class="section-heading">' + esc(heading) + '</h2>'       : '',
+          '<form class="contact-form" id="contactForm" onsubmit="submitContact(event)" novalidate>',
+            '<div class="form-row">',
+              '<div class="form-group">',
+                '<label class="form-label" for="contactName">Name <span class="req">*</span></label>',
+                '<input class="form-input" type="text" id="contactName" name="name"',
+                '  placeholder="First &amp; Last Name" autocomplete="name" required/>',
+              '</div>',
+              '<div class="form-group">',
+                '<label class="form-label" for="contactEmail">Email <span class="req">*</span></label>',
+                '<input class="form-input" type="email" id="contactEmail" name="email"',
+                '  placeholder="your@email.com" autocomplete="email" required/>',
+              '</div>',
+            '</div>',
+            '<div class="form-group-full">',
+              '<label class="form-label" for="contactMessage">Message <span class="req">*</span></label>',
+              '<textarea class="form-textarea" id="contactMessage" name="message"',
+              '  placeholder="What\u2019s on your mind?" required></textarea>',
+            '</div>',
+            '<div class="turnstile-wrap"><div id="turnstileWidget"></div></div>',
+            '<div class="contact-error" id="contactError"></div>',
+            '<button class="btn-send" type="submit" id="sendBtn">Send Message</button>',
+          '</form>',
+          '<div class="contact-success" id="contactSuccess" style="display:none">',
+            '<div class="contact-success-icon">\u2726</div>',
+            '<div class="contact-success-title">' + esc(successTitle) + '</div>',
+            '<div class="contact-success-sub">'   + successSub + '</div>',
+            '<button class="btn-send-another" onclick="resetContactForm()">Send Another Message</button>',
+          '</div>',
         '</div>',
       '</section>'
     ].join('');
@@ -550,7 +619,7 @@
       schema: {
         title:     { type: 'text',    label: 'Title' },
         subtitle:  { type: 'text',    label: 'Subtitle' },
-        icon:      { type: 'icon',    label: 'Icon',     iconSet: ['send','sparkles','fuel','compass','map-pin','calendar','clock','tag','star','heart','bell','gift','coffee'] },
+        icon:      { type: 'icon',    label: 'Icon' },
         variant:   { type: 'select',  label: 'Color',    options: BANNER_VARIANTS },
         cta_label: { type: 'text',    label: 'Button Label (optional)', pairWith: 'cta_link' },
         cta_link:  { type: 'text',    label: 'Button Link (optional)' },
@@ -614,6 +683,21 @@
       },
       defaults: { text: 'New Heading', size: 'medium', align: 'center', show_rule: false },
       render: renderHeading
+    },
+
+    info_card: {
+      label: 'Info Card',
+      icon:  '\u2139', // ℹ
+      description: 'Bordered card with an icon, subtitle, title, and body text. Good for call-to-action messages or contact hints.',
+      category: 'generic',
+      schema: {
+        icon:     { type: 'icon',     label: 'Icon' },
+        subtitle: { type: 'text',     label: 'Subtitle (small label above title)' },
+        title:    { type: 'text',     label: 'Title' },
+        body:     { type: 'longtext', label: 'Body Text' }
+      },
+      defaults: { icon: 'info', subtitle: '', title: 'New Info Card', body: '' },
+      render: renderInfoCard
     },
 
     events: {
@@ -682,7 +766,7 @@
           type: 'list', label: 'Services',
           listLayout: 'grid',
           itemSchema: {
-            icon:  { type: 'icon', label: 'Icon',  iconSet: ['drink','shopping-bag','box','snowflake','coffee','bottle','leaf','mountains','restroom','wifi','compass','map-pin','send','sparkles','fuel'] },
+            icon:  { type: 'icon', label: 'Icon' },
             label: { type: 'text', label: 'Label' }
           }
         }
@@ -715,7 +799,7 @@
         stops: {
           type: 'list', label: 'Stops',
           itemSchema: {
-            layout: { type: 'layoutButtons', label: 'Layout', pairWith: 'tag', options: [
+            layout: { type: 'layoutButtons', label: 'Layout', pairWith: 'tag', pairRatio: [1, 3], options: [
               { value: 'hero',       label: 'Image on top'             },
               { value: 'text-right', label: 'Image left, text right' },
               { value: 'text-left',  label: 'Image right, text left' }
@@ -755,13 +839,20 @@
 
     contact_form: {
       label: 'Contact Form', icon: '\u2709',
-      description: 'Contact form with Turnstile (reserved \u2014 real form is on contact.html).',
-      category: 'reserved',
+      description: 'Name/email/message contact form with Turnstile bot protection. Submissions go to the email set in Contact Info.',
+      category: 'generic',
       schema: {
-        section_label: { type: 'text', label: 'Small Label' },
-        heading:       { type: 'text', label: 'Heading' }
+        section_label: { type: 'text',     label: 'Small Label' },
+        heading:       { type: 'text',     label: 'Heading' },
+        success_title: { type: 'text',     label: 'Success Message Title' },
+        success_sub:   { type: 'longtext', label: 'Success Message Body' }
       },
-      defaults: { section_label: 'Get in Touch', heading: 'Contact Us' },
+      defaults: {
+        section_label: 'Get in Touch',
+        heading: 'Contact Us',
+        success_title: 'Message Sent!',
+        success_sub: 'Thanks for reaching out \u2014 we\u2019ll get back to you soon. In the meantime, feel free to call us if it\u2019s urgent.'
+      },
       render: renderContactForm
     },
 
@@ -837,6 +928,8 @@
         var sizeLabel = d.size === 'small' ? 'S' : d.size === 'large' ? 'L' : 'M';
         var alignLabel = d.align === 'left' ? '\u2190' : d.align === 'right' ? '\u2192' : '\u2194';
         return (d.text ? decodeEntities(d.text) : 'Empty heading') + ' \u00b7 ' + sizeLabel + ' ' + alignLabel + (d.show_rule ? ' \u00b7 rule' : '');
+      case 'info_card':
+        return (d.title ? decodeEntities(d.title) : 'Untitled card') + (d.body ? ' \u00b7 ' + truncate(d.body, 50) : '');
       case 'events':
         return decodeEntities(d.heading || 'Upcoming Events') + (d.show_facebook_strip !== false ? ' \u00b7 Facebook strip on' : '');
       case 'hours':
@@ -849,7 +942,7 @@
         var stopCount = (d.stops && d.stops.length) || 0;
         return stopCount + ' stop' + (stopCount !== 1 ? 's' : '');
       case 'menu':         return 'Menu placeholder \u2014 links to menu.html';
-      case 'contact_form': return 'Contact form placeholder \u2014 links to contact.html';
+      case 'contact_form': return decodeEntities(d.heading || 'Contact Us');
       case 'footer':       return 'Footer placeholder';
       default:             return section && section.type || '';
     }

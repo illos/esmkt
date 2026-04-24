@@ -30,7 +30,8 @@
 <!-- Admin Section Tabs -->
 <div class="admin-tabs" id="adminTabs">
   <button class="tab-btn active" id="tabStoreInfo" onclick="switchTab('storeinfo')">Store Info</button>
-  <button class="tab-btn"        id="tabPages"     onclick="switchTab('pages')">Pages</button>
+  <button class="tab-btn"        id="tabHome"      onclick="switchTab('home')">Home Page</button>
+  <button class="tab-btn"        id="tabContact"   onclick="switchTab('contact')">Contact</button>
   <button class="tab-btn"        id="tabMenu"      onclick="switchTab('menu')">Menu</button>
   <button class="tab-btn"        id="tabEvents"    onclick="switchTab('events')">Events</button>
   <button class="tab-btn"        id="tabSettings"  onclick="switchTab('settings')">Settings</button>
@@ -69,21 +70,6 @@
 <!-- ─── STORE INFO PAGE (first tab) ─── -->
 <div class="page active" id="pageStoreInfo">
 
-  <div class="hours-section-title">Site Info</div>
-  <div class="form-card" style="margin-bottom:28px">
-    <div class="form-group-full">
-      <label class="form-label" for="siPhone">Phone Number</label>
-      <input class="form-input" type="tel" id="siPhone" placeholder="e.g. 775-572-3200"
-        onblur="saveSiteInfo()" onkeydown="if(event.key==='Enter')this.blur()"/>
-    </div>
-    <div class="form-actions">
-      <button class="btn-save" id="saveSiteInfoBtn" onclick="saveSiteInfo()">Save Site Info</button>
-      <span id="savingSiteInfoIndicator" style="display:none;align-items:center;color:var(--cream-dim);font-size:13px;margin-left:16px">
-        <span class="spinner"></span> Saving&hellip;
-      </span>
-    </div>
-  </div>
-
   <div class="hours-section-title">Store Hours</div>
   <div class="form-card" style="margin-bottom:24px">
     <table class="hours-table" id="storeHoursTable">
@@ -112,24 +98,6 @@
   <span id="savingHoursIndicator" style="display:none;align-items:center;color:var(--cream-dim);font-size:13px;margin-left:16px">
     <span class="spinner"></span> Saving&hellip;
   </span>
-
-  <div class="hours-section-title">Contact</div>
-  <div class="form-card" style="margin-bottom:28px">
-    <div class="form-group-full">
-      <label class="form-label" for="siContactEmail">Contact Email <span class="req">*</span></label>
-      <input class="form-input" type="email" id="siContactEmail" placeholder="e.g. hello@esmeralda.market"
-        onblur="saveContactSettings()" onkeydown="if(event.key==='Enter')this.blur()"/>
-    </div>
-    <p style="font-size:12px;color:var(--cream-dim);margin-top:4px;line-height:1.6">
-      Contact-form submissions are sent to this email.
-    </p>
-    <div class="form-actions">
-      <button class="btn-save" id="saveContactSettingsBtn" onclick="saveContactSettings()">Save Contact</button>
-      <span id="savingContactSettingsIndicator" style="display:none;align-items:center;color:var(--cream-dim);font-size:13px;margin-left:16px">
-        <span class="spinner"></span> Saving&hellip;
-      </span>
-    </div>
-  </div>
 
   <div class="hours-section-title">Links</div>
   <div class="form-card" style="margin-bottom:28px">
@@ -223,31 +191,41 @@
 </div>
 
 
-<!-- ─── PAGES MASTER LIST ─── -->
-<div class="page" id="pagePages">
-
-  <div class="list-header">
-    <span class="section-title" style="margin:0;flex:1">Pages</span>
-    <button class="btn-add-item" disabled style="opacity:0.4;cursor:not-allowed" title="Creating new pages is coming in a future update">+ New Page</button>
-  </div>
-
-  <p style="font-size:12px;color:var(--cream-dim);margin:0 0 16px;line-height:1.6;max-width:700px">
-    Your site's pages. Click a page to edit its sections. Adding new pages is coming in a future update.
-  </p>
-
-  <div id="pagesList">
-    <div style="padding:40px;text-align:center;color:var(--cream-dim);font-style:italic"><span class="spinner"></span> Loading&hellip;</div>
-  </div>
-
-</div>
-
-<!-- ─── PAGE EDITOR (sections list for a specific page) ─── -->
+<!-- ─── PAGE EDITOR (sections list for the Home or Contact page) ─── -->
 <div class="page" id="pagePageEditor">
-
-  <button class="form-back" onclick="switchTab('pages')">&#8592; Back to Pages</button>
 
   <div class="list-header">
     <span class="section-title" style="margin:0;flex:1" id="pageEditorTitle">Sections</span>
+  </div>
+
+  <!-- Contact-only: phone + email card shown on the Contact tab only -->
+  <div id="contactInfoCard" style="display:none">
+    <div class="hours-section-title">Contact Info</div>
+    <div class="form-card" style="margin-bottom:28px">
+      <div class="form-pair-row">
+        <div class="form-group-full">
+          <label class="form-label" for="ciPhone">Phone Number</label>
+          <input class="form-input" type="tel" id="ciPhone" placeholder="e.g. 775-572-3200"
+            onblur="saveContactInfoCard()" onkeydown="if(event.key==='Enter')this.blur()"/>
+        </div>
+        <div class="form-group-full">
+          <label class="form-label" for="ciEmail">Contact Email</label>
+          <input class="form-input" type="email" id="ciEmail" placeholder="hello@esmeralda.market"
+            onblur="saveContactInfoCard()" onkeydown="if(event.key==='Enter')this.blur()"/>
+        </div>
+      </div>
+      <p style="font-size:12px;color:var(--cream-dim);margin:8px 0 0;line-height:1.6">
+        The phone number appears across the site wherever a "Call Us" link is shown. Contact-form submissions are sent to the email above.
+      </p>
+      <div class="form-actions">
+        <button class="btn-save" id="saveContactInfoBtn" onclick="saveContactInfoCard()">Save Contact Info</button>
+        <span id="savingContactInfoIndicator" style="display:none;align-items:center;color:var(--cream-dim);font-size:13px;margin-left:16px">
+          <span class="spinner"></span> Saving&hellip;
+        </span>
+      </div>
+    </div>
+
+    <div class="hours-section-title">Page Sections</div>
   </div>
 
   <p style="font-size:12px;color:var(--cream-dim);margin:0 0 16px;line-height:1.6;max-width:700px">

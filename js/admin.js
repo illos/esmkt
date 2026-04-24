@@ -83,15 +83,17 @@ let activeTab = 'menu';
 // Map of tab key → tab button element id (since capitalization doesn't map cleanly)
 const TAB_BTN_IDS = {
   storeinfo: 'tabStoreInfo',
-  pages:     'tabPages',
+  home:      'tabHome',
+  contact:   'tabContact',
   menu:      'tabMenu',
   events:    'tabEvents',
   settings:  'tabSettings'
 };
 
 function switchTab(tab) {
-  // Unsaved-changes guard: when leaving the Pages tab with pending edits.
-  if (activeTab === 'pages' && tab !== 'pages' && hasUnsavedPageChanges()) {
+  // Unsaved-changes guard: when leaving a page-editor tab with pending edits.
+  const isLeavingPageEditor = (activeTab === 'home' || activeTab === 'contact') && tab !== activeTab;
+  if (isLeavingPageEditor && hasUnsavedPageChanges()) {
     if (!confirm('You have unsaved layout changes on this page. Leave without saving?')) return;
     // User opted to discard — clear the dirty state so subsequent checks don't re-prompt
     pageHomeOriginal = JSON.stringify(pageHomeSections);
@@ -101,16 +103,33 @@ function switchTab(tab) {
   const btnId = TAB_BTN_IDS[tab];
   if (btnId) document.getElementById(btnId)?.classList.add('active');
   if (tab === 'storeinfo') {
-    // Store Info combines the old Site Info, Hours, Contact Email, and Links.
-    // Load both settings + hours in one trip; they share the same endpoint.
+    // Store Info = Hours + Links (phone + email moved to Contact tab)
     showPage('pageStoreInfo');
     loadStoreInfo();
   }
-  if (tab === 'pages')    { showPage('pagePages');    loadPagesList(); }
-  if (tab === 'menu')     { showPage('pageList');     loadMenu(); }
-  if (tab === 'events')   { showPage('pageEvents');   loadEvents(); }
+  if (tab === 'home') {
+    // Home page: section list only.
+    showPage('pagePageEditor');
+    currentPageSlug = 'home';
+    document.getElementById('contactInfoCard').style.display = 'none';
+    const titleEl = document.getElementById('pageEditorTitle');
+    if (titleEl) titleEl.textContent = 'Home Page — Sections';
+    loadCurrentPage();
+  }
+  if (tab === 'contact') {
+    // Contact: info card (phone+email) on top, then section list.
+    showPage('pagePageEditor');
+    currentPageSlug = 'contact';
+    document.getElementById('contactInfoCard').style.display = 'block';
+    const titleEl = document.getElementById('pageEditorTitle');
+    if (titleEl) titleEl.textContent = 'Contact Page';
+    loadContactInfoCard();
+    loadCurrentPage();
+  }
+  if (tab === 'menu')   { showPage('pageList');   loadMenu(); }
+  if (tab === 'events') { showPage('pageEvents'); loadEvents(); }
   if (tab === 'settings') {
-    // New Settings tab: tax, online ordering, print server, Turnstile.
+    // Settings: tax, online ordering, print server, Turnstile.
     showPage('pageSettings');
     loadSettings();
   }
@@ -764,7 +783,7 @@ function promptDeleteItem(id, name) {
 // ─── SETTINGS & HOURS ────────────────────────────────────────────────────────
 let settingsData = null;
 
-// ─── STORE INFO TAB (phone + hours + contact email + links) ─────────────────
+// ─── STORE INFO TAB (hours + links only now) ───────────────────────────────
 async function loadStoreInfo() {
   try {
     const res  = await apiFetch('/api/settings');
@@ -775,15 +794,53 @@ async function loadStoreInfo() {
     // Hours tables
     renderHoursTable('storeHoursBody',    data.storeHours);
     renderHoursTable('snackbarHoursBody', data.deliHours);
-    // Site info (now just phone)
-    const phone = document.getElementById('siPhone');
-    if (phone && settingsData.phone != null) phone.value = settingsData.phone;
-    // Contact email
-    const email = document.getElementById('siContactEmail');
-    if (email) email.value = settingsData.contactEmail ?? '';
     // Links
     renderAdminLinks(settingsData?.quickLinks);
   } catch (e) { showToast('Could not load store info.', true); }
+}
+
+// ─── CONTACT TAB INFO CARD (phone + email) ─────────────────────────────────
+async function loadContactInfoCard() {
+  if (!settingsData) {
+    try {
+      const res = await apiFetch('/api/settings');
+      if (res.ok) settingsData = await res.json();
+    } catch(_) {}
+  }
+  if (!settingsData) return;
+  const phone = document.getElementById('ciPhone');
+  const email = document.getElementById('ciEmail');
+  if (phone) phone.value = settingsData.phone        ?? '';
+  if (email) email.value = settingsData.contactEmail ?? '';
+}
+
+async function saveContactInfoCard() {
+  const btn = document.getElementById('saveContactInfoBtn');
+  const ind = document.getElementById('savingContactInfoIndicator');
+  if (btn) btn.disabled = true;
+  if (ind) ind.style.display = 'flex';
+
+  const phone        = document.getElementById('ciPhone')?.value.trim() ?? '';
+  const contactEmail = document.getElementById('ciEmail')?.value.trim() ?? '';
+
+  try {
+    const res = await apiFetch('/api/settings', {
+      method:  'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ phone, contactEmail }),
+    });
+    if (!res.ok) throw new Error('Save failed');
+    if (settingsData) {
+      settingsData.phone        = phone;
+      settingsData.contactEmail = contactEmail;
+    }
+    showToast('Contact info saved.');
+  } catch(e) {
+    showToast(e.message, true);
+  } finally {
+    if (btn) btn.disabled = false;
+    if (ind) ind.style.display = 'none';
+  }
 }
 
 // ─── SETTINGS TAB (tax + ordering + print server + turnstile) ────────────────
@@ -881,34 +938,19 @@ async function saveHours() {
 
 // ─── SITE INFO ────────────────────────────────────────────────────────────────
 
-async function loadSiteInfo() {
-  // Lightweight — only phone is on the Store Info site-info card now.
-  if (!settingsData) {
-    try {
-      const res = await apiFetch('/api/settings');
-      if (res.ok) settingsData = await res.json();
-    } catch(_) {}
-  }
-  if (!settingsData) return;
-  const phone = document.getElementById('siPhone');
-  if (phone && settingsData.phone != null) phone.value = settingsData.phone;
-}
-
 async function saveSiteInfo() {
-  // Saves phone (Store Info tab) AND tax (Settings tab). Since both onblur
-  // callbacks call this, we always pull the current value of whichever field
-  // exists in the DOM. The settings API merges partial updates, so sending
-  // only the present fields is safe.
+  // Phase 7: phone + email moved to Contact tab, Hero fields moved to Hero
+  // section editor. This function now only saves the Snackbar Tax Rate on the
+  // Settings tab (bound to #siDeliTax). Kept under the original name because
+  // the tax input's onblur still calls saveSiteInfo().
   const btn = document.getElementById('saveSiteInfoBtn');
   const ind = document.getElementById('savingSiteInfoIndicator');
   if (btn) btn.disabled = true;
   if (ind) ind.style.display = 'flex';
 
-  const phoneEl = document.getElementById('siPhone');
-  const taxEl   = document.getElementById('siDeliTax');
+  const taxEl = document.getElementById('siDeliTax');
   const body = {};
-  if (phoneEl) body.phone   = phoneEl.value.trim();
-  if (taxEl)   body.deliTax = parseFloat(taxEl.value) || 0;
+  if (taxEl) body.deliTax = parseFloat(taxEl.value) || 0;
 
   try {
     const res = await apiFetch('/api/settings', {
@@ -917,37 +959,8 @@ async function saveSiteInfo() {
       body:    JSON.stringify(body),
     });
     if (!res.ok) throw new Error('Save failed');
-    if (settingsData) {
-      if (body.phone   !== undefined) settingsData.phone   = body.phone;
-      if (body.deliTax !== undefined) settingsData.deliTax = body.deliTax;
-    }
+    if (settingsData && body.deliTax !== undefined) settingsData.deliTax = body.deliTax;
     showToast('Saved.');
-  } catch(e) {
-    showToast(e.message, true);
-  } finally {
-    if (btn) btn.disabled = false;
-    if (ind) ind.style.display = 'none';
-  }
-}
-
-// ─── CONTACT EMAIL (Store Info tab) ─────────────────────────────────────────
-async function saveContactSettings() {
-  const btn = document.getElementById('saveContactSettingsBtn');
-  const ind = document.getElementById('savingContactSettingsIndicator');
-  if (btn) btn.disabled = true;
-  if (ind) ind.style.display = 'flex';
-
-  const contactEmail = document.getElementById('siContactEmail')?.value.trim() ?? '';
-
-  try {
-    const res = await apiFetch('/api/settings', {
-      method:  'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ contactEmail }),
-    });
-    if (!res.ok) throw new Error('Save failed');
-    if (settingsData) settingsData.contactEmail = contactEmail;
-    showToast('Contact email saved.');
   } catch(e) {
     showToast(e.message, true);
   } finally {
@@ -1225,11 +1238,13 @@ function renderAdminLinks(links) {
 
 function buildQlRow(lk, idx) {
   const iconName = lk.icon || '';
-  const iconSvg  = iconName && ADMIN_LINK_ICONS[iconName] ? ADMIN_LINK_ICONS[iconName] : '';
-  const iconPickerGrid = Object.entries(ADMIN_LINK_ICONS).map(([name, svg]) =>
+  const S = window.SECTIONS;
+  const iconSvg  = iconName && S ? S.svgIcon(iconName) : '';
+  const allIcons = S ? Object.keys(S.SVG_ICONS) : [];
+  const iconPickerGrid = allIcons.map(name =>
     `<button type="button" class="ql-icon-opt${name === iconName ? ' selected' : ''}"
        data-icon-name="${name}" title="${name}"
-       onclick="selectLinkIcon(this)">${svg}</button>`
+       onclick="selectLinkIcon(this)">${S.svgIcon(name)}</button>`
   ).join('');
 
   return `<div class="ql-row" draggable="true" data-idx="${idx}"
@@ -1253,25 +1268,8 @@ function buildQlRow(lk, idx) {
   </div>`;
 }
 
-// Icon dict mirrored from nav.js so admin.js stays self-contained
-const ADMIN_LINK_ICONS = {
-  'map-pin':      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>`,
-  'utensils':     `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 002-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 00-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/></svg>`,
-  'compass':      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>`,
-  'star':         `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
-  'clock':        `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
-  'phone':        `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24 11.47 11.47 0 003.58.57 1 1 0 011 1V21a1 1 0 01-1 1A17 17 0 013 5a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.58a1 1 0 01-.25 1.01z"/></svg>`,
-  'mail':         `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>`,
-  'home':         `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`,
-  'shopping-bag': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>`,
-  'calendar':     `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
-  'zap':          `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`,
-  'info':         `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
-  'globe':        `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>`,
-  'share':        `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`,
-  'tag':          `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>`,
-  'arrow-right':  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>`,
-};
+// ADMIN_LINK_ICONS was removed — the Links UI now consumes window.SECTIONS.SVG_ICONS
+// for a single unified registry. See js/sections.js.
 
 function toggleIconPicker(btn) {
   const picker = btn.closest('.ql-row').querySelector('.ql-icon-picker');
@@ -1286,7 +1284,7 @@ function selectLinkIcon(optBtn) {
   const row     = optBtn.closest('.ql-row');
   const iconBtn = row.querySelector('.ql-icon-btn');
   const name    = optBtn.dataset.iconName || '';
-  const svg     = name ? (ADMIN_LINK_ICONS[name] || '') : '';
+  const svg     = name && window.SECTIONS ? window.SECTIONS.svgIcon(name) : '';
 
   iconBtn.dataset.icon = name;
   iconBtn.innerHTML    = svg || '<span class="ql-icon-none">&#8212;</span>';
@@ -1374,83 +1372,19 @@ async function saveLinks() {
   }
 }
 
-// ─── PAGES ADMIN (master/detail) ─────────────────────────────────────────────
-// Pages tab flow:
-//   1. switchTab('pages')     → shows pagePages (master list of pages)
-//   2. openPageEditor(slug)   → shows pagePageEditor (sections list for that page)
-//   3. back button            → switchTab('pages')
-//
-// Each page slug maps to a KV key "page_<slug>" via /api/pages/<slug>.
-// Phase 3 scope: reorder + per-field editing (editing is built on top of this in a follow-up file).
+// ─── PAGES ADMIN (direct access from tabs) ──────────────────────────────────
+// Phase 7: the Pages master list was removed. Each editable page now has its
+// own tab (Home Page, Contact) that calls switchTab(slug). switchTab sets
+// currentPageSlug and invokes loadCurrentPage() to fetch sections.
 
-// Registry of pages available in the admin. "+ New Page" is disabled for now,
-// so this list is fixed. Adding a new page type = add an entry here AND add
-// the slug to PAGE_SLUGS in functions/api/pages/[slug].js.
-const ADMIN_PAGES = [
-  { slug: 'home',    title: 'Home',    icon: '\uD83C\uDFE0' }, // 🏠
-  { slug: 'menu',    title: 'Menu',    icon: '\uD83C\uDF54' }, // 🍔
-  { slug: 'contact', title: 'Contact', icon: '\u2709'         } // ✉
-];
+// Valid page slugs (must match PAGE_SLUGS in functions/api/pages/[slug].js)
+const ADMIN_PAGE_SLUGS = ['home', 'contact', 'menu'];
 
 // Editor state — which page is open and what its sections look like
 let currentPageSlug    = null;
 let pageHomeSections   = [];     // kept name for backward-compat with other code; now holds "current page" sections
 let pageHomeOriginal   = null;   // snapshot for dirty-check
 let dragSectionId      = null;
-
-// ─── MASTER LIST: list of pages ──────────────────────────────────────────────
-async function loadPagesList() {
-  const container = document.getElementById('pagesList');
-  if (!container) return;
-  container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--cream-dim);font-style:italic"><span class="spinner"></span> Loading&hellip;</div>';
-
-  // Fetch section counts for each page in parallel. Failures degrade to "—".
-  const results = await Promise.all(ADMIN_PAGES.map(async p => {
-    try {
-      const res = await fetch('/api/pages/' + p.slug);
-      if (!res.ok) return { ...p, count: null };
-      const data = await res.json();
-      return { ...p, count: Array.isArray(data.sections) ? data.sections.length : 0 };
-    } catch (_) {
-      return { ...p, count: null };
-    }
-  }));
-
-  container.innerHTML = results.map(p => renderPageListRow(p)).join('');
-}
-
-function renderPageListRow(p) {
-  const countStr = p.count == null
-    ? '<span style="color:var(--brand-red)">failed to load</span>'
-    : `${p.count} section${p.count !== 1 ? 's' : ''}`;
-  return `
-    <div class="category-block" style="cursor:pointer;transition:border-color 0.15s,background 0.15s" onclick="openPageEditor('${esc(p.slug)}')"
-      onmouseover="this.style.borderColor='var(--gold-dark)'"
-      onmouseout="this.style.borderColor=''">
-      <div class="category-header" style="gap:12px">
-        <span style="font-size:20px;width:28px;text-align:center;flex-shrink:0">${p.icon}</span>
-        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
-          <span style="font-family:'Oswald',sans-serif;font-size:15px;color:var(--gold);letter-spacing:1px;text-transform:uppercase">${esc(p.title)}</span>
-          <span style="font-size:12px;color:var(--cream-dim)">${countStr}</span>
-        </div>
-        <span style="color:rgba(184,176,160,0.4);font-size:18px;flex-shrink:0">&rsaquo;</span>
-      </div>
-    </div>
-  `;
-}
-
-// ─── DETAIL VIEW: sections for a specific page ───────────────────────────────
-function openPageEditor(slug) {
-  const pageMeta = ADMIN_PAGES.find(p => p.slug === slug);
-  if (!pageMeta) { showToast('Unknown page.', true); return; }
-  currentPageSlug = slug;
-
-  const titleEl = document.getElementById('pageEditorTitle');
-  if (titleEl) titleEl.textContent = pageMeta.title + ' — Sections';
-
-  showPage('pagePageEditor');
-  loadCurrentPage();
-}
 
 async function loadCurrentPage() {
   if (!currentPageSlug) return;
@@ -2007,7 +1941,8 @@ function fieldIcon(key, def, value) {
   // Popover-style icon picker. Shows a button with the current icon + name.
   // Clicking toggles a floating grid panel below the button. The panel is
   // rendered inside the same wrapper so it's easy to dismiss on outside click.
-  const iconSet = def.iconSet || [];
+  // If the field has no iconSet, show every icon in the unified SVG_ICONS registry.
+  const iconSet = (def.iconSet && def.iconSet.length) ? def.iconSet : (window.SECTIONS ? Object.keys(window.SECTIONS.SVG_ICONS) : []);
   const currentSvg  = value && window.SECTIONS ? window.SECTIONS.svgIcon(value) : '';
   const currentName = value || '';
 
@@ -2016,7 +1951,7 @@ function fieldIcon(key, def, value) {
     const isSelected = name === value;
     return `
       <button type="button"
-        onclick="selectIcon('${esc(key)}', '${esc(name)}')"
+        onclick="selectSectionIcon('${esc(key)}', '${esc(name)}')"
         title="${esc(name)}"
         data-icon-key="${esc(key)}" data-icon-name="${esc(name)}"
         style="width:42px;height:42px;display:inline-flex;align-items:center;justify-content:center;border:1px solid ${isSelected ? 'var(--gold)' : 'var(--charcoal-border)'};border-radius:4px;background:${isSelected ? 'rgba(201,169,110,0.12)' : 'transparent'};color:${isSelected ? 'var(--gold)' : 'var(--cream-dim)'};cursor:pointer;padding:0;transition:border-color 0.15s,background 0.15s,color 0.15s">
@@ -2030,7 +1965,7 @@ function fieldIcon(key, def, value) {
       <label class="form-label">${esc(def.label || key)}</label>
       <div class="icon-picker" data-icon-picker-key="${esc(key)}" style="position:relative">
         <button type="button" class="icon-picker-trigger"
-          onclick="toggleIconPicker('${esc(key)}', event)"
+          onclick="toggleSectionIconPopover('${esc(key)}', event)"
           style="display:inline-flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid var(--charcoal-border);border-radius:4px;background:var(--charcoal-card);color:var(--cream);cursor:pointer;min-width:160px;transition:border-color 0.15s">
           <span style="width:22px;height:22px;display:inline-flex;color:var(--gold);flex-shrink:0" data-icon-picker-preview="${esc(key)}">${currentSvg || '<span style=\"font-size:18px;color:var(--cream-dim)\">\u25A1</span>'}</span>
           <span style="font-size:13px;color:var(--cream);letter-spacing:0.5px;flex:1;text-align:left" data-icon-picker-name="${esc(key)}">${esc(currentName) || '<span style=\"color:var(--cream-dim)\">Choose an icon</span>'}</span>
@@ -2045,7 +1980,7 @@ function fieldIcon(key, def, value) {
   `;
 }
 
-function toggleIconPicker(key, event) {
+function toggleSectionIconPopover(key, event) {
   if (event) event.stopPropagation();
   const panel = document.getElementById('iconPickerPanel_' + key);
   if (!panel) return;
@@ -2062,7 +1997,7 @@ document.addEventListener('click', function (e) {
   }
 });
 
-function selectIcon(key, iconName) {
+function selectSectionIcon(key, iconName) {
   updateFieldValue(key, iconName);
   // Update tile visuals (for when the panel is still open briefly)
   const tiles = document.querySelectorAll(`[data-icon-key="${key}"]`);
@@ -2117,17 +2052,18 @@ function renderListItems(key, def) {
 
   if (layout === 'grid') {
     // Compact grid layout matching the front-end visual. Each tile has a
-    // drag handle (top-right), delete (top-left), large icon-popover, and a
-    // label input below. Reordering is drag-and-drop, not ↑↓ buttons.
+    // flex header row with delete button on the left, icon picker in the
+    // middle, drag handle on the right. The label input sits below.
     container.style.display = 'grid';
     container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(140px, 1fr))';
     container.style.gap = '10px';
     container.innerHTML = items.map((item, idx) => {
-      const subFields = itemKeys.map(subKey => {
-        const subDef = itemSchema[subKey];
-        const subVal = item[subKey];
-        return renderListItemField(key, idx, subKey, subDef, subVal);
-      }).join('');
+      // Separate icon field from the rest so we can place it in the header row.
+      // Everything else (label, etc.) goes in the body.
+      const iconKey   = itemKeys.find(k => itemSchema[k].type === 'icon');
+      const otherKeys = itemKeys.filter(k => k !== iconKey);
+      const iconHtml  = iconKey ? renderListItemField(key, idx, iconKey, itemSchema[iconKey], item[iconKey]) : '';
+      const bodyHtml  = otherKeys.map(subKey => renderListItemField(key, idx, subKey, itemSchema[subKey], item[subKey])).join('');
       return `
         <div class="list-tile" data-list-item-idx="${idx}" data-list-key="${esc(key)}"
           draggable="true"
@@ -2135,12 +2071,15 @@ function renderListItems(key, def) {
           ondragover="onListItemDragOver(event, '${esc(key)}', ${idx})"
           ondrop="onListItemDrop(event, '${esc(key)}', ${idx})"
           ondragend="onListItemDragEnd(event)"
-          style="position:relative;padding:10px 8px 8px;border:1px solid var(--charcoal-border);border-radius:4px;background:var(--charcoal-card);cursor:grab">
-          <button type="button" title="Remove" onclick="event.stopPropagation(); removeListItem('${esc(key)}', ${idx})"
-            style="position:absolute;top:4px;left:4px;background:transparent;border:none;color:rgba(230,120,110,0.8);width:22px;height:22px;cursor:pointer;font-size:16px;line-height:1;padding:0;z-index:2">&times;</button>
-          <span title="Drag to reorder"
-            style="position:absolute;top:4px;right:6px;color:rgba(184,176,160,0.5);font-size:14px;pointer-events:none">&#8942;&#8942;</span>
-          ${subFields}
+          style="padding:8px;border:1px solid var(--charcoal-border);border-radius:4px;background:var(--charcoal-card)">
+          <div class="list-tile-header" style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+            <button type="button" title="Remove" onclick="event.stopPropagation(); removeListItem('${esc(key)}', ${idx})"
+              style="background:transparent;border:1px solid rgba(170,60,50,0.4);color:rgba(230,120,110,0.9);width:22px;height:22px;border-radius:3px;cursor:pointer;font-size:14px;line-height:1;padding:0;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center">&times;</button>
+            <div style="flex:1;min-width:0">${iconHtml}</div>
+            <span class="list-tile-drag" title="Drag to reorder"
+              style="color:rgba(184,176,160,0.6);font-size:14px;cursor:grab;flex-shrink:0;padding:0 4px">&#8942;&#8942;</span>
+          </div>
+          ${bodyHtml}
         </div>
       `;
     }).join('');
@@ -2151,11 +2090,32 @@ function renderListItems(key, def) {
     container.style.gap = '12px';
     container.style.gridTemplateColumns = '';
     container.innerHTML = items.map((item, idx) => {
-      const subFields = itemKeys.map(subKey => {
+      // Build sub-fields honoring pairWith: fields marked pairWith wrap
+      // themselves + their partner into a form-pair-row. pairRatio (e.g. [1,3])
+      // sets the flex-grow ratio — default is [1,1] (50/50).
+      const skipSub = new Set();
+      const parts = [];
+      for (const subKey of itemKeys) {
+        if (skipSub.has(subKey)) continue;
         const subDef = itemSchema[subKey];
-        const subVal = item[subKey];
-        return renderListItemField(key, idx, subKey, subDef, subVal);
-      }).join('');
+        if (subDef.pairWith && itemSchema[subDef.pairWith]) {
+          const k2 = subDef.pairWith;
+          skipSub.add(k2);
+          const a = renderListItemField(key, idx, subKey, subDef,               item[subKey]);
+          const b = renderListItemField(key, idx, k2,     itemSchema[k2],       item[k2]);
+          const ratio = Array.isArray(subDef.pairRatio) && subDef.pairRatio.length === 2
+            ? subDef.pairRatio
+            : [1, 1];
+          // Apply flex ratios by wrapping each side in a flex child
+          parts.push(`<div class="form-pair-row">
+            <div style="flex:${ratio[0]};min-width:0">${a}</div>
+            <div style="flex:${ratio[1]};min-width:0">${b}</div>
+          </div>`);
+        } else {
+          parts.push(renderListItemField(key, idx, subKey, subDef, item[subKey]));
+        }
+      }
+      const subFields = parts.join('');
       const canUp = idx > 0;
       const canDown = idx < items.length - 1;
       return `
@@ -2275,10 +2235,9 @@ function renderListItemField(listKey, itemIdx, fieldKey, def, value) {
       `;
     }
     case 'icon': {
-      const iconSet = def.iconSet || [];
+      const iconSet = (def.iconSet && def.iconSet.length) ? def.iconSet : (window.SECTIONS ? Object.keys(window.SECTIONS.SVG_ICONS) : []);
       const group   = `${listKey}_${itemIdx}_${fieldKey}`;
       const currentSvg  = value && window.SECTIONS ? window.SECTIONS.svgIcon(value) : '';
-      const currentName = value || '';
       const tiles = iconSet.map(name => {
         const svg = window.SECTIONS ? window.SECTIONS.svgIcon(name) : '';
         const isSelected = name === value;
@@ -2287,26 +2246,24 @@ function renderListItemField(listKey, itemIdx, fieldKey, def, value) {
             onclick="selectListItemIcon('${esc(listKey)}', ${itemIdx}, '${esc(fieldKey)}', '${esc(name)}')"
             title="${esc(name)}"
             data-li-icon-key="${esc(group)}" data-li-icon-name="${esc(name)}"
-            style="width:38px;height:38px;display:inline-flex;align-items:center;justify-content:center;border:1px solid ${isSelected ? 'var(--gold)' : 'var(--charcoal-border)'};border-radius:3px;background:${isSelected ? 'rgba(201,169,110,0.12)' : 'transparent'};color:${isSelected ? 'var(--gold)' : 'var(--cream-dim)'};cursor:pointer;padding:0">
+            style="width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;border:1px solid ${isSelected ? 'var(--gold)' : 'var(--charcoal-border)'};border-radius:3px;background:${isSelected ? 'rgba(201,169,110,0.12)' : 'transparent'};color:${isSelected ? 'var(--gold)' : 'var(--cream-dim)'};cursor:pointer;padding:0">
             <span style="width:18px;height:18px;display:inline-flex">${svg}</span>
           </button>
         `;
       }).join('');
+      // Compact square trigger — no name text, no caret. Just the icon glyph.
+      // Popover is positioned to overflow outside the parent tile if needed.
       return `
-        <div style="margin-bottom:10px">
-          <label class="form-label" style="font-size:10px">${esc(def.label || fieldKey)}</label>
-          <div class="icon-picker" data-icon-picker-key="${esc(group)}" style="position:relative">
-            <button type="button" class="icon-picker-trigger"
-              onclick="toggleIconPicker('li_${esc(group)}', event)"
-              style="display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--charcoal-border);border-radius:3px;background:var(--charcoal-card);color:var(--cream);cursor:pointer;min-width:140px">
-              <span style="width:18px;height:18px;display:inline-flex;color:var(--gold);flex-shrink:0" data-li-icon-picker-preview="${esc(group)}">${currentSvg || '<span style=\"font-size:14px;color:var(--cream-dim)\">\u25A1</span>'}</span>
-              <span style="font-size:12px;color:var(--cream);flex:1;text-align:left" data-li-icon-picker-name="${esc(group)}">${esc(currentName) || '<span style=\"color:var(--cream-dim)\">Icon</span>'}</span>
-              <span style="color:var(--cream-dim);font-size:9px">&#9662;</span>
-            </button>
-            <div class="icon-picker-panel" id="iconPickerPanel_li_${esc(group)}"
-              style="display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:30;background:var(--charcoal-card);border:1px solid var(--charcoal-border);border-radius:4px;padding:8px;box-shadow:0 8px 24px rgba(0,0,0,0.5);max-width:300px">
-              <div style="display:flex;flex-wrap:wrap;gap:4px">${tiles}</div>
-            </div>
+        <div class="icon-picker icon-picker-compact" data-icon-picker-key="${esc(group)}" style="position:relative;display:inline-block">
+          <button type="button" class="icon-picker-trigger"
+            onclick="event.stopPropagation(); toggleSectionIconPopover('li_${esc(group)}', event)"
+            title="Choose icon"
+            style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:1px solid var(--charcoal-border);border-radius:3px;background:var(--charcoal-card);color:var(--gold);cursor:pointer">
+            <span style="width:18px;height:18px;display:inline-flex" data-li-icon-picker-preview="${esc(group)}">${currentSvg || '<span style=\"font-size:14px;color:var(--cream-dim)\">\u25A1</span>'}</span>
+          </button>
+          <div class="icon-picker-panel" id="iconPickerPanel_li_${esc(group)}"
+            style="display:none;position:absolute;top:calc(100% + 4px);left:50%;transform:translateX(-50%);z-index:30;background:var(--charcoal-card);border:1px solid var(--charcoal-border);border-radius:4px;padding:8px;box-shadow:0 8px 24px rgba(0,0,0,0.5);width:280px;max-width:90vw">
+            <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:4px">${tiles}</div>
           </div>
         </div>
       `;

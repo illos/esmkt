@@ -1744,3 +1744,98 @@
   .section-heading-section { padding: 24px 24px !important; }
   .section-heading-block .section-heading-text { letter-spacing: 3px; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 7 — INFO CARD SECTION
+   Visual vocabulary mirrors the existing .call-us-banner from contact.css.
+   Icon on the left, subtitle + title + body stacked on the right, with a
+   thin gold gradient rule across the top of the card.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.section-info-card-section {
+  padding: 24px 32px;
+}
+
+.info-card {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  background: var(--charcoal-card);
+  border: 1px solid var(--charcoal-border);
+  border-radius: 4px;
+  padding: 20px 24px;
+  position: relative;
+  overflow: hidden;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.info-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(to right, var(--gold-dark), var(--gold), var(--gold-dark));
+}
+
+.info-card-icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gold);
+  opacity: 0.9;
+}
+.info-card-icon svg {
+  width: 32px;
+  height: 32px;
+}
+
+.info-card-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.info-card-subtitle {
+  font-family: 'Oswald', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--cream-dim);
+}
+
+.info-card-title {
+  font-family: 'Oswald', sans-serif;
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  color: var(--cream);
+  line-height: 1.25;
+}
+
+.info-card-body {
+  font-family: 'Source Sans 3', sans-serif;
+  font-size: 14px;
+  color: var(--cream-dim);
+  line-height: 1.6;
+}
+.info-card-body a {
+  color: var(--gold);
+  text-decoration: none;
+}
+.info-card-body a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 600px) {
+  .section-info-card-section { padding: 16px 20px; }
+  .info-card { flex-direction: row; padding: 16px 18px; gap: 14px; }
+  .info-card-icon { width: 32px; height: 32px; }
+  .info-card-icon svg { width: 26px; height: 26px; }
+  .info-card-title { font-size: 17px; }
+}

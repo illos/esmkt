@@ -124,8 +124,33 @@ const HOME_DEFAULT_SECTIONS = [
   }},
 ];
 
+// Contact page default seed. Matches the visual of the old static contact.html:
+// Heading ("Contact Us") → Text (intro blurb) → Info Card ("Have a quick
+// question?") → Contact Form. User edits any of it via the Contact admin tab.
+const CONTACT_DEFAULT_SECTIONS = [
+  { id: 'sec_heading_contact', type: 'heading', data: {
+    text: 'Contact Us', size: 'large', align: 'center', show_rule: true
+  }},
+  { id: 'sec_text_contact_intro', type: 'text', data: {
+    body: 'Have questions about our business, interested in hosting an event, or need us to cater a large group? Drop us a line below and we will get back to you!'
+  }},
+  { id: 'sec_info_quick_question', type: 'info_card', data: {
+    icon: 'phone',
+    subtitle: 'Have a quick question?',
+    title: 'Call Us',
+    body: '<a href="tel:7755723200" style="color:var(--gold);text-decoration:none;font-weight:600">775-572-3200</a> &mdash; Business line.'
+  }},
+  { id: 'sec_contact_form', type: 'contact_form', data: {
+    section_label: 'Get in Touch',
+    heading: 'Send us a Message',
+    success_title: 'Message Sent!',
+    success_sub: 'Thanks for reaching out \u2014 we\u2019ll get back to you soon. In the meantime, feel free to call us if it\u2019s urgent.'
+  }},
+];
+
 function defaultsForSlug(slug) {
-  if (slug === 'home') return { sections: HOME_DEFAULT_SECTIONS };
+  if (slug === 'home')    return { sections: HOME_DEFAULT_SECTIONS };
+  if (slug === 'contact') return { sections: CONTACT_DEFAULT_SECTIONS };
   return { sections: [] };
 }
 
