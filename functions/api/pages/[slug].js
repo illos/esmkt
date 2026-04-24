@@ -204,13 +204,18 @@ export async function onRequestPut({ request, env, params }) {
 
   // Light validation: each section needs an id and a type. Anything else is
   // passed through as-is so admin can add fields without a schema migration.
+  // Top-level flags beyond {id, type, data} (e.g. `hidden`) are preserved.
   const sections = body.sections
     .filter(s => s && typeof s === 'object')
-    .map(s => ({
-      id:   String(s.id || cryptoRandomId()),
-      type: String(s.type || ''),
-      data: s.data && typeof s.data === 'object' ? s.data : {},
-    }))
+    .map(s => {
+      const normalized = {
+        id:   String(s.id || cryptoRandomId()),
+        type: String(s.type || ''),
+        data: s.data && typeof s.data === 'object' ? s.data : {},
+      };
+      if (s.hidden === true) normalized.hidden = true;
+      return normalized;
+    })
     .filter(s => s.type);
 
   await env.MENU_KV.put('page_' + slug, JSON.stringify({ sections }));
