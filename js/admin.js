@@ -1952,7 +1952,7 @@ function fieldImage(key, def, value) {
           <span class="upload-label">Click or drag to upload</span>
           <span class="upload-hint">JPEG, PNG, WebP or GIF &middot; Max 5 MB</span>
         </div>
-        <div class="image-preview-wrap" id="${previewWrapId}" style="${hasImage ? '' : 'display:none'}">
+        <div class="image-preview-wrap${hasImage ? ' has-image' : ''}" id="${previewWrapId}">
           <img class="image-preview" id="${previewImgId}" src="${esc(imgSrc)}" alt="Preview"/>
           <button class="image-preview-remove" onclick="clearSectionImage(event, '${esc(key)}')" title="Remove photo">&#215;</button>
         </div>
@@ -1988,12 +1988,13 @@ async function handleSectionImageSelectFile(file, key) {
   const previewWrapEl = document.getElementById(`imgPreviewWrap_${key}`);
   const previewImgEl  = document.getElementById(`imgPreview_${key}`);
 
-  // Show local preview immediately
+  // Show local preview immediately. Visibility is driven by the .has-image
+  // class, not inline style — see fieldImage() and css/admin.css.
   const reader = new FileReader();
   reader.onload = e => {
     if (previewImgEl) previewImgEl.src = e.target.result;
     if (placeholderEl) placeholderEl.style.display = 'none';
-    if (previewWrapEl) previewWrapEl.style.display = '';
+    if (previewWrapEl) previewWrapEl.classList.add('has-image');
   };
   reader.readAsDataURL(file);
 
@@ -2015,7 +2016,7 @@ async function handleSectionImageSelectFile(file, key) {
     const currentVal = editingSection && editingSection.data[key];
     if (!currentVal) {
       if (placeholderEl) placeholderEl.style.display = '';
-      if (previewWrapEl) previewWrapEl.style.display = 'none';
+      if (previewWrapEl) previewWrapEl.classList.remove('has-image');
     }
   }
 }
@@ -2027,7 +2028,7 @@ function clearSectionImage(event, key) {
   const placeholderEl = document.getElementById(`imgPlaceholder_${key}`);
   const previewWrapEl = document.getElementById(`imgPreviewWrap_${key}`);
   if (placeholderEl) placeholderEl.style.display = '';
-  if (previewWrapEl) previewWrapEl.style.display = 'none';
+  if (previewWrapEl) previewWrapEl.classList.remove('has-image');
 }
 
 // ─── Field type: icon ────────────────────────────────────────────────────────
@@ -2411,7 +2412,7 @@ function renderListItemField(listKey, itemIdx, fieldKey, def, value) {
               <span class="upload-icon">&#128247;</span>
               <span class="upload-label">Click or drag to upload</span>
             </div>
-            <div class="image-preview-wrap" id="liImgPw_${esc(listKey)}_${itemIdx}_${esc(fieldKey)}" style="${hasImage ? '' : 'display:none'}">
+            <div class="image-preview-wrap${hasImage ? ' has-image' : ''}" id="liImgPw_${esc(listKey)}_${itemIdx}_${esc(fieldKey)}">
               <img class="image-preview" id="liImgPv_${esc(listKey)}_${itemIdx}_${esc(fieldKey)}" src="${esc(imgSrc)}" alt="Preview"/>
               <button class="image-preview-remove" onclick="clearListItemImage(event, '${esc(listKey)}', ${itemIdx}, '${esc(fieldKey)}')" title="Remove photo">&#215;</button>
             </div>
@@ -2492,11 +2493,12 @@ async function handleListItemImageSelectFile(file, listKey, itemIdx, fieldKey) {
   const pwEl = document.getElementById(pwId);
   const pvEl = document.getElementById(pvId);
 
+  // Visibility driven by .has-image class (see css/admin.css).
   const reader = new FileReader();
   reader.onload = e => {
     if (pvEl) pvEl.src = e.target.result;
     if (phEl) phEl.style.display = 'none';
-    if (pwEl) pwEl.style.display = '';
+    if (pwEl) pwEl.classList.add('has-image');
   };
   reader.readAsDataURL(file);
 
@@ -2512,6 +2514,12 @@ async function handleListItemImageSelectFile(file, listKey, itemIdx, fieldKey) {
     if (pvEl) pvEl.src = '/images/' + filename;
   } catch (err) {
     showToast('Image upload failed: ' + err.message, true);
+    // Revert preview if no prior image
+    const item = editingSection && Array.isArray(editingSection.data[listKey]) ? editingSection.data[listKey][itemIdx] : null;
+    if (item && !item[fieldKey]) {
+      if (phEl) phEl.style.display = '';
+      if (pwEl) pwEl.classList.remove('has-image');
+    }
   }
 }
 
@@ -2522,7 +2530,7 @@ function clearListItemImage(event, listKey, itemIdx, fieldKey) {
   const phEl = document.getElementById(`liImgPh_${listKey}_${itemIdx}_${fieldKey}`);
   const pwEl = document.getElementById(`liImgPw_${listKey}_${itemIdx}_${fieldKey}`);
   if (phEl) phEl.style.display = '';
-  if (pwEl) pwEl.style.display = 'none';
+  if (pwEl) pwEl.classList.remove('has-image');
 }
 
 function addListItem(listKey) {
