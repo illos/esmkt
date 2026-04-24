@@ -1681,6 +1681,7 @@ function renderFormField(key, def, value) {
     case 'list':     return fieldList(key, def, value);
     case 'richtext': return fieldRichText(key, def, value);
     case 'layoutButtons': return fieldLayoutButtons(key, def, value);
+    case 'iconButtons':   return fieldIconButtons(key, def, value);
     default:         return '<!-- unknown field type: ' + esc(def.type) + ' -->';
   }
 }
@@ -1822,6 +1823,47 @@ function refreshLayoutButtons(key, selectedValue) {
   });
 }
 
+// ─── Field type: iconButtons ────────────────────────────────────────────────
+// Inline row of icon buttons with optional labels below each icon. More
+// general than layoutButtons — each option supplies its own inline SVG via
+// def.options[i].icon. Used for size/align/rule pickers on Heading sections.
+//
+// def options:
+//   { value, label, icon }  — icon is inline SVG string (path+children for
+//                             a <svg viewBox="0 0 24 24"> wrapper)
+function fieldIconButtons(key, def, value) {
+  const opts = def.options || [];
+  const buttons = opts.map(o => {
+    const isSelected = o.value === value;
+    return `
+      <button type="button"
+        onclick="updateFieldValue('${esc(key)}', '${esc(o.value)}'); refreshIconButtons('${esc(key)}', '${esc(o.value)}')"
+        title="${esc(o.label || o.value)}"
+        data-icon-btn-key="${esc(key)}" data-icon-btn-value="${esc(o.value)}"
+        style="flex:1;display:inline-flex;align-items:center;justify-content:center;height:42px;border:1px solid ${isSelected ? 'var(--gold)' : 'var(--charcoal-border)'};border-radius:3px;background:${isSelected ? 'rgba(201,169,110,0.12)' : 'transparent'};color:${isSelected ? 'var(--gold)' : 'var(--cream-dim)'};cursor:pointer;padding:0;transition:border-color 0.15s,background 0.15s,color 0.15s">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px">${o.icon || ''}</svg>
+      </button>
+    `;
+  }).join('');
+  const labelHtml = def.hideLabel ? '' : `<label class="form-label">${esc(def.label || key)}</label>`;
+  return `
+    <div class="form-group-full" style="margin-bottom:16px">
+      ${labelHtml}
+      <div style="display:flex;gap:6px">${buttons}</div>
+    </div>
+  `;
+}
+
+function refreshIconButtons(key, selectedValue) {
+  const btns = document.querySelectorAll(`[data-icon-btn-key="${key}"]`);
+  btns.forEach(b => {
+    const isThis = b.getAttribute('data-icon-btn-value') === selectedValue;
+    b.style.borderColor = isThis ? 'var(--gold)' : 'var(--charcoal-border)';
+    b.style.background  = isThis ? 'rgba(201,169,110,0.12)' : 'transparent';
+    b.style.color       = isThis ? 'var(--gold)' : 'var(--cream-dim)';
+  });
+}
+
 function refreshListItemLayoutButtons(group, selectedValue) {
   const btns = document.querySelectorAll(`[data-li-layout-group="${group}"]`);
   btns.forEach(b => {
@@ -1942,9 +1984,17 @@ function fieldIcon(key, def, value) {
   // Clicking toggles a floating grid panel below the button. The panel is
   // rendered inside the same wrapper so it's easy to dismiss on outside click.
   // If the field has no iconSet, show every icon in the unified SVG_ICONS registry.
+  //
+  // Supported flags:
+  //   def.hideLabel = true → don't render the field label above the trigger
+  //   def.compact   = true → render a small 32×32 square trigger (icon glyph
+  //                           only, no name, no caret) with a popover that
+  //                           overflows the form width if needed.
   const iconSet = (def.iconSet && def.iconSet.length) ? def.iconSet : (window.SECTIONS ? Object.keys(window.SECTIONS.SVG_ICONS) : []);
   const currentSvg  = value && window.SECTIONS ? window.SECTIONS.svgIcon(value) : '';
   const currentName = value || '';
+  const compact   = def.compact   === true;
+  const hideLabel = def.hideLabel === true;
 
   const tiles = iconSet.map(name => {
     const svg = window.SECTIONS ? window.SECTIONS.svgIcon(name) : '';
@@ -1954,15 +2004,40 @@ function fieldIcon(key, def, value) {
         onclick="selectSectionIcon('${esc(key)}', '${esc(name)}')"
         title="${esc(name)}"
         data-icon-key="${esc(key)}" data-icon-name="${esc(name)}"
-        style="width:42px;height:42px;display:inline-flex;align-items:center;justify-content:center;border:1px solid ${isSelected ? 'var(--gold)' : 'var(--charcoal-border)'};border-radius:4px;background:${isSelected ? 'rgba(201,169,110,0.12)' : 'transparent'};color:${isSelected ? 'var(--gold)' : 'var(--cream-dim)'};cursor:pointer;padding:0;transition:border-color 0.15s,background 0.15s,color 0.15s">
-        <span style="width:22px;height:22px;display:inline-flex">${svg}</span>
+        style="width:${compact ? '34' : '42'}px;height:${compact ? '34' : '42'}px;display:inline-flex;align-items:center;justify-content:center;border:1px solid ${isSelected ? 'var(--gold)' : 'var(--charcoal-border)'};border-radius:3px;background:${isSelected ? 'rgba(201,169,110,0.12)' : 'transparent'};color:${isSelected ? 'var(--gold)' : 'var(--cream-dim)'};cursor:pointer;padding:0;transition:border-color 0.15s,background 0.15s,color 0.15s">
+        <span style="width:${compact ? '18' : '22'}px;height:${compact ? '18' : '22'}px;display:inline-flex">${svg}</span>
       </button>
     `;
   }).join('');
 
+  const labelHtml = hideLabel ? '' : `<label class="form-label">${esc(def.label || key)}</label>`;
+
+  if (compact) {
+    // Compact square trigger — icon glyph only, no name, no caret.
+    // Popover is 280px wide with a 6-col grid, positioned to overflow
+    // if the field's column is narrower than the popover.
+    return `
+      <div class="form-group-full" style="margin-bottom:16px">
+        ${labelHtml}
+        <div class="icon-picker icon-picker-compact" data-icon-picker-key="${esc(key)}" style="position:relative;display:inline-block">
+          <button type="button" class="icon-picker-trigger"
+            onclick="toggleSectionIconPopover('${esc(key)}', event)"
+            title="Choose icon"
+            style="display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;padding:0;border:1px solid var(--charcoal-border);border-radius:3px;background:var(--charcoal-card);color:var(--gold);cursor:pointer">
+            <span style="width:22px;height:22px;display:inline-flex" data-icon-picker-preview="${esc(key)}">${currentSvg || '<span style=\"font-size:16px;color:var(--cream-dim)\">\u25A1</span>'}</span>
+          </button>
+          <div class="icon-picker-panel" id="iconPickerPanel_${esc(key)}"
+            style="display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:30;background:var(--charcoal-card);border:1px solid var(--charcoal-border);border-radius:4px;padding:8px;box-shadow:0 8px 24px rgba(0,0,0,0.5);width:280px;max-width:90vw">
+            <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:4px">${tiles}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   return `
     <div class="form-group-full" style="margin-bottom:16px">
-      <label class="form-label">${esc(def.label || key)}</label>
+      ${labelHtml}
       <div class="icon-picker" data-icon-picker-key="${esc(key)}" style="position:relative">
         <button type="button" class="icon-picker-trigger"
           onclick="toggleSectionIconPopover('${esc(key)}', event)"

@@ -231,19 +231,25 @@
   }
 
   function renderHeading(d) {
-    // Standalone heading block with three sizes, three alignments, optional rule.
+    // Standalone heading block with optional tag line ("section_label"),
+    // three sizes, three alignments, and an optional decorative rule.
+    // Visual matches the heading style used inside sections like Services.
     var text     = d.text || '';
-    if (!text) return '';
+    var tagLine  = d.section_label || '';
+    if (!text && !tagLine) return '';
     var size     = d.size  === 'small' || d.size  === 'large' ? d.size  : 'medium';
     var align    = d.align === 'left'  || d.align === 'right' ? d.align : 'center';
     var showRule = d.show_rule === true;
     var classes  = 'section-heading-block section-heading-block--' + size + ' section-heading-block--' + align;
+    var tagHtml  = tagLine ? '<div class="section-label">' + esc(tagLine) + '</div>' : '';
     var ruleHtml = showRule ? '<div class="section-heading-rule"></div>' : '';
+    var headingHtml = text ? '<h2 class="section-heading">' + esc(text) + '</h2>' : '';
     return [
       '<section class="section section-heading-section">',
         '<div class="section-inner">',
           '<div class="' + classes + '">',
-            '<h2 class="section-heading-text">' + esc(text) + '</h2>',
+            tagHtml,
+            headingHtml,
             ruleHtml,
           '</div>',
         '</div>',
@@ -526,15 +532,13 @@
     // Real contact form. Submit + Turnstile wiring is in contact.js (which
     // looks up #contactForm by ID). Keep the markup identical to what was
     // on the old static contact.html so nothing else needs to change.
-    var sectionLabel = d.section_label || '';
-    var heading      = d.heading       || '';
+    // Heading/tag line intentionally not rendered here — add a Heading
+    // section above this one if you want a title.
     var successTitle = d.success_title || 'Message Sent!';
     var successSub   = d.success_sub   || 'Thanks for reaching out \u2014 we\u2019ll get back to you soon. In the meantime, feel free to call us if it\u2019s urgent.';
     return [
       '<section class="section contact-section">',
         '<div class="section-inner">',
-          sectionLabel ? '<div class="section-label">' + esc(sectionLabel) + '</div>' : '',
-          heading      ? '<h2 class="section-heading">' + esc(heading) + '</h2>'       : '',
           '<form class="contact-form" id="contactForm" onsubmit="submitContact(event)" novalidate>',
             '<div class="form-row">',
               '<div class="form-group">',
@@ -619,7 +623,7 @@
       schema: {
         title:     { type: 'text',    label: 'Title' },
         subtitle:  { type: 'text',    label: 'Subtitle' },
-        icon:      { type: 'icon',    label: 'Icon' },
+        icon:      { type: 'icon',    label: 'Icon', compact: true, hideLabel: true, pairWith: 'variant', pairRatio: [1, 4] },
         variant:   { type: 'select',  label: 'Color',    options: BANNER_VARIANTS },
         cta_label: { type: 'text',    label: 'Button Label (optional)', pairWith: 'cta_link' },
         cta_link:  { type: 'text',    label: 'Button Link (optional)' },
@@ -639,7 +643,7 @@
       description: 'Title + optional image + long-form body (rich text coming later).',
       category: 'generic',
       schema: {
-        section_label: { type: 'text',     label: 'Small Label' },
+        section_label: { type: 'text',     label: 'Tag Line' },
         title:         { type: 'text',     label: 'Heading' },
         image:         { type: 'image',    label: 'Hero Image' },
         body:          { type: 'richtext', label: 'Body' },
@@ -665,23 +669,36 @@
     heading: {
       label: 'Heading',
       icon:  '\uD835\uDD44', // 𝕄 — distinctive mathematical M
-      description: 'A standalone heading. Choose size, alignment, and whether to show a rule below.',
+      description: 'A standalone heading with optional tag line and rule. Choose size, alignment, and whether to show a rule below.',
       category: 'generic',
       schema: {
-        text:      { type: 'text',    label: 'Heading Text' },
-        size:      { type: 'select',  label: 'Size',  options: [
-          { value: 'small',  label: 'Small' },
-          { value: 'medium', label: 'Medium' },
-          { value: 'large',  label: 'Large' }
+        section_label: { type: 'text', label: 'Tag Line (small label above heading)' },
+        text:          { type: 'text', label: 'Heading Text' },
+        size: { type: 'iconButtons', label: 'Size', options: [
+          // Three horizontal bars of increasing thickness for small/medium/large
+          { value: 'small',  label: 'Small',
+            icon: '<line x1="6" y1="10" x2="18" y2="10" stroke-width="1.25"/><line x1="6" y1="14" x2="18" y2="14" stroke-width="1.25"/>' },
+          { value: 'medium', label: 'Medium',
+            icon: '<line x1="4" y1="10" x2="20" y2="10" stroke-width="2"/><line x1="4" y1="14" x2="20" y2="14" stroke-width="2"/>' },
+          { value: 'large',  label: 'Large',
+            icon: '<line x1="3" y1="10" x2="21" y2="10" stroke-width="3"/><line x1="3" y1="14" x2="21" y2="14" stroke-width="3"/>' }
         ]},
-        align:     { type: 'select',  label: 'Align', options: [
-          { value: 'left',   label: 'Left' },
-          { value: 'center', label: 'Center' },
-          { value: 'right',  label: 'Right' }
+        align: { type: 'iconButtons', label: 'Alignment', options: [
+          { value: 'left',   label: 'Left',
+            icon: '<line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="10" x2="14" y2="10"/><line x1="4" y1="14" x2="18" y2="14"/><line x1="4" y1="18" x2="12" y2="18"/>' },
+          { value: 'center', label: 'Center',
+            icon: '<line x1="4" y1="6" x2="20" y2="6"/><line x1="7" y1="10" x2="17" y2="10"/><line x1="5" y1="14" x2="19" y2="14"/><line x1="8" y1="18" x2="16" y2="18"/>' },
+          { value: 'right',  label: 'Right',
+            icon: '<line x1="4" y1="6" x2="20" y2="6"/><line x1="10" y1="10" x2="20" y2="10"/><line x1="6" y1="14" x2="20" y2="14"/><line x1="12" y1="18" x2="20" y2="18"/>' }
         ]},
-        show_rule: { type: 'boolean', label: 'Show Rule Below' }
+        show_rule: { type: 'iconButtons', label: 'Rule Below', options: [
+          { value: false, label: 'No Rule',
+            icon: '<line x1="6" y1="9" x2="18" y2="9"/><line x1="6" y1="14" x2="18" y2="14"/>' },
+          { value: true, label: 'Show Rule',
+            icon: '<line x1="6" y1="8" x2="18" y2="8"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="3" y1="17" x2="21" y2="17" stroke-width="2.5"/>' }
+        ]}
       },
-      defaults: { text: 'New Heading', size: 'medium', align: 'center', show_rule: false },
+      defaults: { section_label: '', text: 'New Heading', size: 'medium', align: 'center', show_rule: false },
       render: renderHeading
     },
 
@@ -839,17 +856,13 @@
 
     contact_form: {
       label: 'Contact Form', icon: '\u2709',
-      description: 'Name/email/message contact form with Turnstile bot protection. Submissions go to the email set in Contact Info.',
+      description: 'Name/email/message contact form with Turnstile bot protection. Submissions go to the email set in Contact Info. Add a Heading section above it if you want a title.',
       category: 'generic',
       schema: {
-        section_label: { type: 'text',     label: 'Small Label' },
-        heading:       { type: 'text',     label: 'Heading' },
         success_title: { type: 'text',     label: 'Success Message Title' },
         success_sub:   { type: 'longtext', label: 'Success Message Body' }
       },
       defaults: {
-        section_label: 'Get in Touch',
-        heading: 'Contact Us',
         success_title: 'Message Sent!',
         success_sub: 'Thanks for reaching out \u2014 we\u2019ll get back to you soon. In the meantime, feel free to call us if it\u2019s urgent.'
       },
@@ -942,7 +955,7 @@
         var stopCount = (d.stops && d.stops.length) || 0;
         return stopCount + ' stop' + (stopCount !== 1 ? 's' : '');
       case 'menu':         return 'Menu placeholder \u2014 links to menu.html';
-      case 'contact_form': return decodeEntities(d.heading || 'Contact Us');
+      case 'contact_form': return 'Name \u00b7 Email \u00b7 Message with Turnstile';
       case 'footer':       return 'Footer placeholder';
       default:             return section && section.type || '';
     }

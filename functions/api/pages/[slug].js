@@ -141,8 +141,6 @@ const CONTACT_DEFAULT_SECTIONS = [
     body: '<a href="tel:7755723200" style="color:var(--gold);text-decoration:none;font-weight:600">775-572-3200</a> &mdash; Business line.'
   }},
   { id: 'sec_contact_form', type: 'contact_form', data: {
-    section_label: 'Get in Touch',
-    heading: 'Send us a Message',
     success_title: 'Message Sent!',
     success_sub: 'Thanks for reaching out \u2014 we\u2019ll get back to you soon. In the meantime, feel free to call us if it\u2019s urgent.'
   }},

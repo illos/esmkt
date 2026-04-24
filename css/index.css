@@ -1702,32 +1702,40 @@
 .section-heading-block {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 .section-heading-block--left   { align-items: flex-start; text-align: left; }
 .section-heading-block--center { align-items: center;     text-align: center; }
 .section-heading-block--right  { align-items: flex-end;   text-align: right; }
 
-.section-heading-block .section-heading-text {
-  font-family: 'Oswald', sans-serif;
-  font-weight: 600;
-  color: var(--cream);
-  text-transform: uppercase;
-  letter-spacing: 4px;
-  line-height: 1.1;
+/* Use the shared .section-heading / .section-label base styles
+   (defined earlier in this file) so a standalone Heading section matches
+   the headings inside sections like Services, Hours, Events, etc. */
+
+/* Tag line inside a heading block should not have the flex::after line —
+   when there's no flanking content, the line dangles awkwardly. */
+.section-heading-block .section-label {
+  margin-bottom: 0;
+}
+.section-heading-block--center .section-label { justify-content: center; }
+.section-heading-block--right  .section-label { justify-content: flex-end; }
+.section-heading-block .section-label::after { display: none; }
+
+/* Heading itself — kill the default .section-heading bottom margin since
+   the block's gap handles spacing. Then override font-size per size variant. */
+.section-heading-block .section-heading {
   margin: 0;
 }
-.section-heading-block--small  .section-heading-text {
-  font-size: clamp(14px, 2vw, 18px);
+.section-heading-block--small  .section-heading {
+  font-size: clamp(14px, 1.8vw, 20px);
   letter-spacing: 5px;
   color: var(--gold);
 }
-.section-heading-block--medium .section-heading-text {
-  font-size: clamp(26px, 4.5vw, 38px);
+.section-heading-block--medium .section-heading {
+  font-size: clamp(22px, 3.5vw, 32px);
 }
-.section-heading-block--large  .section-heading-text {
-  font-size: clamp(38px, 6.5vw, 56px);
-  letter-spacing: 5px;
+.section-heading-block--large  .section-heading {
+  font-size: clamp(28px, 4.5vw, 40px);
 }
 
 .section-heading-rule {
@@ -1735,6 +1743,7 @@
   width: 60px;
   background: var(--gold);
   opacity: 0.6;
+  margin-top: 6px;
 }
 .section-heading-block--left   .section-heading-rule { align-self: flex-start; }
 .section-heading-block--center .section-heading-rule { align-self: center; }
@@ -1742,7 +1751,7 @@
 
 @media (max-width: 600px) {
   .section-heading-section { padding: 24px 24px !important; }
-  .section-heading-block .section-heading-text { letter-spacing: 3px; }
+  .section-heading-block .section-heading { letter-spacing: 3px; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
