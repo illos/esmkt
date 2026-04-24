@@ -216,13 +216,16 @@
   }
 
   function renderText(d) {
-    // Dead-simple text block. Body is escaped and wrapped in <p>.
-    // Used for connecting paragraphs between custom sections (e.g. the
-    // intro/outro paragraphs around the Explore trail).
+    // Simple text block. Body is escaped and wrapped in <p>. Size + align are
+    // controlled via modifier classes on the section wrapper (see index.css
+    // for the font-size + text-align rules).
     var body = d.body || '';
     if (!body) return '';
+    var size  = d.size  === 'small' || d.size  === 'large' ? d.size  : 'medium';
+    var align = d.align === 'left'   || d.align === 'right' ? d.align : 'center';
+    var classes = 'section section-text section-text--' + size + ' section-text--' + align;
     return [
-      '<section class="section section-text">',
+      '<section class="' + classes + '">',
         '<div class="section-inner">',
           '<p class="section-text-body">' + esc(body).replace(/\n\n+/g, '</p><p class="section-text-body">').replace(/\n/g, '<br/>') + '</p>',
         '</div>',
@@ -660,29 +663,21 @@
       description: 'A plain paragraph of text. Good for connecting copy between custom sections.',
       category: 'generic',
       schema: {
-        body: { type: 'longtext', label: 'Text' }
-      },
-      defaults: { body: '' },
-      render: renderText
-    },
-
-    heading: {
-      label: 'Heading',
-      icon:  '\uD835\uDD44', // 𝕄 — distinctive mathematical M
-      description: 'A standalone heading with optional tag line and rule. Choose size, alignment, and whether to show a rule below.',
-      category: 'generic',
-      schema: {
-        section_label: { type: 'text', label: 'Tag Line (small label above heading)' },
-        text:          { type: 'text', label: 'Heading Text' },
-        size: { type: 'iconButtons', label: 'Size', options: [
-          // Three horizontal bars of increasing thickness for small/medium/large
-          { value: 'small',  label: 'Small',
-            icon: '<line x1="6" y1="10" x2="18" y2="10" stroke-width="1.25"/><line x1="6" y1="14" x2="18" y2="14" stroke-width="1.25"/>' },
-          { value: 'medium', label: 'Medium',
-            icon: '<line x1="4" y1="10" x2="20" y2="10" stroke-width="2"/><line x1="4" y1="14" x2="20" y2="14" stroke-width="2"/>' },
-          { value: 'large',  label: 'Large',
-            icon: '<line x1="3" y1="10" x2="21" y2="10" stroke-width="3"/><line x1="3" y1="14" x2="21" y2="14" stroke-width="3"/>' }
-        ]},
+        body: { type: 'longtext', label: 'Text' },
+        size: {
+          type: 'iconButtons',
+          label: 'Size',
+          pairWith: ['align'],
+          pairRatio: [1, 1],
+          options: [
+            { value: 'small',  label: 'Small',
+              icon: '<text x="12" y="16.5" text-anchor="middle" font-family="Oswald, sans-serif" font-weight="700" font-size="11" fill="currentColor" stroke="none">S</text>' },
+            { value: 'medium', label: 'Medium',
+              icon: '<text x="12" y="17" text-anchor="middle" font-family="Oswald, sans-serif" font-weight="700" font-size="13" fill="currentColor" stroke="none">M</text>' },
+            { value: 'large',  label: 'Large',
+              icon: '<text x="12" y="17.5" text-anchor="middle" font-family="Oswald, sans-serif" font-weight="700" font-size="15" fill="currentColor" stroke="none">L</text>' }
+          ]
+        },
         align: { type: 'iconButtons', label: 'Alignment', options: [
           { value: 'left',   label: 'Left',
             icon: '<line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="10" x2="14" y2="10"/><line x1="4" y1="14" x2="18" y2="14"/><line x1="4" y1="18" x2="12" y2="18"/>' },
@@ -690,13 +685,51 @@
             icon: '<line x1="4" y1="6" x2="20" y2="6"/><line x1="7" y1="10" x2="17" y2="10"/><line x1="5" y1="14" x2="19" y2="14"/><line x1="8" y1="18" x2="16" y2="18"/>' },
           { value: 'right',  label: 'Right',
             icon: '<line x1="4" y1="6" x2="20" y2="6"/><line x1="10" y1="10" x2="20" y2="10"/><line x1="6" y1="14" x2="20" y2="14"/><line x1="12" y1="18" x2="20" y2="18"/>' }
-        ]},
-        show_rule: { type: 'iconButtons', label: 'Rule Below', options: [
-          { value: false, label: 'No Rule',
-            icon: '<line x1="6" y1="9" x2="18" y2="9"/><line x1="6" y1="14" x2="18" y2="14"/>' },
-          { value: true, label: 'Show Rule',
-            icon: '<line x1="6" y1="8" x2="18" y2="8"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="3" y1="17" x2="21" y2="17" stroke-width="2.5"/>' }
         ]}
+      },
+      defaults: { body: '', size: 'medium', align: 'center' },
+      render: renderText
+    },
+
+    heading: {
+      label: 'Heading',
+      icon:  '\uD835\uDD44', // 𝕄 — distinctive mathematical M
+      description: 'A standalone heading with optional tag line and underline. Choose size, alignment, and whether to show a rule below.',
+      category: 'generic',
+      schema: {
+        section_label: { type: 'text', label: 'Tag Line (small label above heading)' },
+        text:          { type: 'text', label: 'Heading Text' },
+        // Size, Alignment, Underline render on one row at 33/33/33.
+        // Only the leader (size) declares pairWith; the group is built from it.
+        size: {
+          type: 'iconButtons',
+          label: 'Size',
+          pairWith: ['align', 'show_rule'],
+          pairRatio: [1, 1, 1],
+          options: [
+            // S / M / L letters (ascending font-size so "L looks like large")
+            { value: 'small',  label: 'Small',
+              icon: '<text x="12" y="16.5" text-anchor="middle" font-family="Oswald, sans-serif" font-weight="700" font-size="11" fill="currentColor" stroke="none">S</text>' },
+            { value: 'medium', label: 'Medium',
+              icon: '<text x="12" y="17" text-anchor="middle" font-family="Oswald, sans-serif" font-weight="700" font-size="13" fill="currentColor" stroke="none">M</text>' },
+            { value: 'large',  label: 'Large',
+              icon: '<text x="12" y="17.5" text-anchor="middle" font-family="Oswald, sans-serif" font-weight="700" font-size="15" fill="currentColor" stroke="none">L</text>' }
+          ]
+        },
+        align: { type: 'iconButtons', label: 'Alignment', hideLabel: false, options: [
+          { value: 'left',   label: 'Left',
+            icon: '<line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="10" x2="14" y2="10"/><line x1="4" y1="14" x2="18" y2="14"/><line x1="4" y1="18" x2="12" y2="18"/>' },
+          { value: 'center', label: 'Center',
+            icon: '<line x1="4" y1="6" x2="20" y2="6"/><line x1="7" y1="10" x2="17" y2="10"/><line x1="5" y1="14" x2="19" y2="14"/><line x1="8" y1="18" x2="16" y2="18"/>' },
+          { value: 'right',  label: 'Right',
+            icon: '<line x1="4" y1="6" x2="20" y2="6"/><line x1="10" y1="10" x2="20" y2="10"/><line x1="6" y1="14" x2="20" y2="14"/><line x1="12" y1="18" x2="20" y2="18"/>' }
+        ]},
+        show_rule: {
+          type: 'iconToggle',
+          label: 'Underline',
+          // Icon: a single underline stroke beneath the letter "U"
+          icon: '<text x="12" y="14" text-anchor="middle" font-family="Oswald, sans-serif" font-weight="700" font-size="12" fill="currentColor" stroke="none">U</text><line x1="7" y1="18" x2="17" y2="18" stroke-width="1.75"/>'
+        }
       },
       defaults: { section_label: '', text: 'New Heading', size: 'medium', align: 'center', show_rule: false },
       render: renderHeading

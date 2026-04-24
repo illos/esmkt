@@ -1687,9 +1687,22 @@
 .section-text-body + .section-text-body {
   margin-top: 1em;
 }
+
+/* Size variants (controlled by section-level class) */
+.section-text--small  .section-text-body { font-size: 12px; line-height: 1.7; }
+.section-text--medium .section-text-body { font-size: 16px; line-height: 1.8; }
+.section-text--large  .section-text-body { font-size: 18px; line-height: 1.75; }
+
+/* Align variants */
+.section-text--left   .section-text-body { text-align: left; }
+.section-text--center .section-text-body { text-align: center; }
+.section-text--right  .section-text-body { text-align: right; }
+
 @media (max-width: 600px) {
   .section-text { padding: 20px 24px !important; }
-  .section-text-body { font-size: 14px; line-height: 1.7; }
+  .section-text--small  .section-text-body { font-size: 11px; line-height: 1.65; }
+  .section-text--medium .section-text-body { font-size: 14px; line-height: 1.7; }
+  .section-text--large  .section-text-body { font-size: 16px; line-height: 1.7; }
 }
 
 /* ── Heading section ──

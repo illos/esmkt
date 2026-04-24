@@ -1475,3 +1475,35 @@ trix-toolbar .trix-dialog .trix-button:hover {
     max-width: none;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 9 — iconToggle field
+   Single-button toggle that's lit (gold) when on, grayed out with a
+   strikethrough when off. Strikethrough is a single diagonal line across
+   the entire button to visually communicate "disabled".
+   ═══════════════════════════════════════════════════════════════════════════ */
+.icon-toggle {
+  position: relative;
+  overflow: hidden;
+}
+.icon-toggle.is-off {
+  opacity: 0.55;
+}
+.icon-toggle.is-off::after {
+  content: '';
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  top: 50%;
+  height: 1.5px;
+  background: currentColor;
+  transform: translateY(-50%) rotate(-14deg);
+  pointer-events: none;
+  opacity: 0.75;
+}
+.icon-toggle:hover {
+  border-color: var(--gold-dark) !important;
+}
+.icon-toggle.is-off:hover {
+  opacity: 0.75;
+}

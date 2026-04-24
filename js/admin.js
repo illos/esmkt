@@ -890,9 +890,8 @@ function renderHoursTable(tbodyId, hours) {
       <td><input class="hours-time-input" type="time" value="${h.open || ''}" id="${tbodyId}-open-${i}" ${h.closed ? 'disabled' : ''}/></td>
       <td><input class="hours-time-input" type="time" value="${h.close || ''}" id="${tbodyId}-close-${i}" ${h.closed ? 'disabled' : ''}/></td>
       <td>
-        <label class="hours-closed-wrap">
+        <label class="hours-closed-wrap" title="Closed">
           <input type="checkbox" ${h.closed ? 'checked' : ''} onchange="toggleDayClosed('${tbodyId}',${i},this.checked)"/>
-          Closed
         </label>
       </td>
     </tr>`).join('');
@@ -1631,22 +1630,31 @@ function renderSectionEditor() {
 
   _formFieldIdCounter = 0;
 
-  // Build ordered list, respecting pairWith (wraps two fields in a 50/50 row)
+  // Build ordered list, respecting pairWith. `pairWith` is either:
+  //   - a string: the key of one sibling field → 2-field row (default 50/50)
+  //   - an array of strings: keys of N sibling fields → (1+N)-field row
+  // Ratios come from pairRatio (array of numbers, same length as the row).
   const skip = new Set();
   const html = [];
   for (const key of keys) {
     if (skip.has(key)) continue;
     const def = schema[key];
-    if (def.pairWith && schema[def.pairWith]) {
-      const k2  = def.pairWith;
-      const def2 = schema[k2];
-      skip.add(k2);
-      // Render each as normal, then wrap the two HTML chunks in a pair row.
-      // Each renderFormField returns a `.form-group-full` wrapper; we swap it
-      // for a flex child so the 50/50 row works.
-      const a = renderFormField(key, def,  editingSection.data[key]);
-      const b = renderFormField(k2,  def2, editingSection.data[k2]);
-      html.push('<div class="form-pair-row">' + a + b + '</div>');
+    // Normalize pairWith to an array of partner keys
+    const partners = Array.isArray(def.pairWith)
+      ? def.pairWith.filter(k => schema[k])
+      : (def.pairWith && schema[def.pairWith]) ? [def.pairWith] : [];
+    if (partners.length) {
+      partners.forEach(p => skip.add(p));
+      const groupKeys = [key, ...partners];
+      // Default ratios: equal share for each child
+      const ratios = Array.isArray(def.pairRatio) && def.pairRatio.length === groupKeys.length
+        ? def.pairRatio
+        : groupKeys.map(() => 1);
+      const cells = groupKeys.map((k, i) => {
+        const inner = renderFormField(k, schema[k], editingSection.data[k]);
+        return `<div style="flex:${ratios[i]};min-width:0">${inner}</div>`;
+      }).join('');
+      html.push('<div class="form-pair-row">' + cells + '</div>');
     } else {
       html.push(renderFormField(key, def, editingSection.data[key]));
     }
@@ -1682,6 +1690,7 @@ function renderFormField(key, def, value) {
     case 'richtext': return fieldRichText(key, def, value);
     case 'layoutButtons': return fieldLayoutButtons(key, def, value);
     case 'iconButtons':   return fieldIconButtons(key, def, value);
+    case 'iconToggle':    return fieldIconToggle(key, def, value);
     default:         return '<!-- unknown field type: ' + esc(def.type) + ' -->';
   }
 }
@@ -1862,6 +1871,44 @@ function refreshIconButtons(key, selectedValue) {
     b.style.background  = isThis ? 'rgba(201,169,110,0.12)' : 'transparent';
     b.style.color       = isThis ? 'var(--gold)' : 'var(--cream-dim)';
   });
+}
+
+// ─── Field type: iconToggle ─────────────────────────────────────────────────
+// Single square icon button that toggles a boolean. Lit (gold) when on;
+// dim with a strikethrough across the box when off.
+//
+// def options:
+//   { icon }  — inline SVG content for the button glyph (paths + children of
+//               an outer <svg viewBox="0 0 24 24">)
+//   hideLabel — omits the field label
+function fieldIconToggle(key, def, value) {
+  const isOn = !!value;
+  const label = def.hideLabel ? '' : `<label class="form-label">${esc(def.label || key)}</label>`;
+  return `
+    <div class="form-group-full" style="margin-bottom:16px">
+      ${label}
+      <button type="button"
+        class="icon-toggle ${isOn ? 'is-on' : 'is-off'}"
+        onclick="toggleIconValue('${esc(key)}', this)"
+        data-icon-toggle-key="${esc(key)}"
+        title="${esc(def.label || key)}"
+        style="width:100%;display:inline-flex;align-items:center;justify-content:center;height:42px;border:1px solid ${isOn ? 'var(--gold)' : 'var(--charcoal-border)'};border-radius:3px;background:${isOn ? 'rgba(201,169,110,0.12)' : 'transparent'};color:${isOn ? 'var(--gold)' : 'var(--cream-dim)'};cursor:pointer;padding:0;position:relative;transition:border-color 0.15s,background 0.15s,color 0.15s">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px">${def.icon || ''}</svg>
+      </button>
+    </div>
+  `;
+}
+
+function toggleIconValue(key, btn) {
+  // Flip the current value, then update the button state
+  const currentVal = !!(editingSection && editingSection.data && editingSection.data[key]);
+  const next = !currentVal;
+  updateFieldValue(key, next);
+  btn.classList.toggle('is-on',  next);
+  btn.classList.toggle('is-off', !next);
+  btn.style.borderColor = next ? 'var(--gold)' : 'var(--charcoal-border)';
+  btn.style.background  = next ? 'rgba(201,169,110,0.12)' : 'transparent';
+  btn.style.color       = next ? 'var(--gold)' : 'var(--cream-dim)';
 }
 
 function refreshListItemLayoutButtons(group, selectedValue) {
@@ -2165,27 +2212,29 @@ function renderListItems(key, def) {
     container.style.gap = '12px';
     container.style.gridTemplateColumns = '';
     container.innerHTML = items.map((item, idx) => {
-      // Build sub-fields honoring pairWith: fields marked pairWith wrap
-      // themselves + their partner into a form-pair-row. pairRatio (e.g. [1,3])
-      // sets the flex-grow ratio — default is [1,1] (50/50).
+      // Build sub-fields honoring pairWith. Same semantics as top-level:
+      // pairWith is either a sibling key (string) or a list of sibling keys
+      // (array). pairRatio is an optional array of flex ratios matching the
+      // number of children (leader + partners).
       const skipSub = new Set();
       const parts = [];
       for (const subKey of itemKeys) {
         if (skipSub.has(subKey)) continue;
         const subDef = itemSchema[subKey];
-        if (subDef.pairWith && itemSchema[subDef.pairWith]) {
-          const k2 = subDef.pairWith;
-          skipSub.add(k2);
-          const a = renderListItemField(key, idx, subKey, subDef,               item[subKey]);
-          const b = renderListItemField(key, idx, k2,     itemSchema[k2],       item[k2]);
-          const ratio = Array.isArray(subDef.pairRatio) && subDef.pairRatio.length === 2
+        const partners = Array.isArray(subDef.pairWith)
+          ? subDef.pairWith.filter(k => itemSchema[k])
+          : (subDef.pairWith && itemSchema[subDef.pairWith]) ? [subDef.pairWith] : [];
+        if (partners.length) {
+          partners.forEach(p => skipSub.add(p));
+          const groupKeys = [subKey, ...partners];
+          const ratios = Array.isArray(subDef.pairRatio) && subDef.pairRatio.length === groupKeys.length
             ? subDef.pairRatio
-            : [1, 1];
-          // Apply flex ratios by wrapping each side in a flex child
-          parts.push(`<div class="form-pair-row">
-            <div style="flex:${ratio[0]};min-width:0">${a}</div>
-            <div style="flex:${ratio[1]};min-width:0">${b}</div>
-          </div>`);
+            : groupKeys.map(() => 1);
+          const cells = groupKeys.map((k, i) => {
+            const inner = renderListItemField(key, idx, k, itemSchema[k], item[k]);
+            return `<div style="flex:${ratios[i]};min-width:0">${inner}</div>`;
+          }).join('');
+          parts.push('<div class="form-pair-row">' + cells + '</div>');
         } else {
           parts.push(renderListItemField(key, idx, subKey, subDef, item[subKey]));
         }
