@@ -12,6 +12,12 @@ document.addEventListener('DOMContentLoaded', () => {
   if (authToken) showList();
   setupUploadArea('uploadArea', applyPhotoFile);
   setupUploadArea('eventUploadArea', applyEventPhotoFile);
+
+  // Page-load fade-in: reveal once the login vs. admin-list decision is made.
+  // Admin doesn't have an async render-blocking fetch at boot — showList()
+  // triggers its own loads in the background. Safe to reveal immediately.
+  document.body.classList.remove('page-loading');
+  document.body.classList.add('page-loaded');
 });
 
 function setupUploadArea(areaId, onFileFn) {

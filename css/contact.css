@@ -132,6 +132,7 @@
   }
 
   /* ─── FORM CARD ─── */
+  .contact-section .section-inner { max-width: 680px; }
   .contact-form {
     background: var(--charcoal-card);
     border: 1px solid var(--charcoal-border);

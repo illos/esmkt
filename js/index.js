@@ -256,7 +256,15 @@ function initSite() {
       // Scroll-driven trail animation must initialize AFTER sections render
       initExploreTrail();
     });
-  });
+  }).then(revealPage).catch(revealPage);
+}
+
+// Page-load fade-in: remove .page-loading, add .page-loaded so base.css
+// transitions opacity 0 → 1. Called unconditionally (even on init error)
+// so the user always sees *something*.
+function revealPage() {
+  document.body.classList.remove('page-loading');
+  document.body.classList.add('page-loaded');
 }
 
 // ─── Render events into the Events section's grid ────────────────────────────

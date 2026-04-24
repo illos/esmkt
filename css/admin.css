@@ -752,12 +752,16 @@
   .hours-time-input:focus { border-color: var(--gold-dark); }
   .hours-time-input:disabled { opacity: 0.35; cursor: not-allowed; }
   .hours-closed-wrap {
-    display: flex; align-items: center; gap: 6px;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
     font-family: 'Oswald', sans-serif; font-size: 11px;
     letter-spacing: 2px; text-transform: uppercase;
     color: var(--cream-dim); cursor: pointer; white-space: nowrap;
   }
   .hours-closed-wrap input[type="checkbox"] { accent-color: var(--gold); width: 14px; height: 14px; cursor: pointer; }
+  /* "Closed" column — both header and cell centered so the checkbox column
+     reads as a single centered axis (the header already says "Closed"). */
+  .hours-table th:last-child,
+  .hours-table td:last-child { text-align: center; }
 
   /* ─── EVENTS ─── */
   .event-list { display: flex; flex-direction: column; gap: 0; }

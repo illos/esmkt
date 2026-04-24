@@ -15,7 +15,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 
   // Step 1: Render sections. Done before init so the form IDs exist.
-  await renderContactSections();
+  try {
+    await renderContactSections();
+  } catch (_) { /* render function handles its own error state */ }
+
+  // Page-load fade-in: reveal once sections are in the DOM (success or error).
+  document.body.classList.remove('page-loading');
+  document.body.classList.add('page-loaded');
 
   // Step 2 + 3: Load settings and wire up the form.
   initContact();

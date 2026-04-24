@@ -1710,7 +1710,7 @@
    Oswald display treatment in gold on cream, differing only in size
    and alignment. */
 .section-heading-section { padding: 32px 28px !important; }
-.section-heading-section .section-inner { max-width: 1060px; }
+.section-heading-section .section-inner { max-width: 680px; }
 
 .section-heading-block {
   display: flex;

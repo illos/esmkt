@@ -35,7 +35,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('footerYear').textContent = new Date().getFullYear();
   // checkSnackbarHours and populatePickupTimes are called inside initMenu()
   // after loading snackbar hours from the API
-  await initMenu();
+  try {
+    await initMenu();
+  } catch (_) { /* initMenu handles its own error UI */ }
+
+  // Page-load fade-in: reveal menu once it's populated (or after error).
+  document.body.classList.remove('page-loading');
+  document.body.classList.add('page-loaded');
 });
 
 // ─── SNACKBAR HOURS ──────────────────────────────────────────────────────────
