@@ -11,6 +11,10 @@
 <!-- Trix rich-text editor (loaded from CDN, used by Article section body field) -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/trix@2.1.15/dist/trix.css">
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/trix@2.1.15/dist/trix.umd.min.js"></script>
+
+<!-- Turnstile (explicit render) — bot protection for the login form.
+     Site key is loaded from /api/settings at runtime; admin.js handles rendering. -->
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 </head>
 <body class="page-loading">
 
@@ -49,6 +53,13 @@
       <div class="form-group">
         <label class="form-label" for="loginPassword">Password</label>
         <input class="form-input" type="password" id="loginPassword" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/>
+      </div>
+      <!-- Turnstile widget. Hidden by default; admin.js reveals + renders it
+           once it has fetched the site key from /api/settings. If the site
+           isn't configured with a key, the whole wrapper stays hidden and
+           login falls back to password-only. -->
+      <div class="login-turnstile-wrap" id="loginTurnstileWrap" style="display:none">
+        <div id="loginTurnstileWidget"></div>
       </div>
       <button class="btn-primary" id="loginBtn" onclick="doLogin()">Sign In</button>
     </div>

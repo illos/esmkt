@@ -9,7 +9,13 @@ let clearExistingPhoto = false;
 
 // ─── BOOT ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-  if (authToken) showList();
+  if (authToken) {
+    showList();
+  } else {
+    // Only render the login Turnstile when we're actually showing the login
+    // page — no point loading the widget if the user is already signed in.
+    initLoginTurnstile();
+  }
   setupUploadArea('uploadArea', applyPhotoFile);
   setupUploadArea('eventUploadArea', applyEventPhotoFile);
 
@@ -40,15 +46,27 @@ async function doLogin() {
 
   if (!pw) { showLoginError('Please enter a password.'); return; }
 
+  // If the Turnstile widget was rendered but the user hasn't completed the
+  // challenge yet, block the submission early with a friendly message.
+  // The server will also enforce this when TURNSTILE_SECRET is configured.
+  const wrap = document.getElementById('loginTurnstileWrap');
+  const widgetVisible = wrap && wrap.style.display !== 'none';
+  if (widgetVisible && !loginTurnstileToken) {
+    showLoginError('Please complete the bot check above.');
+    return;
+  }
+
   btn.disabled = true;
   btn.textContent = 'Signing in…';
   err.classList.remove('visible');
 
   try {
+    const body = { password: pw };
+    if (loginTurnstileToken) body.turnstileToken = loginTurnstileToken;
     const res  = await fetch('/api/auth', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password: pw }),
+      body: JSON.stringify(body),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Login failed.');
@@ -58,9 +76,62 @@ async function doLogin() {
     showList();
   } catch (e) {
     showLoginError(e.message);
+    // Turnstile tokens are single-use. If the server rejected us for any
+    // reason, reset the widget so the user can get a fresh token before
+    // retrying instead of being stuck with a stale one.
+    resetLoginTurnstile();
   } finally {
     btn.disabled = false;
     btn.textContent = 'Sign In';
+  }
+}
+
+// ─── LOGIN TURNSTILE ──────────────────────────────────────────────────────────
+// Mirrors the pattern used in js/contact.js: fetch site key from /api/settings
+// (public GET), render the widget in explicit mode, track the token, and
+// reset after a failed submission. If the site has no turnstileSiteKey
+// configured the wrapper stays hidden and login falls back to password-only
+// (matching the contact form's graceful degradation).
+let loginTurnstileToken  = null;
+let loginTurnstileWidget = null;
+
+async function initLoginTurnstile() {
+  try {
+    const res = await fetch('/api/settings');
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!data.turnstileSiteKey) return;
+    const wrap = document.getElementById('loginTurnstileWrap');
+    if (!wrap) return;
+    wrap.style.display = '';
+    renderLoginTurnstile(data.turnstileSiteKey);
+  } catch (_) {
+    // Network error → leave the wrapper hidden; server will fall back if
+    // it also lacks TURNSTILE_SECRET.
+  }
+}
+
+function renderLoginTurnstile(sitekey) {
+  function tryRender() {
+    if (typeof window.turnstile === 'undefined') {
+      setTimeout(tryRender, 100);
+      return;
+    }
+    loginTurnstileWidget = window.turnstile.render('#loginTurnstileWidget', {
+      sitekey,
+      theme: 'dark',
+      callback:           token => { loginTurnstileToken = token; },
+      'expired-callback': ()    => { loginTurnstileToken = null; },
+      'error-callback':   ()    => { loginTurnstileToken = null; },
+    });
+  }
+  tryRender();
+}
+
+function resetLoginTurnstile() {
+  loginTurnstileToken = null;
+  if (loginTurnstileWidget && window.turnstile) {
+    try { window.turnstile.reset(loginTurnstileWidget); } catch (_) { /* ignore */ }
   }
 }
 
@@ -76,6 +147,14 @@ function logout() {
   showPage('pageLogin');
   document.getElementById('navLogout').classList.remove('visible');
   document.getElementById('adminTabs').classList.remove('visible');
+  // If the Turnstile widget was never rendered on this page load (because
+  // the user was already authed at boot), render it now. If it already
+  // exists, just reset it so the user gets a fresh challenge.
+  if (!loginTurnstileWidget) {
+    initLoginTurnstile();
+  } else {
+    resetLoginTurnstile();
+  }
 }
 
 // ─── PAGE ROUTING ─────────────────────────────────────────────────────────────

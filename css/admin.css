@@ -1511,3 +1511,19 @@ trix-toolbar .trix-dialog .trix-button:hover {
 .icon-toggle.is-off:hover {
   opacity: 0.75;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LOGIN TURNSTILE
+   Spacing + centering for the Cloudflare Turnstile widget on the admin
+   login card. Matches the tone of the surrounding form fields without
+   pulling in contact.css. Hidden by default; admin.js reveals the wrapper
+   once it has a site key from /api/settings.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.login-turnstile-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+.login-turnstile-wrap #loginTurnstileWidget {
+  min-height: 65px;
+}
