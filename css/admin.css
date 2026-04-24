@@ -1193,3 +1193,60 @@
   }
   .ql-btn-remove:hover { color: var(--danger); border-color: var(--danger); }
 
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 6 ADDITIONS — section-editor UI polish
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── 50/50 field pairs (pairWith) ──
+   Wraps two form-group-full children side-by-side on desktop, stacks on
+   narrow viewports. Each child still keeps its original inner layout. */
+.form-pair-row {
+  display: flex;
+  gap: 14px;
+  align-items: stretch;
+}
+.form-pair-row > .form-group-full {
+  flex: 1 1 0;
+  min-width: 0;
+}
+@media (max-width: 640px) {
+  .form-pair-row { flex-direction: column; gap: 0; }
+}
+
+/* ── Icon picker popover ──
+   The trigger button is styled inline. When the panel is open, give the
+   trigger a subtle highlight so it's obvious which control owns the panel. */
+.icon-picker-trigger:hover {
+  border-color: var(--gold-dark);
+}
+.icon-picker-panel {
+  /* Shadow + border tuned to match other floating surfaces in the admin */
+  animation: iconPickerFadeIn 0.12s ease-out;
+}
+@keyframes iconPickerFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+/* ── Services grid tiles ──
+   Used when a list field has listLayout:'grid' (currently just Services).
+   The parent #listContainer_items gets grid styling inline via JS; these
+   rules just polish the tile appearance + drag feedback. */
+.list-tile { transition: border-color 0.15s, opacity 0.15s; }
+.list-tile:hover { border-color: var(--gold-dark); }
+.list-tile:active { cursor: grabbing; }
+
+/* Hide the input labels inside grid tiles — they're redundant in the
+   compact layout, the context is obvious from the big icon tile. */
+.list-tile > div > .form-label { display: none; }
+
+/* Inputs inside grid tiles are tighter than normal */
+.list-tile .icon-picker-trigger {
+  width: 100%;
+  justify-content: flex-start;
+}
+.list-tile input.form-input {
+  font-size: 12px;
+  padding: 6px 8px;
+}

@@ -520,11 +520,11 @@
       category: 'custom',
       schema: {
         description:       { type: 'longtext', label: 'Description' },
-        primary_cta_label: { type: 'text',     label: 'Button Label' },
+        primary_cta_label: { type: 'text',     label: 'Button Label', pairWith: 'primary_cta_link' },
         primary_cta_link:  { type: 'text',     label: 'Button Link' },
-        bg_photo:          { type: 'image',    label: 'Background Photo' },
         store_photo:       { type: 'image',    label: 'Store Pop-out Photo' },
-        show_phone_button: { type: 'boolean',  label: 'Show Phone Button',  defaultValue: true }
+        show_phone_button: { type: 'boolean',  label: 'Show Phone Number',  defaultValue: true },
+        bg_photo:          { type: 'image',    label: 'Background Photo' }
       },
       defaults: {
         eyebrow: 'Welcome to the',
@@ -552,7 +552,7 @@
         subtitle:  { type: 'text',    label: 'Subtitle' },
         icon:      { type: 'icon',    label: 'Icon',     iconSet: ['send','sparkles','fuel','compass','map-pin','calendar','clock','tag','star','heart','bell','gift','coffee'] },
         variant:   { type: 'select',  label: 'Color',    options: BANNER_VARIANTS },
-        cta_label: { type: 'text',    label: 'Button Label (optional)' },
+        cta_label: { type: 'text',    label: 'Button Label (optional)', pairWith: 'cta_link' },
         cta_link:  { type: 'text',    label: 'Button Link (optional)' },
         show_star: { type: 'boolean', label: 'Show ✦ star (when no button)' }
       },
@@ -574,7 +574,7 @@
         title:         { type: 'text',     label: 'Heading' },
         image:         { type: 'image',    label: 'Hero Image' },
         body:          { type: 'richtext', label: 'Body' },
-        cta_label:     { type: 'text',     label: 'Button Label (optional)' },
+        cta_label:     { type: 'text',     label: 'Button Label (optional)', pairWith: 'cta_link' },
         cta_link:      { type: 'text',     label: 'Button Link (optional)' }
       },
       defaults: { section_label: '', title: 'New Article', image: null, body: '', cta_label: '', cta_link: '' },
@@ -650,7 +650,7 @@
         show_location_card: { type: 'boolean', label: 'Show Location Card', defaultValue: true },
         address_line_1:     { type: 'text',    label: 'Address Line 1' },
         address_line_2:     { type: 'text',    label: 'Address Line 2' },
-        google_maps_url:    { type: 'text',    label: 'Google Maps URL' },
+        google_maps_url:    { type: 'text',    label: 'Google Maps URL', pairWith: 'apple_maps_url' },
         apple_maps_url:     { type: 'text',    label: 'Apple Maps URL' }
       },
       defaults: {
@@ -680,6 +680,7 @@
         heading:       { type: 'text', label: 'Heading' },
         items: {
           type: 'list', label: 'Services',
+          listLayout: 'grid',
           itemSchema: {
             icon:  { type: 'icon', label: 'Icon',  iconSet: ['drink','shopping-bag','box','snowflake','coffee','bottle','leaf','mountains','restroom','wifi','compass','map-pin','send','sparkles','fuel'] },
             label: { type: 'text', label: 'Label' }
@@ -714,16 +715,16 @@
         stops: {
           type: 'list', label: 'Stops',
           itemSchema: {
-            layout: { type: 'select', label: 'Layout', options: [
-              { value: 'hero',       label: 'Hero (image on top, description below)' },
-              { value: 'text-right', label: 'Text Right (image left)' },
-              { value: 'text-left',  label: 'Text Left (image right)' }
+            layout: { type: 'layoutButtons', label: 'Layout', pairWith: 'tag', options: [
+              { value: 'hero',       label: 'Image on top'             },
+              { value: 'text-right', label: 'Image left, text right' },
+              { value: 'text-left',  label: 'Image right, text left' }
             ]},
             tag:         { type: 'text',     label: 'Tag Line' },
             title:       { type: 'text',     label: 'Title' },
             description: { type: 'longtext', label: 'Description' },
             image:       { type: 'image',    label: 'Photo' },
-            cta_label:   { type: 'text',     label: 'Button Label (optional)' },
+            cta_label:   { type: 'text',     label: 'Button Label (optional)', pairWith: 'cta_link' },
             cta_link:    { type: 'text',     label: 'Button Link (optional)' }
           }
         }

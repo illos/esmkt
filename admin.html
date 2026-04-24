@@ -29,11 +29,11 @@
 
 <!-- Admin Section Tabs -->
 <div class="admin-tabs" id="adminTabs">
-  <button class="tab-btn active" id="tabSettings" onclick="switchTab('settings')">Settings</button>
-  <button class="tab-btn"        id="tabHours"    onclick="switchTab('hours')">Hours</button>
-  <button class="tab-btn"        id="tabPages"    onclick="switchTab('pages')">Pages</button>
-  <button class="tab-btn"        id="tabMenu"     onclick="switchTab('menu')">Menu</button>
-  <button class="tab-btn"        id="tabEvents"   onclick="switchTab('events')">Events</button>
+  <button class="tab-btn active" id="tabStoreInfo" onclick="switchTab('storeinfo')">Store Info</button>
+  <button class="tab-btn"        id="tabPages"     onclick="switchTab('pages')">Pages</button>
+  <button class="tab-btn"        id="tabMenu"      onclick="switchTab('menu')">Menu</button>
+  <button class="tab-btn"        id="tabEvents"    onclick="switchTab('events')">Events</button>
+  <button class="tab-btn"        id="tabSettings"  onclick="switchTab('settings')">Settings</button>
 </div>
 
 <!-- ─── LOGIN PAGE ─── -->
@@ -66,108 +66,71 @@
   <button class="btn-add-category" onclick="addCategory()">+ Add Category</button>
 </div>
 
-<!-- ─── SETTINGS & HOURS PAGE ─── -->
-<div class="page" id="pageSettings">
-
-  <div class="hours-section-title">Online Ordering</div>
-  <div class="ordering-status-bar" style="margin-bottom:28px">
-    <div class="ordering-status-left">
-      <span class="ordering-status-label">Online Ordering</span>
-      <span class="ordering-status-desc" id="orderingStatusDesc">Enabled</span>
-    </div>
-    <label class="toggle-switch">
-      <input type="checkbox" id="onlineOrderingToggle" checked onchange="saveOnlineOrdering(this.checked)"/>
-      <span class="toggle-slider"></span>
-    </label>
-  </div>
+<!-- ─── STORE INFO PAGE (first tab) ─── -->
+<div class="page active" id="pageStoreInfo">
 
   <div class="hours-section-title">Site Info</div>
   <div class="form-card" style="margin-bottom:28px">
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label" for="siPhone">Phone Number</label>
-        <input class="form-input" type="tel" id="siPhone" placeholder="e.g. 775-572-3200"
-          onblur="saveSiteInfo()" onkeydown="if(event.key==='Enter')this.blur()"/>
-      </div>
-      <div class="form-group">
-        <label class="form-label" for="siDeliTax">Snackbar Tax Rate <span style="font-size:10px;text-transform:none;letter-spacing:0;color:rgba(184,176,160,0.5)">(%)</span></label>
-        <input class="form-input" type="number" id="siDeliTax" placeholder="e.g. 8.25"
-          step="0.01" min="0" max="100"
-          onblur="saveSiteInfo()" onkeydown="if(event.key==='Enter')this.blur()"/>
-      </div>
-    </div>
     <div class="form-group-full">
-      <label class="form-label" for="siHeroDesc">Homepage Description</label>
-      <textarea class="form-textarea" id="siHeroDesc"
-        placeholder="Hero section text shown on the homepage…"
-        style="min-height:80px"
-        onblur="saveSiteInfo()"></textarea>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label" for="siHeroBtnText">Hero Button Text</label>
-        <input class="form-input" type="text" id="siHeroBtnText" placeholder="e.g. Order from the Snackbar"
-          onblur="saveSiteInfo()" onkeydown="if(event.key==='Enter')this.blur()"/>
-      </div>
-      <div class="form-group">
-        <label class="form-label" for="siHeroBtnLink">Hero Button Link</label>
-        <input class="form-input" type="text" id="siHeroBtnLink" placeholder="e.g. menu.html or https://…"
-          onblur="saveSiteInfo()" onkeydown="if(event.key==='Enter')this.blur()"/>
-      </div>
-    </div>
-    <div class="form-group-full">
-      <label class="form-label">Hero Background Photo</label>
-      <div class="image-upload-area" id="heroBgUploadArea">
-        <input type="file" id="heroBgFile" accept="image/jpeg,image/png,image/webp,image/gif" onchange="handleHeroBgSelect(this)"/>
-        <div class="upload-placeholder" id="heroBgUploadPlaceholder">
-          <span class="upload-icon">&#128247;</span>
-          <span class="upload-label">Click or drag to upload</span>
-          <span class="upload-hint">JPEG, PNG, WebP or GIF &middot; Max 5 MB</span>
-        </div>
-        <div class="image-preview-wrap" id="heroBgPreviewWrap">
-          <img class="image-preview" id="heroBgImagePreview" src="" alt="Preview"/>
-          <button class="image-preview-remove" onclick="clearHeroBgPhoto(event)" title="Remove photo">&#215;</button>
-        </div>
-      </div>
-      <div class="current-image-note" id="heroBgCurrentImageNote"></div>
+      <label class="form-label" for="siPhone">Phone Number</label>
+      <input class="form-input" type="tel" id="siPhone" placeholder="e.g. 775-572-3200"
+        onblur="saveSiteInfo()" onkeydown="if(event.key==='Enter')this.blur()"/>
     </div>
     <div class="form-actions">
       <button class="btn-save" id="saveSiteInfoBtn" onclick="saveSiteInfo()">Save Site Info</button>
       <span id="savingSiteInfoIndicator" style="display:none;align-items:center;color:var(--cream-dim);font-size:13px;margin-left:16px">
-        <span class="spinner"></span> Saving…
+        <span class="spinner"></span> Saving&hellip;
       </span>
     </div>
   </div>
 
-  <!-- ─── CONTACT FORM ─── -->
-  <div class="hours-section-title">Contact Form</div>
+  <div class="hours-section-title">Store Hours</div>
+  <div class="form-card" style="margin-bottom:24px">
+    <table class="hours-table" id="storeHoursTable">
+      <thead><tr>
+        <th style="width:50px">Day</th>
+        <th>Opens</th><th>Closes</th>
+        <th style="width:90px">Closed</th>
+      </tr></thead>
+      <tbody id="storeHoursBody"></tbody>
+    </table>
+  </div>
+
+  <div class="hours-section-title">Snackbar Hours</div>
+  <div class="form-card" style="margin-bottom:24px">
+    <table class="hours-table" id="snackbarHoursTable">
+      <thead><tr>
+        <th style="width:50px">Day</th>
+        <th>Opens</th><th>Closes</th>
+        <th style="width:90px">Closed</th>
+      </tr></thead>
+      <tbody id="snackbarHoursBody"></tbody>
+    </table>
+  </div>
+
+  <button class="btn-save" id="saveHoursBtn" onclick="saveHours()" style="margin-bottom:28px">Save Hours</button>
+  <span id="savingHoursIndicator" style="display:none;align-items:center;color:var(--cream-dim);font-size:13px;margin-left:16px">
+    <span class="spinner"></span> Saving&hellip;
+  </span>
+
+  <div class="hours-section-title">Contact</div>
   <div class="form-card" style="margin-bottom:28px">
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label" for="siContactEmail">Contact Email <span class="req">*</span></label>
-        <input class="form-input" type="email" id="siContactEmail" placeholder="e.g. hello@esmeralda.market"
-          onblur="saveSiteInfo()" onkeydown="if(event.key==='Enter')this.blur()"/>
-      </div>
-      <div class="form-group">
-        <label class="form-label" for="siTurnstileKey">Turnstile Site Key</label>
-        <input class="form-input" type="text" id="siTurnstileKey" placeholder="0x4AAAA…"
-          onblur="saveSiteInfo()" onkeydown="if(event.key==='Enter')this.blur()"/>
-      </div>
+    <div class="form-group-full">
+      <label class="form-label" for="siContactEmail">Contact Email <span class="req">*</span></label>
+      <input class="form-input" type="email" id="siContactEmail" placeholder="e.g. hello@esmeralda.market"
+        onblur="saveContactSettings()" onkeydown="if(event.key==='Enter')this.blur()"/>
     </div>
     <p style="font-size:12px;color:var(--cream-dim);margin-top:4px;line-height:1.6">
-      Form submissions are sent to the email above. The Turnstile Site Key enables bot protection &mdash; get one free at
-      <a href="https://developers.cloudflare.com/turnstile/" target="_blank" rel="noopener" style="color:var(--gold);text-decoration:none">Cloudflare Turnstile</a>.
-      The matching <strong style="font-weight:600">Turnstile Secret Key</strong> must be set as a Cloudflare Pages environment variable named <code style="font-size:11px;background:rgba(255,255,255,0.06);padding:1px 5px;border-radius:2px">TURNSTILE_SECRET</code>.
+      Contact-form submissions are sent to this email.
     </p>
     <div class="form-actions">
-      <button class="btn-save" id="saveContactSettingsBtn" onclick="saveContactSettings()">Save Contact Settings</button>
+      <button class="btn-save" id="saveContactSettingsBtn" onclick="saveContactSettings()">Save Contact</button>
       <span id="savingContactSettingsIndicator" style="display:none;align-items:center;color:var(--cream-dim);font-size:13px;margin-left:16px">
         <span class="spinner"></span> Saving&hellip;
       </span>
     </div>
   </div>
 
-  <!-- ─── LINKS ─── -->
   <div class="hours-section-title">Links</div>
   <div class="form-card" style="margin-bottom:28px">
     <p style="font-size:12px;color:var(--cream-dim);margin-bottom:16px;line-height:1.6">
@@ -183,17 +146,42 @@
     </div>
   </div>
 
-  <!-- ─── PRINT SERVER ─── -->
-  <div class="hours-section-title">Print Server <span style="font-size:10px;color:var(--cream-dim);letter-spacing:2px;margin-left:8px">&middot; not yet deployed</span></div>
-  <div class="form-card" style="margin-bottom:28px">
-    <p style="font-size:12px;color:var(--cream-dim);margin-bottom:16px;line-height:1.6">
-      When deployed, a small server running on a PC at the store will receive online orders and send them to a receipt printer. This UI is a placeholder &mdash; the print server isn't running yet, so ordering currently works regardless of the setting below.
-    </p>
+</div>
 
-    <!-- Status indicator -->
+<!-- ─── SETTINGS PAGE (last tab) ─── -->
+<div class="page" id="pageSettings">
+
+  <div class="hours-section-title">Snackbar &amp; Ordering</div>
+  <div class="form-card" style="margin-bottom:28px">
+
+    <!-- Tax rate -->
+    <div class="form-group-full" style="margin-bottom:20px">
+      <label class="form-label" for="siDeliTax">Snackbar Tax Rate <span style="font-size:10px;text-transform:none;letter-spacing:0;color:rgba(184,176,160,0.5)">(%)</span></label>
+      <input class="form-input" type="number" id="siDeliTax" placeholder="e.g. 8.25"
+        step="0.01" min="0" max="100"
+        onblur="saveSiteInfo()" onkeydown="if(event.key==='Enter')this.blur()"/>
+    </div>
+
+    <div style="height:1px;background:var(--charcoal-border);margin:0 -14px 20px"></div>
+
+    <!-- Online ordering toggle with live status -->
     <div class="ordering-status-bar" style="margin-bottom:20px">
       <div class="ordering-status-left">
-        <span class="ordering-status-label">Server Status</span>
+        <span class="ordering-status-label">Online Ordering</span>
+        <span class="ordering-status-desc" id="orderingStatusDesc">Enabled</span>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="onlineOrderingToggle" checked onchange="saveOnlineOrdering(this.checked)"/>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
+    <div style="height:1px;background:var(--charcoal-border);margin:0 -14px 20px"></div>
+
+    <!-- Print-server status indicator -->
+    <div class="ordering-status-bar" style="margin-bottom:14px">
+      <div class="ordering-status-left">
+        <span class="ordering-status-label">Print Server <span style="font-size:9px;color:var(--cream-dim);letter-spacing:2px;margin-left:8px;text-transform:uppercase">not yet deployed</span></span>
         <span class="ordering-status-desc" id="printServerStatusDesc">&mdash;</span>
       </div>
       <span id="printServerStatusDot" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:rgba(184,176,160,0.4);flex-shrink:0"></span>
@@ -212,42 +200,28 @@
     </div>
   </div>
 
-
-</div>
-
-<!-- ─── HOURS PAGE ─── -->
-<div class="page" id="pageHours">
-
-  <div class="hours-section-title">Store Hours</div>
-  <div class="form-card" style="margin-bottom:24px">
-    <table class="hours-table" id="storeHoursTable">
-      <thead><tr>
-        <th style="width:50px">Day</th>
-        <th>Opens</th><th>Closes</th>
-        <th style="width:90px">Closed</th>
-      </tr></thead>
-      <tbody id="storeHoursBody"></tbody>
-    </table>
-  </div>
-
-  <div class="hours-section-title">Snackbar Hours</div>
+  <div class="hours-section-title">Contact Form Bot Protection</div>
   <div class="form-card" style="margin-bottom:28px">
-    <table class="hours-table" id="snackbarHoursTable">
-      <thead><tr>
-        <th style="width:50px">Day</th>
-        <th>Opens</th><th>Closes</th>
-        <th style="width:90px">Closed</th>
-      </tr></thead>
-      <tbody id="snackbarHoursBody"></tbody>
-    </table>
+    <div class="form-group-full">
+      <label class="form-label" for="siTurnstileKey">Turnstile Site Key</label>
+      <input class="form-input" type="text" id="siTurnstileKey" placeholder="0x4AAAA&hellip;"
+        onblur="saveTurnstileKey()" onkeydown="if(event.key==='Enter')this.blur()"/>
+    </div>
+    <p style="font-size:12px;color:var(--cream-dim);margin-top:4px;line-height:1.6">
+      The Turnstile Site Key enables bot protection on the contact form &mdash; get one free at
+      <a href="https://developers.cloudflare.com/turnstile/" target="_blank" rel="noopener" style="color:var(--gold);text-decoration:none">Cloudflare Turnstile</a>.
+      The matching <strong style="font-weight:600">Turnstile Secret Key</strong> must be set as a Cloudflare Pages environment variable named <code style="font-size:11px;background:rgba(255,255,255,0.06);padding:1px 5px;border-radius:2px">TURNSTILE_SECRET</code>.
+    </p>
+    <div class="form-actions">
+      <button class="btn-save" id="saveTurnstileBtn" onclick="saveTurnstileKey()">Save Key</button>
+      <span id="savingTurnstileIndicator" style="display:none;align-items:center;color:var(--cream-dim);font-size:13px;margin-left:16px">
+        <span class="spinner"></span> Saving&hellip;
+      </span>
+    </div>
   </div>
 
-  <button class="btn-save" id="saveHoursBtn" onclick="saveHours()">Save Hours</button>
-  <span id="savingHoursIndicator" style="display:none;align-items:center;color:var(--cream-dim);font-size:13px;margin-left:16px">
-    <span class="spinner"></span> Saving…
-  </span>
-
 </div>
+
 
 <!-- ─── PAGES MASTER LIST ─── -->
 <div class="page" id="pagePages">

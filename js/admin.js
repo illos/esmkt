@@ -12,7 +12,6 @@ document.addEventListener('DOMContentLoaded', () => {
   if (authToken) showList();
   setupUploadArea('uploadArea', applyPhotoFile);
   setupUploadArea('eventUploadArea', applyEventPhotoFile);
-  setupUploadArea('heroBgUploadArea', applyHeroBgFile);
 });
 
 function setupUploadArea(areaId, onFileFn) {
@@ -81,6 +80,15 @@ function showPage(id) {
 
 let activeTab = 'menu';
 
+// Map of tab key → tab button element id (since capitalization doesn't map cleanly)
+const TAB_BTN_IDS = {
+  storeinfo: 'tabStoreInfo',
+  pages:     'tabPages',
+  menu:      'tabMenu',
+  events:    'tabEvents',
+  settings:  'tabSettings'
+};
+
 function switchTab(tab) {
   // Unsaved-changes guard: when leaving the Pages tab with pending edits.
   if (activeTab === 'pages' && tab !== 'pages' && hasUnsavedPageChanges()) {
@@ -90,12 +98,22 @@ function switchTab(tab) {
   }
   activeTab = tab;
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1))?.classList.add('active');
-  if (tab === 'settings') { showPage('pageSettings'); loadSettings(); }
-  if (tab === 'hours')    { showPage('pageHours');    loadHours(); }
+  const btnId = TAB_BTN_IDS[tab];
+  if (btnId) document.getElementById(btnId)?.classList.add('active');
+  if (tab === 'storeinfo') {
+    // Store Info combines the old Site Info, Hours, Contact Email, and Links.
+    // Load both settings + hours in one trip; they share the same endpoint.
+    showPage('pageStoreInfo');
+    loadStoreInfo();
+  }
   if (tab === 'pages')    { showPage('pagePages');    loadPagesList(); }
   if (tab === 'menu')     { showPage('pageList');     loadMenu(); }
   if (tab === 'events')   { showPage('pageEvents');   loadEvents(); }
+  if (tab === 'settings') {
+    // New Settings tab: tax, online ordering, print server, Turnstile.
+    showPage('pageSettings');
+    loadSettings();
+  }
 }
 
 // Returns true if the current Pages admin state has unsaved changes
@@ -120,7 +138,7 @@ window.addEventListener('beforeunload', function (e) {
 async function showList() {
   document.getElementById('navLogout').classList.add('visible');
   document.getElementById('adminTabs').classList.add('visible');
-  switchTab('settings');
+  switchTab('storeinfo');
 }
 
 // ─── ORDERING UI HELPER ───────────────────────────────────────────────────────
@@ -746,6 +764,29 @@ function promptDeleteItem(id, name) {
 // ─── SETTINGS & HOURS ────────────────────────────────────────────────────────
 let settingsData = null;
 
+// ─── STORE INFO TAB (phone + hours + contact email + links) ─────────────────
+async function loadStoreInfo() {
+  try {
+    const res  = await apiFetch('/api/settings');
+    const data = await res.json();
+    settingsData = data;
+    // Keep ordering UI in sync in case it's shown elsewhere (Settings tab)
+    updateOrderingUI(data.onlineOrdering !== false);
+    // Hours tables
+    renderHoursTable('storeHoursBody',    data.storeHours);
+    renderHoursTable('snackbarHoursBody', data.deliHours);
+    // Site info (now just phone)
+    const phone = document.getElementById('siPhone');
+    if (phone && settingsData.phone != null) phone.value = settingsData.phone;
+    // Contact email
+    const email = document.getElementById('siContactEmail');
+    if (email) email.value = settingsData.contactEmail ?? '';
+    // Links
+    renderAdminLinks(settingsData?.quickLinks);
+  } catch (e) { showToast('Could not load store info.', true); }
+}
+
+// ─── SETTINGS TAB (tax + ordering + print server + turnstile) ────────────────
 async function loadSettings() {
   try {
     const res  = await apiFetch('/api/settings');
@@ -753,21 +794,17 @@ async function loadSettings() {
     settingsData = data;
     updateOrderingUI(data.onlineOrdering !== false);
   } catch(e) { showToast('Could not load settings.', true); return; }
-  loadSiteInfo();
-  loadContactSettings();
-  renderAdminLinks(settingsData?.quickLinks);
-  loadPrintServerUI();
-}
 
-async function loadHours() {
-  try {
-    const res  = await apiFetch('/api/settings');
-    const data = await res.json();
-    settingsData = data;
-    updateOrderingUI(data.onlineOrdering !== false);
-    renderHoursTable('storeHoursBody',   data.storeHours);
-    renderHoursTable('snackbarHoursBody', data.deliHours);
-  } catch(e) { showToast('Could not load hours.', true); }
+  // Tax
+  const tax = document.getElementById('siDeliTax');
+  if (tax && settingsData.deliTax != null) tax.value = settingsData.deliTax;
+
+  // Turnstile
+  const ts = document.getElementById('siTurnstileKey');
+  if (ts) ts.value = settingsData.turnstileSiteKey ?? '';
+
+  // Print server status + toggle
+  loadPrintServerUI();
 }
 
 async function saveOnlineOrdering(enabled) {
@@ -776,11 +813,7 @@ async function saveOnlineOrdering(enabled) {
     const res = await apiFetch('/api/settings', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        storeHours:     settingsData.storeHours,
-        deliHours:      settingsData.deliHours,
-        onlineOrdering: enabled,
-      }),
+      body: JSON.stringify({ onlineOrdering: enabled }),
     });
     if (!res.ok) throw new Error('Save failed');
     settingsData.onlineOrdering = enabled;
@@ -788,7 +821,7 @@ async function saveOnlineOrdering(enabled) {
     showToast(enabled ? 'Online ordering enabled.' : 'Online ordering disabled.');
   } catch(e) {
     showToast(e.message, true);
-    updateOrderingUI(!enabled); // revert on failure
+    updateOrderingUI(!enabled);
   }
 }
 
@@ -849,6 +882,7 @@ async function saveHours() {
 // ─── SITE INFO ────────────────────────────────────────────────────────────────
 
 async function loadSiteInfo() {
+  // Lightweight — only phone is on the Store Info site-info card now.
   if (!settingsData) {
     try {
       const res = await apiFetch('/api/settings');
@@ -856,76 +890,38 @@ async function loadSiteInfo() {
     } catch(_) {}
   }
   if (!settingsData) return;
-
   const phone = document.getElementById('siPhone');
-  const tax   = document.getElementById('siDeliTax');
-  const desc  = document.getElementById('siHeroDesc');
-
-  if (phone && settingsData.phone        != null) phone.value = settingsData.phone;
-  if (tax   && settingsData.deliTax      != null) tax.value   = settingsData.deliTax;
-  if (desc  && settingsData.heroDescription != null) desc.value = settingsData.heroDescription;
-  const btnText = document.getElementById('siHeroBtnText');
-  const btnLink = document.getElementById('siHeroBtnLink');
-  if (btnText && settingsData.heroButtonText != null) btnText.value = settingsData.heroButtonText;
-  if (btnLink && settingsData.heroButtonLink != null) btnLink.value = settingsData.heroButtonLink;
-  // Hero bg photo
-  const heroBgNote = document.getElementById('heroBgCurrentImageNote');
-  if (settingsData.heroBgPhoto) {
-    document.getElementById('heroBgImagePreview').src = `/images/${settingsData.heroBgPhoto}`;
-    document.getElementById('heroBgPreviewWrap').classList.add('has-image');
-    document.getElementById('heroBgUploadPlaceholder').style.display = 'none';
-    if (heroBgNote) heroBgNote.textContent = 'Current hero photo shown above. Upload a new one to replace it, or click × to remove.';
-  } else {
-    resetHeroBgUI();
-    if (heroBgNote) heroBgNote.textContent = '';
-  }
-  newHeroBgFile = null;
-  clearHeroBg_flag = false;
+  if (phone && settingsData.phone != null) phone.value = settingsData.phone;
 }
 
 async function saveSiteInfo() {
+  // Saves phone (Store Info tab) AND tax (Settings tab). Since both onblur
+  // callbacks call this, we always pull the current value of whichever field
+  // exists in the DOM. The settings API merges partial updates, so sending
+  // only the present fields is safe.
   const btn = document.getElementById('saveSiteInfoBtn');
   const ind = document.getElementById('savingSiteInfoIndicator');
   if (btn) btn.disabled = true;
   if (ind) ind.style.display = 'flex';
 
-  const phone   = document.getElementById('siPhone')?.value.trim()   ?? '';
-  const tax     = parseFloat(document.getElementById('siDeliTax')?.value) || 0;
-  const desc    = document.getElementById('siHeroDesc')?.value.trim() ?? '';
-  const btnText = document.getElementById('siHeroBtnText')?.value.trim() ?? '';
-  const btnLink = document.getElementById('siHeroBtnLink')?.value.trim() ?? '';
-
-  // Handle hero bg photo upload/removal separately before saving settings
-  let heroBgPhoto = settingsData?.heroBgPhoto ?? null;
-  if (clearHeroBg_flag) heroBgPhoto = null;
-  if (newHeroBgFile) {
-    try {
-      const fd = new FormData();
-      fd.append('file', newHeroBgFile);
-      fd.append('itemName', 'hero-bg');
-      const upRes  = await apiFetch('/api/upload', { method: 'POST', body: fd });
-      const upData = await upRes.json();
-      if (!upRes.ok) throw new Error(upData.error || 'Photo upload failed.');
-      heroBgPhoto = upData.filename;
-    } catch(e) { showToast(e.message, true); return; }
-  }
+  const phoneEl = document.getElementById('siPhone');
+  const taxEl   = document.getElementById('siDeliTax');
+  const body = {};
+  if (phoneEl) body.phone   = phoneEl.value.trim();
+  if (taxEl)   body.deliTax = parseFloat(taxEl.value) || 0;
 
   try {
     const res = await apiFetch('/api/settings', {
       method:  'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ phone, deliTax: tax, heroDescription: desc, heroButtonText: btnText, heroButtonLink: btnLink, heroBgPhoto }),
+      body:    JSON.stringify(body),
     });
     if (!res.ok) throw new Error('Save failed');
     if (settingsData) {
-      settingsData.phone           = phone;
-      settingsData.deliTax         = tax;
-      settingsData.heroDescription = desc;
-      settingsData.heroButtonText  = btnText;
-      settingsData.heroButtonLink  = btnLink;
-      settingsData.heroBgPhoto = heroBgPhoto;
+      if (body.phone   !== undefined) settingsData.phone   = body.phone;
+      if (body.deliTax !== undefined) settingsData.deliTax = body.deliTax;
     }
-    showToast('Site info saved.');
+    showToast('Saved.');
   } catch(e) {
     showToast(e.message, true);
   } finally {
@@ -934,37 +930,24 @@ async function saveSiteInfo() {
   }
 }
 
-// ─── CONTACT SETTINGS ────────────────────────────────────────────────────────
-
-function loadContactSettings() {
-  if (!settingsData) return;
-  const emailEl = document.getElementById('siContactEmail');
-  const keyEl   = document.getElementById('siTurnstileKey');
-  if (emailEl) emailEl.value = settingsData.contactEmail     ?? '';
-  if (keyEl)   keyEl.value   = settingsData.turnstileSiteKey ?? '';
-}
-
+// ─── CONTACT EMAIL (Store Info tab) ─────────────────────────────────────────
 async function saveContactSettings() {
   const btn = document.getElementById('saveContactSettingsBtn');
   const ind = document.getElementById('savingContactSettingsIndicator');
   if (btn) btn.disabled = true;
   if (ind) ind.style.display = 'flex';
 
-  const contactEmail     = document.getElementById('siContactEmail')?.value.trim() ?? '';
-  const turnstileSiteKey = document.getElementById('siTurnstileKey')?.value.trim()  ?? '';
+  const contactEmail = document.getElementById('siContactEmail')?.value.trim() ?? '';
 
   try {
     const res = await apiFetch('/api/settings', {
       method:  'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ contactEmail, turnstileSiteKey }),
+      body:    JSON.stringify({ contactEmail }),
     });
     if (!res.ok) throw new Error('Save failed');
-    if (settingsData) {
-      settingsData.contactEmail     = contactEmail;
-      settingsData.turnstileSiteKey = turnstileSiteKey;
-    }
-    showToast('Contact settings saved.');
+    if (settingsData) settingsData.contactEmail = contactEmail;
+    showToast('Contact email saved.');
   } catch(e) {
     showToast(e.message, true);
   } finally {
@@ -973,37 +956,30 @@ async function saveContactSettings() {
   }
 }
 
-function handleHeroBgSelect(input) {
-  const f = input.files?.[0]; if (f) applyHeroBgFile(f);
-}
-function applyHeroBgFile(file) {
-  if (!file.type.startsWith('image/')) { showToast('Please select an image file.', true); return; }
-  if (file.size > 5 * 1024 * 1024)    { showToast('Image must be under 5 MB.', true);   return; }
-  newHeroBgFile = file; clearHeroBg_flag = false;
-  const reader = new FileReader();
-  reader.onload = e => {
-    document.getElementById('heroBgImagePreview').src = e.target.result;
-    document.getElementById('heroBgPreviewWrap').classList.add('has-image');
-    document.getElementById('heroBgUploadPlaceholder').style.display = 'none';
-    document.getElementById('heroBgCurrentImageNote').textContent = `Ready to upload: ${file.name}`;
-  };
-  reader.readAsDataURL(file);
-}
-function resetHeroBgUI() {
-  const fileEl = document.getElementById('heroBgFile');
-  if (fileEl) fileEl.value = '';
-  const prev = document.getElementById('heroBgImagePreview');
-  if (prev) prev.src = '';
-  const wrap = document.getElementById('heroBgPreviewWrap');
-  if (wrap) wrap.classList.remove('has-image');
-  const ph = document.getElementById('heroBgUploadPlaceholder');
-  if (ph) ph.style.display = '';
-}
-function clearHeroBgPhoto(e) {
-  e.stopPropagation(); e.preventDefault();
-  newHeroBgFile = null; clearHeroBg_flag = true;
-  resetHeroBgUI();
-  document.getElementById('heroBgCurrentImageNote').textContent = '';
+// ─── TURNSTILE KEY (Settings tab) ───────────────────────────────────────────
+async function saveTurnstileKey() {
+  const btn = document.getElementById('saveTurnstileBtn');
+  const ind = document.getElementById('savingTurnstileIndicator');
+  if (btn) btn.disabled = true;
+  if (ind) ind.style.display = 'flex';
+
+  const turnstileSiteKey = document.getElementById('siTurnstileKey')?.value.trim() ?? '';
+
+  try {
+    const res = await apiFetch('/api/settings', {
+      method:  'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ turnstileSiteKey }),
+    });
+    if (!res.ok) throw new Error('Save failed');
+    if (settingsData) settingsData.turnstileSiteKey = turnstileSiteKey;
+    showToast('Turnstile key saved.');
+  } catch(e) {
+    showToast(e.message, true);
+  } finally {
+    if (btn) btn.disabled = false;
+    if (ind) ind.style.display = 'none';
+  }
 }
 
 // ─── EVENTS ───────────────────────────────────────────────────────────────────
@@ -1011,8 +987,6 @@ let events = [];
 let editingEvent = null;
 let newEventPhotoFile = null;
 let clearEventPhoto_flag = false;
-let newHeroBgFile = null;
-let clearHeroBg_flag = false;
 
 async function loadEvents() {
   const container = document.getElementById('eventListContainer');
@@ -1722,7 +1696,28 @@ function renderSectionEditor() {
   }
 
   _formFieldIdCounter = 0;
-  container.innerHTML = keys.map(key => renderFormField(key, schema[key], editingSection.data[key])).join('');
+
+  // Build ordered list, respecting pairWith (wraps two fields in a 50/50 row)
+  const skip = new Set();
+  const html = [];
+  for (const key of keys) {
+    if (skip.has(key)) continue;
+    const def = schema[key];
+    if (def.pairWith && schema[def.pairWith]) {
+      const k2  = def.pairWith;
+      const def2 = schema[k2];
+      skip.add(k2);
+      // Render each as normal, then wrap the two HTML chunks in a pair row.
+      // Each renderFormField returns a `.form-group-full` wrapper; we swap it
+      // for a flex child so the 50/50 row works.
+      const a = renderFormField(key, def,  editingSection.data[key]);
+      const b = renderFormField(k2,  def2, editingSection.data[k2]);
+      html.push('<div class="form-pair-row">' + a + b + '</div>');
+    } else {
+      html.push(renderFormField(key, def, editingSection.data[key]));
+    }
+  }
+  container.innerHTML = html.join('');
 
   // Post-render hooks: wire up anything that needs DOM access after innerHTML replacement.
   keys.forEach(key => {
@@ -1751,6 +1746,7 @@ function renderFormField(key, def, value) {
     case 'icon':     return fieldIcon(key, def, value);
     case 'list':     return fieldList(key, def, value);
     case 'richtext': return fieldRichText(key, def, value);
+    case 'layoutButtons': return fieldLayoutButtons(key, def, value);
     default:         return '<!-- unknown field type: ' + esc(def.type) + ' -->';
   }
 }
@@ -1817,6 +1813,91 @@ function fieldSelect(key, def, value) {
     </div>
   `;
 }
+
+// ─── Field type: layoutButtons ──────────────────────────────────────────────
+// Inline icon-button row for choosing between 2-3 layout variants. Currently
+// used by Explore stops for picking hero/text-right/text-left. Each option
+// renders as a small schematic SVG showing where the image and text sit.
+function layoutSchematic(value) {
+  // Returns an SVG that schematically shows the layout. All three layouts
+  // use the same 40x24 viewBox with a photo rectangle (gold) and a text
+  // rectangle (muted cream).
+  const photoStyle = 'fill:currentColor;opacity:0.9';
+  const textStyle  = 'fill:rgba(184,176,160,0.55)';
+  switch (value) {
+    case 'hero':
+      // Image on top (wide), text below (wide)
+      return '<svg viewBox="0 0 40 24" xmlns="http://www.w3.org/2000/svg" style="width:28px;height:18px">'
+        +   '<rect x="2" y="2"  width="36" height="12" rx="1" style="' + photoStyle + '"/>'
+        +   '<rect x="2" y="16" width="22" height="1.5" rx="0.5" style="' + textStyle + '"/>'
+        +   '<rect x="2" y="19" width="28" height="1.5" rx="0.5" style="' + textStyle + '"/>'
+        +   '<rect x="2" y="22" width="18" height="1.5" rx="0.5" style="' + textStyle + '"/>'
+        + '</svg>';
+    case 'text-right':
+      // Image left, text right
+      return '<svg viewBox="0 0 40 24" xmlns="http://www.w3.org/2000/svg" style="width:28px;height:18px">'
+        +   '<rect x="2"  y="2" width="16" height="20" rx="1" style="' + photoStyle + '"/>'
+        +   '<rect x="22" y="5"  width="14" height="1.5" rx="0.5" style="' + textStyle + '"/>'
+        +   '<rect x="22" y="10" width="16" height="1.5" rx="0.5" style="' + textStyle + '"/>'
+        +   '<rect x="22" y="15" width="12" height="1.5" rx="0.5" style="' + textStyle + '"/>'
+        +   '<rect x="22" y="20" width="10" height="1.5" rx="0.5" style="' + textStyle + '"/>'
+        + '</svg>';
+    case 'text-left':
+      // Image right, text left
+      return '<svg viewBox="0 0 40 24" xmlns="http://www.w3.org/2000/svg" style="width:28px;height:18px">'
+        +   '<rect x="22" y="2" width="16" height="20" rx="1" style="' + photoStyle + '"/>'
+        +   '<rect x="4"  y="5"  width="14" height="1.5" rx="0.5" style="' + textStyle + '"/>'
+        +   '<rect x="2"  y="10" width="16" height="1.5" rx="0.5" style="' + textStyle + '"/>'
+        +   '<rect x="6"  y="15" width="12" height="1.5" rx="0.5" style="' + textStyle + '"/>'
+        +   '<rect x="8"  y="20" width="10" height="1.5" rx="0.5" style="' + textStyle + '"/>'
+        + '</svg>';
+    default:
+      return '';
+  }
+}
+
+function fieldLayoutButtons(key, def, value) {
+  const opts = def.options || [];
+  const buttons = opts.map(o => {
+    const isSelected = o.value === value;
+    return `
+      <button type="button"
+        onclick="updateFieldValue('${esc(key)}', '${esc(o.value)}'); refreshLayoutButtons('${esc(key)}', '${esc(o.value)}')"
+        title="${esc(o.label)}"
+        data-layout-key="${esc(key)}" data-layout-value="${esc(o.value)}"
+        style="flex:1;display:inline-flex;align-items:center;justify-content:center;height:42px;border:1px solid ${isSelected ? 'var(--gold)' : 'var(--charcoal-border)'};border-radius:3px;background:${isSelected ? 'rgba(201,169,110,0.12)' : 'transparent'};color:${isSelected ? 'var(--gold)' : 'var(--cream-dim)'};cursor:pointer;padding:0;transition:border-color 0.15s,background 0.15s,color 0.15s">
+        ${layoutSchematic(o.value)}
+      </button>
+    `;
+  }).join('');
+  return `
+    <div class="form-group-full" style="margin-bottom:16px">
+      <label class="form-label">${esc(def.label || key)}</label>
+      <div style="display:flex;gap:6px">${buttons}</div>
+    </div>
+  `;
+}
+
+function refreshLayoutButtons(key, selectedValue) {
+  const btns = document.querySelectorAll(`[data-layout-key="${key}"]`);
+  btns.forEach(b => {
+    const isThis = b.getAttribute('data-layout-value') === selectedValue;
+    b.style.borderColor = isThis ? 'var(--gold)' : 'var(--charcoal-border)';
+    b.style.background  = isThis ? 'rgba(201,169,110,0.12)' : 'transparent';
+    b.style.color       = isThis ? 'var(--gold)' : 'var(--cream-dim)';
+  });
+}
+
+function refreshListItemLayoutButtons(group, selectedValue) {
+  const btns = document.querySelectorAll(`[data-li-layout-group="${group}"]`);
+  btns.forEach(b => {
+    const isThis = b.getAttribute('data-li-layout-value') === selectedValue;
+    b.style.borderColor = isThis ? 'var(--gold)' : 'var(--charcoal-border)';
+    b.style.background  = isThis ? 'rgba(201,169,110,0.12)' : 'transparent';
+    b.style.color       = isThis ? 'var(--gold)' : 'var(--cream-dim)';
+  });
+}
+
 
 // ─── Field type: image ───────────────────────────────────────────────────────
 // Reuses the existing upload endpoint (/api/upload) and image preview pattern.
@@ -1923,7 +2004,13 @@ function clearSectionImage(event, key) {
 // ─── Field type: icon ────────────────────────────────────────────────────────
 // Renders a grid of SVG icons from the iconSet list. Clicking selects one.
 function fieldIcon(key, def, value) {
+  // Popover-style icon picker. Shows a button with the current icon + name.
+  // Clicking toggles a floating grid panel below the button. The panel is
+  // rendered inside the same wrapper so it's easy to dismiss on outside click.
   const iconSet = def.iconSet || [];
+  const currentSvg  = value && window.SECTIONS ? window.SECTIONS.svgIcon(value) : '';
+  const currentName = value || '';
+
   const tiles = iconSet.map(name => {
     const svg = window.SECTIONS ? window.SECTIONS.svgIcon(name) : '';
     const isSelected = name === value;
@@ -1931,34 +2018,68 @@ function fieldIcon(key, def, value) {
       <button type="button"
         onclick="selectIcon('${esc(key)}', '${esc(name)}')"
         title="${esc(name)}"
-        class="icon-tile${isSelected ? ' is-selected' : ''}"
         data-icon-key="${esc(key)}" data-icon-name="${esc(name)}"
-        style="width:46px;height:46px;display:inline-flex;align-items:center;justify-content:center;border:1px solid ${isSelected ? 'var(--gold)' : 'var(--charcoal-border)'};border-radius:4px;background:${isSelected ? 'rgba(201,169,110,0.12)' : 'transparent'};color:${isSelected ? 'var(--gold)' : 'var(--cream-dim)'};cursor:pointer;padding:0;transition:border-color 0.15s,background 0.15s,color 0.15s">
+        style="width:42px;height:42px;display:inline-flex;align-items:center;justify-content:center;border:1px solid ${isSelected ? 'var(--gold)' : 'var(--charcoal-border)'};border-radius:4px;background:${isSelected ? 'rgba(201,169,110,0.12)' : 'transparent'};color:${isSelected ? 'var(--gold)' : 'var(--cream-dim)'};cursor:pointer;padding:0;transition:border-color 0.15s,background 0.15s,color 0.15s">
         <span style="width:22px;height:22px;display:inline-flex">${svg}</span>
       </button>
     `;
   }).join('');
+
   return `
     <div class="form-group-full" style="margin-bottom:16px">
       <label class="form-label">${esc(def.label || key)}</label>
-      <div style="display:flex;flex-wrap:wrap;gap:6px;padding:10px;border:1px solid var(--charcoal-border);border-radius:4px">
-        ${tiles}
+      <div class="icon-picker" data-icon-picker-key="${esc(key)}" style="position:relative">
+        <button type="button" class="icon-picker-trigger"
+          onclick="toggleIconPicker('${esc(key)}', event)"
+          style="display:inline-flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid var(--charcoal-border);border-radius:4px;background:var(--charcoal-card);color:var(--cream);cursor:pointer;min-width:160px;transition:border-color 0.15s">
+          <span style="width:22px;height:22px;display:inline-flex;color:var(--gold);flex-shrink:0" data-icon-picker-preview="${esc(key)}">${currentSvg || '<span style=\"font-size:18px;color:var(--cream-dim)\">\u25A1</span>'}</span>
+          <span style="font-size:13px;color:var(--cream);letter-spacing:0.5px;flex:1;text-align:left" data-icon-picker-name="${esc(key)}">${esc(currentName) || '<span style=\"color:var(--cream-dim)\">Choose an icon</span>'}</span>
+          <span style="color:var(--cream-dim);font-size:10px">&#9662;</span>
+        </button>
+        <div class="icon-picker-panel" id="iconPickerPanel_${esc(key)}"
+          style="display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:30;background:var(--charcoal-card);border:1px solid var(--charcoal-border);border-radius:4px;padding:10px;box-shadow:0 8px 24px rgba(0,0,0,0.5);max-width:340px">
+          <div style="display:flex;flex-wrap:wrap;gap:6px">${tiles}</div>
+        </div>
       </div>
     </div>
   `;
 }
 
+function toggleIconPicker(key, event) {
+  if (event) event.stopPropagation();
+  const panel = document.getElementById('iconPickerPanel_' + key);
+  if (!panel) return;
+  const opening = panel.style.display === 'none';
+  // Close all other icon pickers first
+  document.querySelectorAll('.icon-picker-panel').forEach(p => p.style.display = 'none');
+  if (opening) panel.style.display = 'block';
+}
+
+// Global outside-click handler: close any open icon picker
+document.addEventListener('click', function (e) {
+  if (!e.target.closest('.icon-picker')) {
+    document.querySelectorAll('.icon-picker-panel').forEach(p => p.style.display = 'none');
+  }
+});
+
 function selectIcon(key, iconName) {
   updateFieldValue(key, iconName);
-  // Update visual: clear .is-selected on siblings, add on this one
+  // Update tile visuals (for when the panel is still open briefly)
   const tiles = document.querySelectorAll(`[data-icon-key="${key}"]`);
   tiles.forEach(t => {
     const isThis = t.getAttribute('data-icon-name') === iconName;
-    t.classList.toggle('is-selected', isThis);
     t.style.borderColor = isThis ? 'var(--gold)' : 'var(--charcoal-border)';
     t.style.background  = isThis ? 'rgba(201,169,110,0.12)' : 'transparent';
     t.style.color       = isThis ? 'var(--gold)' : 'var(--cream-dim)';
   });
+  // Update the trigger button's preview + name
+  const preview = document.querySelector(`[data-icon-picker-preview="${key}"]`);
+  const name    = document.querySelector(`[data-icon-picker-name="${key}"]`);
+  if (preview && window.SECTIONS) preview.innerHTML = window.SECTIONS.svgIcon(iconName);
+  if (name) name.textContent = iconName;
+  // Close the panel
+  const panel = document.getElementById('iconPickerPanel_' + key);
+  if (panel) panel.style.display = 'none';
 }
 
 // ─── Field type: list (repeatable sub-fields) ───────────────────────────────
@@ -1986,32 +2107,70 @@ function renderListItems(key, def) {
   const items = Array.isArray(editingSection.data[key]) ? editingSection.data[key] : [];
   const itemSchema = def.itemSchema || {};
   const itemKeys = Object.keys(itemSchema);
+  const layout = def.listLayout === 'grid' ? 'grid' : 'stack';
 
   if (items.length === 0) {
     container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--cream-dim);font-style:italic;border:1px dashed var(--charcoal-border);border-radius:4px">No items yet. Click + Add Item below.</div>';
+    container.style.display = 'block';
     return;
   }
 
-  container.innerHTML = items.map((item, idx) => {
-    const subFields = itemKeys.map(subKey => {
-      const subDef = itemSchema[subKey];
-      const subVal = item[subKey];
-      return renderListItemField(key, idx, subKey, subDef, subVal);
-    }).join('');
-    const canUp = idx > 0;
-    const canDown = idx < items.length - 1;
-    return `
-      <div class="category-block" data-list-item-idx="${idx}" style="padding:12px">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--charcoal-border)">
-          <span style="font-family:'Oswald',sans-serif;font-size:11px;color:var(--gold);letter-spacing:2px;text-transform:uppercase;flex:1">#${idx + 1}</span>
-          <button type="button" title="Move up"   onclick="moveListItem('${esc(key)}', ${idx}, -1)" ${canUp   ? '' : 'disabled'} style="background:transparent;border:1px solid var(--charcoal-border);color:${canUp   ? 'var(--cream)' : 'rgba(255,255,255,0.2)'};width:30px;height:30px;border-radius:3px;cursor:${canUp   ? 'pointer' : 'not-allowed'};font-size:14px">&uarr;</button>
-          <button type="button" title="Move down" onclick="moveListItem('${esc(key)}', ${idx},  1)" ${canDown ? '' : 'disabled'} style="background:transparent;border:1px solid var(--charcoal-border);color:${canDown ? 'var(--cream)' : 'rgba(255,255,255,0.2)'};width:30px;height:30px;border-radius:3px;cursor:${canDown ? 'pointer' : 'not-allowed'};font-size:14px">&darr;</button>
-          <button type="button" title="Remove"    onclick="removeListItem('${esc(key)}', ${idx})" style="background:transparent;border:1px solid rgba(170,60,50,0.5);color:rgba(230,120,110,0.9);width:30px;height:30px;border-radius:3px;cursor:pointer;font-size:16px">&times;</button>
+  if (layout === 'grid') {
+    // Compact grid layout matching the front-end visual. Each tile has a
+    // drag handle (top-right), delete (top-left), large icon-popover, and a
+    // label input below. Reordering is drag-and-drop, not ↑↓ buttons.
+    container.style.display = 'grid';
+    container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(140px, 1fr))';
+    container.style.gap = '10px';
+    container.innerHTML = items.map((item, idx) => {
+      const subFields = itemKeys.map(subKey => {
+        const subDef = itemSchema[subKey];
+        const subVal = item[subKey];
+        return renderListItemField(key, idx, subKey, subDef, subVal);
+      }).join('');
+      return `
+        <div class="list-tile" data-list-item-idx="${idx}" data-list-key="${esc(key)}"
+          draggable="true"
+          ondragstart="onListItemDragStart(event, '${esc(key)}', ${idx})"
+          ondragover="onListItemDragOver(event, '${esc(key)}', ${idx})"
+          ondrop="onListItemDrop(event, '${esc(key)}', ${idx})"
+          ondragend="onListItemDragEnd(event)"
+          style="position:relative;padding:10px 8px 8px;border:1px solid var(--charcoal-border);border-radius:4px;background:var(--charcoal-card);cursor:grab">
+          <button type="button" title="Remove" onclick="event.stopPropagation(); removeListItem('${esc(key)}', ${idx})"
+            style="position:absolute;top:4px;left:4px;background:transparent;border:none;color:rgba(230,120,110,0.8);width:22px;height:22px;cursor:pointer;font-size:16px;line-height:1;padding:0;z-index:2">&times;</button>
+          <span title="Drag to reorder"
+            style="position:absolute;top:4px;right:6px;color:rgba(184,176,160,0.5);font-size:14px;pointer-events:none">&#8942;&#8942;</span>
+          ${subFields}
         </div>
-        ${subFields}
-      </div>
-    `;
-  }).join('');
+      `;
+    }).join('');
+  } else {
+    // Original stacked-card layout with ↑↓ reorder buttons. Used by Explore.
+    container.style.display = 'flex';
+    container.style.flexDirection = 'column';
+    container.style.gap = '12px';
+    container.style.gridTemplateColumns = '';
+    container.innerHTML = items.map((item, idx) => {
+      const subFields = itemKeys.map(subKey => {
+        const subDef = itemSchema[subKey];
+        const subVal = item[subKey];
+        return renderListItemField(key, idx, subKey, subDef, subVal);
+      }).join('');
+      const canUp = idx > 0;
+      const canDown = idx < items.length - 1;
+      return `
+        <div class="category-block" data-list-item-idx="${idx}" style="padding:12px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--charcoal-border)">
+            <span style="font-family:'Oswald',sans-serif;font-size:11px;color:var(--gold);letter-spacing:2px;text-transform:uppercase;flex:1">#${idx + 1}</span>
+            <button type="button" title="Move up"   onclick="moveListItem('${esc(key)}', ${idx}, -1)" ${canUp   ? '' : 'disabled'} style="background:transparent;border:1px solid var(--charcoal-border);color:${canUp   ? 'var(--cream)' : 'rgba(255,255,255,0.2)'};width:30px;height:30px;border-radius:3px;cursor:${canUp   ? 'pointer' : 'not-allowed'};font-size:14px">&uarr;</button>
+            <button type="button" title="Move down" onclick="moveListItem('${esc(key)}', ${idx},  1)" ${canDown ? '' : 'disabled'} style="background:transparent;border:1px solid var(--charcoal-border);color:${canDown ? 'var(--cream)' : 'rgba(255,255,255,0.2)'};width:30px;height:30px;border-radius:3px;cursor:${canDown ? 'pointer' : 'not-allowed'};font-size:14px">&darr;</button>
+            <button type="button" title="Remove"    onclick="removeListItem('${esc(key)}', ${idx})" style="background:transparent;border:1px solid rgba(170,60,50,0.5);color:rgba(230,120,110,0.9);width:30px;height:30px;border-radius:3px;cursor:pointer;font-size:16px">&times;</button>
+          </div>
+          ${subFields}
+        </div>
+      `;
+    }).join('');
+  }
 
   // Post-render: wire image / richtext sub-fields (icon pickers work via data attrs)
   items.forEach((item, idx) => {
@@ -2020,6 +2179,42 @@ function renderListItems(key, def) {
       if (subDef.type === 'image') initListItemImageField(key, idx, subKey);
     });
   });
+}
+
+// ─── Drag-drop reorder for grid-layout list items ───────────────────────────
+let _draggingListItem = null;
+
+function onListItemDragStart(e, listKey, idx) {
+  _draggingListItem = { listKey, idx };
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', 'listitem');
+  e.currentTarget.style.opacity = '0.4';
+}
+
+function onListItemDragOver(e, listKey, idx) {
+  if (!_draggingListItem || _draggingListItem.listKey !== listKey) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+}
+
+function onListItemDrop(e, listKey, idx) {
+  if (!_draggingListItem || _draggingListItem.listKey !== listKey) return;
+  e.preventDefault();
+  const fromIdx = _draggingListItem.idx;
+  const toIdx = idx;
+  if (fromIdx === toIdx) return;
+  const arr = editingSection && editingSection.data[listKey];
+  if (!Array.isArray(arr)) return;
+  const [moved] = arr.splice(fromIdx, 1);
+  arr.splice(toIdx, 0, moved);
+  const T = window.SECTIONS && window.SECTIONS.TYPES && window.SECTIONS.TYPES[editingSection.type];
+  const def = T && T.schema && T.schema[listKey];
+  if (def) renderListItems(listKey, def);
+}
+
+function onListItemDragEnd(e) {
+  _draggingListItem = null;
+  document.querySelectorAll('.list-tile').forEach(t => t.style.opacity = '');
 }
 
 // A list-item field: same as top-level but with scoped IDs and callbacks.
@@ -2058,8 +2253,32 @@ function renderListItemField(listKey, itemIdx, fieldKey, def, value) {
         </div>
       `;
     }
+    case 'layoutButtons': {
+      const group = `${listKey}_${itemIdx}_${fieldKey}`;
+      const buttons = (def.options || []).map(o => {
+        const isSelected = o.value === value;
+        return `
+          <button type="button"
+            onclick="updateListItemValue('${esc(listKey)}', ${itemIdx}, '${esc(fieldKey)}', '${esc(o.value)}'); refreshListItemLayoutButtons('${esc(group)}', '${esc(o.value)}')"
+            title="${esc(o.label)}"
+            data-li-layout-group="${esc(group)}" data-li-layout-value="${esc(o.value)}"
+            style="flex:1;display:inline-flex;align-items:center;justify-content:center;height:38px;border:1px solid ${isSelected ? 'var(--gold)' : 'var(--charcoal-border)'};border-radius:3px;background:${isSelected ? 'rgba(201,169,110,0.12)' : 'transparent'};color:${isSelected ? 'var(--gold)' : 'var(--cream-dim)'};cursor:pointer;padding:0">
+            ${layoutSchematic(o.value)}
+          </button>
+        `;
+      }).join('');
+      return `
+        <div style="margin-bottom:10px">
+          <label class="form-label" style="font-size:10px">${esc(def.label || fieldKey)}</label>
+          <div style="display:flex;gap:4px">${buttons}</div>
+        </div>
+      `;
+    }
     case 'icon': {
       const iconSet = def.iconSet || [];
+      const group   = `${listKey}_${itemIdx}_${fieldKey}`;
+      const currentSvg  = value && window.SECTIONS ? window.SECTIONS.svgIcon(value) : '';
+      const currentName = value || '';
       const tiles = iconSet.map(name => {
         const svg = window.SECTIONS ? window.SECTIONS.svgIcon(name) : '';
         const isSelected = name === value;
@@ -2067,7 +2286,7 @@ function renderListItemField(listKey, itemIdx, fieldKey, def, value) {
           <button type="button"
             onclick="selectListItemIcon('${esc(listKey)}', ${itemIdx}, '${esc(fieldKey)}', '${esc(name)}')"
             title="${esc(name)}"
-            data-li-icon-key="${esc(listKey)}_${itemIdx}_${esc(fieldKey)}" data-li-icon-name="${esc(name)}"
+            data-li-icon-key="${esc(group)}" data-li-icon-name="${esc(name)}"
             style="width:38px;height:38px;display:inline-flex;align-items:center;justify-content:center;border:1px solid ${isSelected ? 'var(--gold)' : 'var(--charcoal-border)'};border-radius:3px;background:${isSelected ? 'rgba(201,169,110,0.12)' : 'transparent'};color:${isSelected ? 'var(--gold)' : 'var(--cream-dim)'};cursor:pointer;padding:0">
             <span style="width:18px;height:18px;display:inline-flex">${svg}</span>
           </button>
@@ -2076,8 +2295,18 @@ function renderListItemField(listKey, itemIdx, fieldKey, def, value) {
       return `
         <div style="margin-bottom:10px">
           <label class="form-label" style="font-size:10px">${esc(def.label || fieldKey)}</label>
-          <div style="display:flex;flex-wrap:wrap;gap:4px;padding:8px;border:1px solid var(--charcoal-border);border-radius:3px">
-            ${tiles}
+          <div class="icon-picker" data-icon-picker-key="${esc(group)}" style="position:relative">
+            <button type="button" class="icon-picker-trigger"
+              onclick="toggleIconPicker('li_${esc(group)}', event)"
+              style="display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--charcoal-border);border-radius:3px;background:var(--charcoal-card);color:var(--cream);cursor:pointer;min-width:140px">
+              <span style="width:18px;height:18px;display:inline-flex;color:var(--gold);flex-shrink:0" data-li-icon-picker-preview="${esc(group)}">${currentSvg || '<span style=\"font-size:14px;color:var(--cream-dim)\">\u25A1</span>'}</span>
+              <span style="font-size:12px;color:var(--cream);flex:1;text-align:left" data-li-icon-picker-name="${esc(group)}">${esc(currentName) || '<span style=\"color:var(--cream-dim)\">Icon</span>'}</span>
+              <span style="color:var(--cream-dim);font-size:9px">&#9662;</span>
+            </button>
+            <div class="icon-picker-panel" id="iconPickerPanel_li_${esc(group)}"
+              style="display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:30;background:var(--charcoal-card);border:1px solid var(--charcoal-border);border-radius:4px;padding:8px;box-shadow:0 8px 24px rgba(0,0,0,0.5);max-width:300px">
+              <div style="display:flex;flex-wrap:wrap;gap:4px">${tiles}</div>
+            </div>
           </div>
         </div>
       `;
@@ -2150,6 +2379,14 @@ function selectListItemIcon(listKey, itemIdx, fieldKey, iconName) {
     t.style.background  = isThis ? 'rgba(201,169,110,0.12)' : 'transparent';
     t.style.color       = isThis ? 'var(--gold)' : 'var(--cream-dim)';
   });
+  // Update the trigger button's preview + name
+  const preview = document.querySelector(`[data-li-icon-picker-preview="${group}"]`);
+  const name    = document.querySelector(`[data-li-icon-picker-name="${group}"]`);
+  if (preview && window.SECTIONS) preview.innerHTML = window.SECTIONS.svgIcon(iconName);
+  if (name) name.textContent = iconName;
+  // Close the panel
+  const panel = document.getElementById('iconPickerPanel_li_' + group);
+  if (panel) panel.style.display = 'none';
 }
 
 async function handleListItemImageSelect(input, listKey, itemIdx, fieldKey) {
