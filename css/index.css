@@ -1567,3 +1567,172 @@
 .snackbar-banner {
   background: linear-gradient(100deg, rgba(30,155,95,0.65) 0%, rgba(18,110,65,0.32) 45%, rgba(5,22,12,1) 78%) !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PHASE 3B ADDITIONS — added by the sections refactor (see /js/sections.js)
+
+   Everything below this line is new for Phase 3b. It is purely additive —
+   no existing rules were modified. Grouped by what it supports so it's
+   easy to find and review.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── New banner gradients (Phase 3b) ──
+   Same pattern as existing: tinted color at ~0% fading through a darker
+   mid-tone to near-black on the right. `!important` preserved to match
+   the existing banner-variant conventions. */
+.evergreen-banner {
+  background: linear-gradient(100deg, rgba(40,105,70,0.68) 0%, rgba(24,72,50,0.34) 45%, rgba(6,18,12,1) 78%) !important;
+}
+.sunset-banner {
+  background: linear-gradient(100deg, rgba(235,120,75,0.68) 0%, rgba(175,60,80,0.34) 45%, rgba(28,10,14,1) 78%) !important;
+}
+.ice-banner {
+  background: linear-gradient(100deg, rgba(120,180,210,0.60) 0%, rgba(80,130,170,0.32) 45%, rgba(10,18,28,1) 78%) !important;
+}
+.sage-banner {
+  background: linear-gradient(100deg, rgba(155,165,120,0.60) 0%, rgba(105,115,80,0.32) 45%, rgba(20,22,14,1) 78%) !important;
+}
+.night-banner {
+  background: linear-gradient(100deg, rgba(60,75,150,0.68) 0%, rgba(35,45,100,0.34) 45%, rgba(8,10,22,1) 78%) !important;
+}
+
+/* ── Hours: Google + Apple Maps button pair ──
+   Wraps the two .btn-maps children so they sit side-by-side (on narrow
+   viewports they wrap). Relies on existing .btn-maps styling. */
+.btn-maps-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-start;
+}
+.btn-maps-group .btn-maps { align-self: flex-start; }
+.btn-maps-apple {
+  /* Apple Maps gets a subtler treatment so Google reads as primary */
+  opacity: 0.9;
+}
+
+/* ── Explore per-stop CTA button ──
+   Sits at the end of .explore-body. Matches the visual language of other
+   outlined gold buttons on the site. */
+.explore-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 18px;
+  padding: 9px 18px;
+  border: 1px solid var(--gold-dark);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--gold);
+  font-family: 'Oswald', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  text-decoration: none;
+  align-self: flex-start;
+  transition: background 0.2s, border-color 0.2s;
+}
+.explore-cta-btn:hover {
+  background: rgba(201,169,110,0.1);
+  border-color: var(--gold);
+}
+
+/* ── Article CTA button ──
+   Centered, slightly bolder than the explore stop button. */
+.article-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 28px;
+  border: 1px solid var(--gold);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--gold);
+  font-family: 'Oswald', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: background 0.2s, color 0.2s;
+}
+.article-cta-btn:hover {
+  background: var(--gold);
+  color: var(--charcoal);
+}
+
+/* ── Text section ──
+   A simple paragraph block. Used for connecting prose between custom
+   sections. Visually inherits from the old .explore-lede styling so the
+   homepage reads the same after migration. Tighter vertical padding than
+   a normal .section so Text blocks flow naturally between bigger sections. */
+.section-text { padding: 28px 28px !important; }
+.section-text .section-inner { max-width: 680px; }
+.section-text-body {
+  text-align: center;
+  font-size: 16px;
+  line-height: 1.8;
+  color: var(--cream-dim);
+  font-weight: 300;
+  margin: 0;
+}
+.section-text-body + .section-text-body {
+  margin-top: 1em;
+}
+@media (max-width: 600px) {
+  .section-text { padding: 20px 24px !important; }
+  .section-text-body { font-size: 14px; line-height: 1.7; }
+}
+
+/* ── Heading section ──
+   Three sizes × three alignments + optional rule. All use the same
+   Oswald display treatment in gold on cream, differing only in size
+   and alignment. */
+.section-heading-section { padding: 32px 28px !important; }
+.section-heading-section .section-inner { max-width: 1060px; }
+
+.section-heading-block {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.section-heading-block--left   { align-items: flex-start; text-align: left; }
+.section-heading-block--center { align-items: center;     text-align: center; }
+.section-heading-block--right  { align-items: flex-end;   text-align: right; }
+
+.section-heading-block .section-heading-text {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 600;
+  color: var(--cream);
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  line-height: 1.1;
+  margin: 0;
+}
+.section-heading-block--small  .section-heading-text {
+  font-size: clamp(14px, 2vw, 18px);
+  letter-spacing: 5px;
+  color: var(--gold);
+}
+.section-heading-block--medium .section-heading-text {
+  font-size: clamp(26px, 4.5vw, 38px);
+}
+.section-heading-block--large  .section-heading-text {
+  font-size: clamp(38px, 6.5vw, 56px);
+  letter-spacing: 5px;
+}
+
+.section-heading-rule {
+  height: 1px;
+  width: 60px;
+  background: var(--gold);
+  opacity: 0.6;
+}
+.section-heading-block--left   .section-heading-rule { align-self: flex-start; }
+.section-heading-block--center .section-heading-rule { align-self: center; }
+.section-heading-block--right  .section-heading-rule { align-self: flex-end; }
+
+@media (max-width: 600px) {
+  .section-heading-section { padding: 24px 24px !important; }
+  .section-heading-block .section-heading-text { letter-spacing: 3px; }
+}

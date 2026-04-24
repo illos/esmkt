@@ -1487,19 +1487,28 @@ function renderSectionRow(section, idx) {
   const category = T ? T.category : '';
   const summary  = window.SECTIONS ? window.SECTIONS.sectionSummary(section) : '';
   const id       = esc(section.id || '');
+  const editable = T && T.schema && Object.keys(T.schema).length > 0;
 
   const catBadge = category === 'reserved'
     ? '<span style="display:inline-block;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--cream-dim);border:1px solid var(--charcoal-border);padding:1px 6px;border-radius:2px;margin-left:8px;opacity:0.6">reserved</span>'
     : '';
 
+  const clickAttr = editable
+    ? `onclick="openSectionEditor('${id}')" style="cursor:pointer"`
+    : '';
+  const caret = editable
+    ? '<span style="color:rgba(184,176,160,0.4);font-size:16px;flex-shrink:0">&rsaquo;</span>'
+    : '';
+
   return `
-    <div class="category-block" data-section-id="${id}"
+    <div class="category-block" data-section-id="${id}" ${clickAttr}
       ondragover="onSectionDragOver(event,'${id}')"
       ondrop="onSectionDrop(event,'${id}')"
       ondragend="onSectionDragEnd(event)">
       <div class="category-header" style="gap:12px">
         <span class="cat-drag-handle" draggable="true"
           ondragstart="onSectionDragStart(event,'${id}')"
+          onclick="event.stopPropagation()"
           title="Drag to reorder">&#8942;&#8942;</span>
         <span style="font-size:18px;width:24px;text-align:center;flex-shrink:0">${icon}</span>
         <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
@@ -1510,6 +1519,7 @@ function renderSectionRow(section, idx) {
           <div style="font-size:12px;color:var(--cream-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(summary)}</div>
         </div>
         <span style="font-size:11px;color:rgba(184,176,160,0.4);letter-spacing:1px;font-family:'Oswald',sans-serif;flex-shrink:0">#${idx + 1}</span>
+        ${caret}
       </div>
     </div>
   `;
@@ -1592,6 +1602,659 @@ async function savePageHome() {
     showToast(err.message, true);
   } finally {
     if (btn) btn.disabled = pageHomeOriginal === JSON.stringify(pageHomeSections);
+    if (ind) ind.style.display = 'none';
+  }
+}
+
+// ─── SECTION EDITOR (form builder) ───────────────────────────────────────────
+// Opens a detail view to edit one section's fields, reading the schema from
+// window.SECTIONS.TYPES[type].schema. Supports these field types:
+//   text, longtext, boolean, select, number, image, icon, list, richtext
+//
+// State flow:
+//   1. openSectionEditor(sectionId)   — clones the section into editingSection
+//   2. renderSectionEditor()          — renders form from schema into #sectionEditorForm
+//   3. user edits fields              — each onChange writes to editingSection.data
+//   4. saveEditingSection()           — writes editingSection back into pageHomeSections[],
+//                                        PUTs the full sections[] to the API, then navigates back
+//   5. backToPageEditor()             — returns to the sections list for currentPageSlug
+
+let editingSection = null;    // working copy of the section under edit
+let editingSectionIdx = -1;   // index in pageHomeSections[] (for splicing back)
+
+// Counter for unique field IDs (so nested list-item fields don't collide across renders)
+let _formFieldIdCounter = 0;
+function nextFieldId() { _formFieldIdCounter++; return 'ff_' + _formFieldIdCounter; }
+
+// ─── Navigation ──────────────────────────────────────────────────────────────
+function openSectionEditor(sectionId) {
+  const idx = pageHomeSections.findIndex(s => s.id === sectionId);
+  if (idx < 0) { showToast('Section not found.', true); return; }
+  editingSectionIdx = idx;
+  editingSection    = JSON.parse(JSON.stringify(pageHomeSections[idx])); // deep clone
+
+  const T = window.SECTIONS && window.SECTIONS.TYPES && window.SECTIONS.TYPES[editingSection.type];
+  const typeLabel = T ? T.label : editingSection.type;
+
+  const titleEl = document.getElementById('sectionEditorTitle');
+  if (titleEl) titleEl.textContent = 'Edit ' + typeLabel;
+
+  showPage('pageSectionEditor');
+  renderSectionEditor();
+}
+
+function backToPageEditor() {
+  editingSection = null;
+  editingSectionIdx = -1;
+  showPage('pagePageEditor');
+}
+
+// ─── Main form render ────────────────────────────────────────────────────────
+function renderSectionEditor() {
+  const container = document.getElementById('sectionEditorForm');
+  if (!container || !editingSection) return;
+
+  const T = window.SECTIONS && window.SECTIONS.TYPES && window.SECTIONS.TYPES[editingSection.type];
+  if (!T || !T.schema) {
+    container.innerHTML = '<p style="color:var(--cream-dim);font-style:italic;padding:20px 0">No editable fields for this section type.</p>';
+    return;
+  }
+
+  const schema = T.schema;
+  const keys = Object.keys(schema);
+  if (keys.length === 0) {
+    container.innerHTML = '<p style="color:var(--cream-dim);font-style:italic;padding:20px 0">No editable fields for this section type.</p>';
+    return;
+  }
+
+  _formFieldIdCounter = 0;
+  container.innerHTML = keys.map(key => renderFormField(key, schema[key], editingSection.data[key])).join('');
+
+  // Post-render hooks: wire up anything that needs DOM access after innerHTML replacement.
+  keys.forEach(key => {
+    const def = schema[key];
+    if (def.type === 'image') initImageField(key);
+    if (def.type === 'richtext') initRichTextField(key);
+    if (def.type === 'list') initListField(key, def);
+  });
+}
+
+// ─── Read/write helpers ──────────────────────────────────────────────────────
+function updateFieldValue(key, value) {
+  if (!editingSection) return;
+  editingSection.data[key] = value;
+}
+
+// ─── Field type: text ────────────────────────────────────────────────────────
+function renderFormField(key, def, value) {
+  switch (def.type) {
+    case 'text':     return fieldText(key, def, value);
+    case 'longtext': return fieldLongtext(key, def, value);
+    case 'boolean':  return fieldBoolean(key, def, value);
+    case 'select':   return fieldSelect(key, def, value);
+    case 'number':   return fieldNumber(key, def, value);
+    case 'image':    return fieldImage(key, def, value);
+    case 'icon':     return fieldIcon(key, def, value);
+    case 'list':     return fieldList(key, def, value);
+    case 'richtext': return fieldRichText(key, def, value);
+    default:         return '<!-- unknown field type: ' + esc(def.type) + ' -->';
+  }
+}
+
+function fieldText(key, def, value) {
+  const ph = def.placeholder ? ` placeholder="${esc(def.placeholder)}"` : '';
+  return `
+    <div class="form-group-full" style="margin-bottom:16px">
+      <label class="form-label" for="f_${esc(key)}">${esc(def.label || key)}</label>
+      <input class="form-input" type="text" id="f_${esc(key)}" value="${esc(value || '')}"${ph}
+        oninput="updateFieldValue('${esc(key)}', this.value)"/>
+    </div>
+  `;
+}
+
+function fieldLongtext(key, def, value) {
+  const ph = def.placeholder ? ` placeholder="${esc(def.placeholder)}"` : '';
+  return `
+    <div class="form-group-full" style="margin-bottom:16px">
+      <label class="form-label" for="f_${esc(key)}">${esc(def.label || key)}</label>
+      <textarea class="form-textarea" id="f_${esc(key)}" style="min-height:100px"${ph}
+        oninput="updateFieldValue('${esc(key)}', this.value)">${esc(value || '')}</textarea>
+    </div>
+  `;
+}
+
+function fieldNumber(key, def, value) {
+  const ph = def.placeholder ? ` placeholder="${esc(def.placeholder)}"` : '';
+  return `
+    <div class="form-group-full" style="margin-bottom:16px">
+      <label class="form-label" for="f_${esc(key)}">${esc(def.label || key)}</label>
+      <input class="form-input" type="number" id="f_${esc(key)}" value="${esc(value != null ? value : '')}"${ph}
+        oninput="updateFieldValue('${esc(key)}', this.value === '' ? null : Number(this.value))"/>
+    </div>
+  `;
+}
+
+function fieldBoolean(key, def, value) {
+  // Default true if defaultValue says so AND value is undefined
+  const isOn = value === undefined ? (def.defaultValue === true) : !!value;
+  return `
+    <div class="form-group-full" style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 14px;border:1px solid var(--charcoal-border);border-radius:4px">
+      <label class="form-label" for="f_${esc(key)}" style="margin:0;cursor:pointer">${esc(def.label || key)}</label>
+      <label class="toggle-switch" style="flex-shrink:0">
+        <input type="checkbox" id="f_${esc(key)}" ${isOn ? 'checked' : ''}
+          onchange="updateFieldValue('${esc(key)}', this.checked)"/>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+  `;
+}
+
+function fieldSelect(key, def, value) {
+  const opts = (def.options || []).map(o => {
+    const v = esc(o.value);
+    const l = esc(o.label || o.value);
+    return `<option value="${v}"${o.value === value ? ' selected' : ''}>${l}</option>`;
+  }).join('');
+  return `
+    <div class="form-group-full" style="margin-bottom:16px">
+      <label class="form-label" for="f_${esc(key)}">${esc(def.label || key)}</label>
+      <select class="form-input" id="f_${esc(key)}" style="cursor:pointer"
+        onchange="updateFieldValue('${esc(key)}', this.value)">${opts}</select>
+    </div>
+  `;
+}
+
+// ─── Field type: image ───────────────────────────────────────────────────────
+// Reuses the existing upload endpoint (/api/upload) and image preview pattern.
+// On change, uploads the file, stores the returned filename in the field value.
+function fieldImage(key, def, value) {
+  const areaId  = `imgArea_${esc(key)}`;
+  const fileId  = `imgFile_${esc(key)}`;
+  const placeholderId = `imgPlaceholder_${esc(key)}`;
+  const previewWrapId = `imgPreviewWrap_${esc(key)}`;
+  const previewImgId  = `imgPreview_${esc(key)}`;
+
+  const hasImage = !!value;
+  const imgSrc = hasImage ? (value.indexOf('/') >= 0 ? value : '/images/' + value) : '';
+
+  return `
+    <div class="form-group-full" style="margin-bottom:16px">
+      <label class="form-label">${esc(def.label || key)}</label>
+      <div class="image-upload-area" id="${areaId}">
+        <input type="file" id="${fileId}" accept="image/jpeg,image/png,image/webp,image/gif"
+          onchange="handleSectionImageSelect(this, '${esc(key)}')"/>
+        <div class="upload-placeholder" id="${placeholderId}" style="${hasImage ? 'display:none' : ''}">
+          <span class="upload-icon">&#128247;</span>
+          <span class="upload-label">Click or drag to upload</span>
+          <span class="upload-hint">JPEG, PNG, WebP or GIF &middot; Max 5 MB</span>
+        </div>
+        <div class="image-preview-wrap" id="${previewWrapId}" style="${hasImage ? '' : 'display:none'}">
+          <img class="image-preview" id="${previewImgId}" src="${esc(imgSrc)}" alt="Preview"/>
+          <button class="image-preview-remove" onclick="clearSectionImage(event, '${esc(key)}')" title="Remove photo">&#215;</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// Wires up the drag-and-drop behavior for the generated image area.
+function initImageField(key) {
+  const areaId = `imgArea_${key}`;
+  const area = document.getElementById(areaId);
+  if (!area) return;
+  area.addEventListener('dragover', e => { e.preventDefault(); area.classList.add('drag-over'); });
+  area.addEventListener('dragleave', () => area.classList.remove('drag-over'));
+  area.addEventListener('drop', e => {
+    e.preventDefault(); area.classList.remove('drag-over');
+    const f = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f) handleSectionImageSelectFile(f, key);
+  });
+}
+
+async function handleSectionImageSelect(input, key) {
+  const f = input.files && input.files[0];
+  if (!f) return;
+  await handleSectionImageSelectFile(f, key);
+  input.value = ''; // allow re-selecting the same file
+}
+
+async function handleSectionImageSelectFile(file, key) {
+  if (file.size > 5 * 1024 * 1024) { showToast('Image is over 5 MB.', true); return; }
+  const placeholderEl = document.getElementById(`imgPlaceholder_${key}`);
+  const previewWrapEl = document.getElementById(`imgPreviewWrap_${key}`);
+  const previewImgEl  = document.getElementById(`imgPreview_${key}`);
+
+  // Show local preview immediately
+  const reader = new FileReader();
+  reader.onload = e => {
+    if (previewImgEl) previewImgEl.src = e.target.result;
+    if (placeholderEl) placeholderEl.style.display = 'none';
+    if (previewWrapEl) previewWrapEl.style.display = '';
+  };
+  reader.readAsDataURL(file);
+
+  // Upload to /api/upload
+  const fd = new FormData();
+  fd.append('file', file);
+  try {
+    const res = await apiFetch('/api/upload', { method: 'POST', body: fd });
+    if (!res.ok) throw new Error('Upload failed (HTTP ' + res.status + ')');
+    const data = await res.json();
+    const filename = data.filename || data.key || data.path || '';
+    if (!filename) throw new Error('Upload response missing filename');
+    updateFieldValue(key, filename);
+    // Swap preview src to the served URL now that it's uploaded
+    if (previewImgEl) previewImgEl.src = '/images/' + filename;
+  } catch (err) {
+    showToast('Image upload failed: ' + err.message, true);
+    // Revert the preview
+    const currentVal = editingSection && editingSection.data[key];
+    if (!currentVal) {
+      if (placeholderEl) placeholderEl.style.display = '';
+      if (previewWrapEl) previewWrapEl.style.display = 'none';
+    }
+  }
+}
+
+function clearSectionImage(event, key) {
+  event.preventDefault();
+  event.stopPropagation();
+  updateFieldValue(key, null);
+  const placeholderEl = document.getElementById(`imgPlaceholder_${key}`);
+  const previewWrapEl = document.getElementById(`imgPreviewWrap_${key}`);
+  if (placeholderEl) placeholderEl.style.display = '';
+  if (previewWrapEl) previewWrapEl.style.display = 'none';
+}
+
+// ─── Field type: icon ────────────────────────────────────────────────────────
+// Renders a grid of SVG icons from the iconSet list. Clicking selects one.
+function fieldIcon(key, def, value) {
+  const iconSet = def.iconSet || [];
+  const tiles = iconSet.map(name => {
+    const svg = window.SECTIONS ? window.SECTIONS.svgIcon(name) : '';
+    const isSelected = name === value;
+    return `
+      <button type="button"
+        onclick="selectIcon('${esc(key)}', '${esc(name)}')"
+        title="${esc(name)}"
+        class="icon-tile${isSelected ? ' is-selected' : ''}"
+        data-icon-key="${esc(key)}" data-icon-name="${esc(name)}"
+        style="width:46px;height:46px;display:inline-flex;align-items:center;justify-content:center;border:1px solid ${isSelected ? 'var(--gold)' : 'var(--charcoal-border)'};border-radius:4px;background:${isSelected ? 'rgba(201,169,110,0.12)' : 'transparent'};color:${isSelected ? 'var(--gold)' : 'var(--cream-dim)'};cursor:pointer;padding:0;transition:border-color 0.15s,background 0.15s,color 0.15s">
+        <span style="width:22px;height:22px;display:inline-flex">${svg}</span>
+      </button>
+    `;
+  }).join('');
+  return `
+    <div class="form-group-full" style="margin-bottom:16px">
+      <label class="form-label">${esc(def.label || key)}</label>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;padding:10px;border:1px solid var(--charcoal-border);border-radius:4px">
+        ${tiles}
+      </div>
+    </div>
+  `;
+}
+
+function selectIcon(key, iconName) {
+  updateFieldValue(key, iconName);
+  // Update visual: clear .is-selected on siblings, add on this one
+  const tiles = document.querySelectorAll(`[data-icon-key="${key}"]`);
+  tiles.forEach(t => {
+    const isThis = t.getAttribute('data-icon-name') === iconName;
+    t.classList.toggle('is-selected', isThis);
+    t.style.borderColor = isThis ? 'var(--gold)' : 'var(--charcoal-border)';
+    t.style.background  = isThis ? 'rgba(201,169,110,0.12)' : 'transparent';
+    t.style.color       = isThis ? 'var(--gold)' : 'var(--cream-dim)';
+  });
+}
+
+// ─── Field type: list (repeatable sub-fields) ───────────────────────────────
+function fieldList(key, def, value) {
+  // value should be an array. Render as stacked item cards with sub-fields.
+  return `
+    <div class="form-group-full" style="margin-bottom:16px">
+      <label class="form-label">${esc(def.label || key)}</label>
+      <div id="listContainer_${esc(key)}" style="display:flex;flex-direction:column;gap:12px">
+        <!-- populated by initListField -->
+      </div>
+      <button type="button" class="btn-add-item" style="margin-top:12px"
+        onclick="addListItem('${esc(key)}')">+ Add Item</button>
+    </div>
+  `;
+}
+
+function initListField(key, def) {
+  renderListItems(key, def);
+}
+
+function renderListItems(key, def) {
+  const container = document.getElementById(`listContainer_${key}`);
+  if (!container || !editingSection) return;
+  const items = Array.isArray(editingSection.data[key]) ? editingSection.data[key] : [];
+  const itemSchema = def.itemSchema || {};
+  const itemKeys = Object.keys(itemSchema);
+
+  if (items.length === 0) {
+    container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--cream-dim);font-style:italic;border:1px dashed var(--charcoal-border);border-radius:4px">No items yet. Click + Add Item below.</div>';
+    return;
+  }
+
+  container.innerHTML = items.map((item, idx) => {
+    const subFields = itemKeys.map(subKey => {
+      const subDef = itemSchema[subKey];
+      const subVal = item[subKey];
+      return renderListItemField(key, idx, subKey, subDef, subVal);
+    }).join('');
+    const canUp = idx > 0;
+    const canDown = idx < items.length - 1;
+    return `
+      <div class="category-block" data-list-item-idx="${idx}" style="padding:12px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--charcoal-border)">
+          <span style="font-family:'Oswald',sans-serif;font-size:11px;color:var(--gold);letter-spacing:2px;text-transform:uppercase;flex:1">#${idx + 1}</span>
+          <button type="button" title="Move up"   onclick="moveListItem('${esc(key)}', ${idx}, -1)" ${canUp   ? '' : 'disabled'} style="background:transparent;border:1px solid var(--charcoal-border);color:${canUp   ? 'var(--cream)' : 'rgba(255,255,255,0.2)'};width:30px;height:30px;border-radius:3px;cursor:${canUp   ? 'pointer' : 'not-allowed'};font-size:14px">&uarr;</button>
+          <button type="button" title="Move down" onclick="moveListItem('${esc(key)}', ${idx},  1)" ${canDown ? '' : 'disabled'} style="background:transparent;border:1px solid var(--charcoal-border);color:${canDown ? 'var(--cream)' : 'rgba(255,255,255,0.2)'};width:30px;height:30px;border-radius:3px;cursor:${canDown ? 'pointer' : 'not-allowed'};font-size:14px">&darr;</button>
+          <button type="button" title="Remove"    onclick="removeListItem('${esc(key)}', ${idx})" style="background:transparent;border:1px solid rgba(170,60,50,0.5);color:rgba(230,120,110,0.9);width:30px;height:30px;border-radius:3px;cursor:pointer;font-size:16px">&times;</button>
+        </div>
+        ${subFields}
+      </div>
+    `;
+  }).join('');
+
+  // Post-render: wire image / richtext sub-fields (icon pickers work via data attrs)
+  items.forEach((item, idx) => {
+    itemKeys.forEach(subKey => {
+      const subDef = itemSchema[subKey];
+      if (subDef.type === 'image') initListItemImageField(key, idx, subKey);
+    });
+  });
+}
+
+// A list-item field: same as top-level but with scoped IDs and callbacks.
+function renderListItemField(listKey, itemIdx, fieldKey, def, value) {
+  const inputId = `li_${listKey}_${itemIdx}_${fieldKey}`;
+  switch (def.type) {
+    case 'text': {
+      const ph = def.placeholder ? ` placeholder="${esc(def.placeholder)}"` : '';
+      return `
+        <div style="margin-bottom:10px">
+          <label class="form-label" for="${inputId}" style="font-size:10px">${esc(def.label || fieldKey)}</label>
+          <input class="form-input" type="text" id="${inputId}" value="${esc(value || '')}"${ph}
+            oninput="updateListItemValue('${esc(listKey)}', ${itemIdx}, '${esc(fieldKey)}', this.value)"/>
+        </div>
+      `;
+    }
+    case 'longtext': {
+      const ph = def.placeholder ? ` placeholder="${esc(def.placeholder)}"` : '';
+      return `
+        <div style="margin-bottom:10px">
+          <label class="form-label" for="${inputId}" style="font-size:10px">${esc(def.label || fieldKey)}</label>
+          <textarea class="form-textarea" id="${inputId}" style="min-height:70px"${ph}
+            oninput="updateListItemValue('${esc(listKey)}', ${itemIdx}, '${esc(fieldKey)}', this.value)">${esc(value || '')}</textarea>
+        </div>
+      `;
+    }
+    case 'select': {
+      const opts = (def.options || []).map(o =>
+        `<option value="${esc(o.value)}"${o.value === value ? ' selected' : ''}>${esc(o.label || o.value)}</option>`
+      ).join('');
+      return `
+        <div style="margin-bottom:10px">
+          <label class="form-label" for="${inputId}" style="font-size:10px">${esc(def.label || fieldKey)}</label>
+          <select class="form-input" id="${inputId}" style="cursor:pointer"
+            onchange="updateListItemValue('${esc(listKey)}', ${itemIdx}, '${esc(fieldKey)}', this.value)">${opts}</select>
+        </div>
+      `;
+    }
+    case 'icon': {
+      const iconSet = def.iconSet || [];
+      const tiles = iconSet.map(name => {
+        const svg = window.SECTIONS ? window.SECTIONS.svgIcon(name) : '';
+        const isSelected = name === value;
+        return `
+          <button type="button"
+            onclick="selectListItemIcon('${esc(listKey)}', ${itemIdx}, '${esc(fieldKey)}', '${esc(name)}')"
+            title="${esc(name)}"
+            data-li-icon-key="${esc(listKey)}_${itemIdx}_${esc(fieldKey)}" data-li-icon-name="${esc(name)}"
+            style="width:38px;height:38px;display:inline-flex;align-items:center;justify-content:center;border:1px solid ${isSelected ? 'var(--gold)' : 'var(--charcoal-border)'};border-radius:3px;background:${isSelected ? 'rgba(201,169,110,0.12)' : 'transparent'};color:${isSelected ? 'var(--gold)' : 'var(--cream-dim)'};cursor:pointer;padding:0">
+            <span style="width:18px;height:18px;display:inline-flex">${svg}</span>
+          </button>
+        `;
+      }).join('');
+      return `
+        <div style="margin-bottom:10px">
+          <label class="form-label" style="font-size:10px">${esc(def.label || fieldKey)}</label>
+          <div style="display:flex;flex-wrap:wrap;gap:4px;padding:8px;border:1px solid var(--charcoal-border);border-radius:3px">
+            ${tiles}
+          </div>
+        </div>
+      `;
+    }
+    case 'image': {
+      const hasImage = !!value;
+      const imgSrc = hasImage ? (value.indexOf('/') >= 0 ? value : '/images/' + value) : '';
+      return `
+        <div style="margin-bottom:10px">
+          <label class="form-label" style="font-size:10px">${esc(def.label || fieldKey)}</label>
+          <div class="image-upload-area" id="liImgArea_${esc(listKey)}_${itemIdx}_${esc(fieldKey)}" style="min-height:100px">
+            <input type="file" id="liImgFile_${esc(listKey)}_${itemIdx}_${esc(fieldKey)}" accept="image/jpeg,image/png,image/webp,image/gif"
+              onchange="handleListItemImageSelect(this, '${esc(listKey)}', ${itemIdx}, '${esc(fieldKey)}')"/>
+            <div class="upload-placeholder" id="liImgPh_${esc(listKey)}_${itemIdx}_${esc(fieldKey)}" style="${hasImage ? 'display:none' : ''}">
+              <span class="upload-icon">&#128247;</span>
+              <span class="upload-label">Click or drag to upload</span>
+            </div>
+            <div class="image-preview-wrap" id="liImgPw_${esc(listKey)}_${itemIdx}_${esc(fieldKey)}" style="${hasImage ? '' : 'display:none'}">
+              <img class="image-preview" id="liImgPv_${esc(listKey)}_${itemIdx}_${esc(fieldKey)}" src="${esc(imgSrc)}" alt="Preview"/>
+              <button class="image-preview-remove" onclick="clearListItemImage(event, '${esc(listKey)}', ${itemIdx}, '${esc(fieldKey)}')" title="Remove photo">&#215;</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+    case 'boolean': {
+      const isOn = value === undefined ? (def.defaultValue === true) : !!value;
+      return `
+        <div style="margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 12px;border:1px solid var(--charcoal-border);border-radius:3px">
+          <label class="form-label" style="font-size:10px;margin:0">${esc(def.label || fieldKey)}</label>
+          <label class="toggle-switch" style="flex-shrink:0">
+            <input type="checkbox" ${isOn ? 'checked' : ''}
+              onchange="updateListItemValue('${esc(listKey)}', ${itemIdx}, '${esc(fieldKey)}', this.checked)"/>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      `;
+    }
+    default: return '<!-- unsupported list-item field type: ' + esc(def.type) + ' -->';
+  }
+}
+
+function initListItemImageField(listKey, itemIdx, fieldKey) {
+  const areaId = `liImgArea_${listKey}_${itemIdx}_${fieldKey}`;
+  const area = document.getElementById(areaId);
+  if (!area) return;
+  area.addEventListener('dragover', e => { e.preventDefault(); area.classList.add('drag-over'); });
+  area.addEventListener('dragleave', () => area.classList.remove('drag-over'));
+  area.addEventListener('drop', e => {
+    e.preventDefault(); area.classList.remove('drag-over');
+    const f = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f) handleListItemImageSelectFile(f, listKey, itemIdx, fieldKey);
+  });
+}
+
+function updateListItemValue(listKey, itemIdx, fieldKey, value) {
+  if (!editingSection) return;
+  if (!Array.isArray(editingSection.data[listKey])) return;
+  if (!editingSection.data[listKey][itemIdx]) return;
+  editingSection.data[listKey][itemIdx][fieldKey] = value;
+}
+
+function selectListItemIcon(listKey, itemIdx, fieldKey, iconName) {
+  updateListItemValue(listKey, itemIdx, fieldKey, iconName);
+  const group = `${listKey}_${itemIdx}_${fieldKey}`;
+  const tiles = document.querySelectorAll(`[data-li-icon-key="${group}"]`);
+  tiles.forEach(t => {
+    const isThis = t.getAttribute('data-li-icon-name') === iconName;
+    t.style.borderColor = isThis ? 'var(--gold)' : 'var(--charcoal-border)';
+    t.style.background  = isThis ? 'rgba(201,169,110,0.12)' : 'transparent';
+    t.style.color       = isThis ? 'var(--gold)' : 'var(--cream-dim)';
+  });
+}
+
+async function handleListItemImageSelect(input, listKey, itemIdx, fieldKey) {
+  const f = input.files && input.files[0];
+  if (!f) return;
+  await handleListItemImageSelectFile(f, listKey, itemIdx, fieldKey);
+  input.value = '';
+}
+
+async function handleListItemImageSelectFile(file, listKey, itemIdx, fieldKey) {
+  if (file.size > 5 * 1024 * 1024) { showToast('Image is over 5 MB.', true); return; }
+  const phId = `liImgPh_${listKey}_${itemIdx}_${fieldKey}`;
+  const pwId = `liImgPw_${listKey}_${itemIdx}_${fieldKey}`;
+  const pvId = `liImgPv_${listKey}_${itemIdx}_${fieldKey}`;
+  const phEl = document.getElementById(phId);
+  const pwEl = document.getElementById(pwId);
+  const pvEl = document.getElementById(pvId);
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    if (pvEl) pvEl.src = e.target.result;
+    if (phEl) phEl.style.display = 'none';
+    if (pwEl) pwEl.style.display = '';
+  };
+  reader.readAsDataURL(file);
+
+  const fd = new FormData();
+  fd.append('file', file);
+  try {
+    const res = await apiFetch('/api/upload', { method: 'POST', body: fd });
+    if (!res.ok) throw new Error('Upload failed (HTTP ' + res.status + ')');
+    const data = await res.json();
+    const filename = data.filename || data.key || data.path || '';
+    if (!filename) throw new Error('Upload response missing filename');
+    updateListItemValue(listKey, itemIdx, fieldKey, filename);
+    if (pvEl) pvEl.src = '/images/' + filename;
+  } catch (err) {
+    showToast('Image upload failed: ' + err.message, true);
+  }
+}
+
+function clearListItemImage(event, listKey, itemIdx, fieldKey) {
+  event.preventDefault();
+  event.stopPropagation();
+  updateListItemValue(listKey, itemIdx, fieldKey, null);
+  const phEl = document.getElementById(`liImgPh_${listKey}_${itemIdx}_${fieldKey}`);
+  const pwEl = document.getElementById(`liImgPw_${listKey}_${itemIdx}_${fieldKey}`);
+  if (phEl) phEl.style.display = '';
+  if (pwEl) pwEl.style.display = 'none';
+}
+
+function addListItem(listKey) {
+  if (!editingSection) return;
+  const T = window.SECTIONS && window.SECTIONS.TYPES && window.SECTIONS.TYPES[editingSection.type];
+  const def = T && T.schema && T.schema[listKey];
+  if (!def) return;
+  // Build an empty item from the itemSchema defaults
+  const newItem = {};
+  const itemSchema = def.itemSchema || {};
+  Object.keys(itemSchema).forEach(subKey => {
+    const subDef = itemSchema[subKey];
+    if (subDef.type === 'boolean')    newItem[subKey] = subDef.defaultValue === true;
+    else if (subDef.type === 'select') newItem[subKey] = (subDef.options && subDef.options[0] && subDef.options[0].value) || '';
+    else if (subDef.type === 'number') newItem[subKey] = null;
+    else                               newItem[subKey] = '';
+  });
+  if (!Array.isArray(editingSection.data[listKey])) editingSection.data[listKey] = [];
+  editingSection.data[listKey].push(newItem);
+  renderListItems(listKey, def);
+}
+
+function removeListItem(listKey, itemIdx) {
+  if (!editingSection) return;
+  const T = window.SECTIONS && window.SECTIONS.TYPES && window.SECTIONS.TYPES[editingSection.type];
+  const def = T && T.schema && T.schema[listKey];
+  if (!def) return;
+  if (!Array.isArray(editingSection.data[listKey])) return;
+  if (!confirm('Remove this item?')) return;
+  editingSection.data[listKey].splice(itemIdx, 1);
+  renderListItems(listKey, def);
+}
+
+function moveListItem(listKey, itemIdx, delta) {
+  if (!editingSection) return;
+  const T = window.SECTIONS && window.SECTIONS.TYPES && window.SECTIONS.TYPES[editingSection.type];
+  const def = T && T.schema && T.schema[listKey];
+  if (!def) return;
+  const arr = editingSection.data[listKey];
+  if (!Array.isArray(arr)) return;
+  const j = itemIdx + delta;
+  if (j < 0 || j >= arr.length) return;
+  const [moved] = arr.splice(itemIdx, 1);
+  arr.splice(j, 0, moved);
+  renderListItems(listKey, def);
+}
+
+// ─── Field type: richtext (Trix) ────────────────────────────────────────────
+function fieldRichText(key, def, value) {
+  const inputId = `rtInput_${esc(key)}`;
+  const editorId = `rtEditor_${esc(key)}`;
+  return `
+    <div class="form-group-full" style="margin-bottom:16px">
+      <label class="form-label">${esc(def.label || key)}</label>
+      <input type="hidden" id="${inputId}" value="${esc(value || '')}"/>
+      <trix-editor id="${editorId}" input="${inputId}" style="background:var(--charcoal-card);color:var(--cream);border:1px solid var(--charcoal-border);border-radius:4px;min-height:140px;padding:10px"></trix-editor>
+    </div>
+  `;
+}
+
+function initRichTextField(key) {
+  const editor = document.getElementById(`rtEditor_${key}`);
+  if (!editor) return;
+  // Trix dispatches 'trix-change' whenever the content changes
+  editor.addEventListener('trix-change', () => {
+    const input = document.getElementById(`rtInput_${key}`);
+    if (input) updateFieldValue(key, input.value);
+  });
+}
+
+// ─── Save ────────────────────────────────────────────────────────────────────
+async function saveEditingSection() {
+  if (!editingSection || editingSectionIdx < 0 || !currentPageSlug) {
+    showToast('Nothing to save.', true);
+    return;
+  }
+
+  const btn = document.getElementById('saveSectionBtn');
+  const ind = document.getElementById('savingSectionIndicator');
+  if (btn) btn.disabled = true;
+  if (ind) ind.style.display = 'inline-flex';
+
+  // Replace the section in the working list with our edited copy
+  const updatedSections = pageHomeSections.slice();
+  updatedSections[editingSectionIdx] = JSON.parse(JSON.stringify(editingSection));
+
+  try {
+    const res = await apiFetch('/api/pages/' + currentPageSlug, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sections: updatedSections })
+    });
+    if (!res.ok) {
+      const txt = await res.text();
+      throw new Error(res.status === 401 ? 'Session expired — please sign in again.' : (txt || ('HTTP ' + res.status)));
+    }
+    const data = await res.json();
+    pageHomeSections = Array.isArray(data.sections) ? data.sections : updatedSections;
+    pageHomeOriginal = JSON.stringify(pageHomeSections);
+    showToast('Section saved.');
+    // Navigate back to the list with fresh data
+    editingSection = null;
+    editingSectionIdx = -1;
+    showPage('pagePageEditor');
+    renderPageSections();
+    updatePageHomeDirty();
+  } catch (err) {
+    showToast(err.message, true);
+  } finally {
+    if (btn) btn.disabled = false;
     if (ind) ind.style.display = 'none';
   }
 }

@@ -33,6 +33,13 @@
     'fuel':      '<path d="M3 22V6a2 2 0 012-2h8a2 2 0 012 2v16"/><path d="M3 22h12"/><path d="M9 6v4"/><path d="M15 10h2a2 2 0 012 2v2a2 2 0 002 2v0a2 2 0 002-2V8l-3-3"/><path d="M19 5v0a1 1 0 011 1v1"/>',
     'compass':   '<circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>',
     'map-pin':   '<path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>',
+    'calendar':  '<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+    'clock':     '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+    'tag':       '<path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/>',
+    'star':      '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+    'heart':     '<path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>',
+    'bell':      '<path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/>',
+    'gift':      '<polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/>',
 
     // Service icons (the existing 10 on the current homepage, in order)
     'drink':        '<path d="M7 3h10l-1.5 9H8.5L7 3z"/><path d="M8.5 12v7a1 1 0 001 1h5a1 1 0 001-1v-7"/><path d="M5 7h14"/><path d="M10 16h4"/>',
@@ -55,11 +62,16 @@
 
   // ─── BANNER VARIANTS ──────────────────────────────────────────────────────
   var BANNER_VARIANTS = [
-    { value: 'snackbar',  label: 'Snackbar (teal/green)', className: 'snackbar-banner'  },
-    { value: 'fireworks', label: 'Fireworks (red)',        className: 'fireworks-banner' },
-    { value: 'fuel',      label: 'Fuel (gold/amber)',      className: 'fuel-banner'      },
-    { value: 'explore',   label: 'Explore (blue/slate)',   className: 'explore-banner'   },
-    { value: 'see-you',   label: 'See You Soon (purple)',  className: 'see-you-banner'   }
+    { value: 'snackbar',  label: 'Snackbar (teal/green)',   className: 'snackbar-banner'  },
+    { value: 'fireworks', label: 'Fireworks (red)',         className: 'fireworks-banner' },
+    { value: 'fuel',      label: 'Fuel (gold/amber)',       className: 'fuel-banner'      },
+    { value: 'explore',   label: 'Explore (blue/slate)',    className: 'explore-banner'   },
+    { value: 'see-you',   label: 'See You Soon (purple)',   className: 'see-you-banner'   },
+    { value: 'evergreen', label: 'Evergreen (forest green)', className: 'evergreen-banner' },
+    { value: 'sunset',    label: 'Sunset (orange/pink)',    className: 'sunset-banner'    },
+    { value: 'ice',       label: 'Ice (cyan/white)',        className: 'ice-banner'       },
+    { value: 'sage',      label: 'Sage (olive/tan)',        className: 'sage-banner'      },
+    { value: 'night',     label: 'Night (navy/indigo)',     className: 'night-banner'     }
   ];
 
   function bannerVariantClass(value) {
@@ -100,6 +112,16 @@
         '</nav>';
     }
 
+    var showPhoneButton = d.show_phone_button !== false; // default true
+    var phoneButtonHtml = '';
+    if (showPhoneButton) {
+      phoneButtonHtml = ''
+        + '<a href="tel:' + esc(phoneDigits) + '" class="btn-call" id="callBtn">'
+        +   SVG_CALL
+        +   '<span id="callBtnPhone">' + esc(phone) + '</span>'
+        + '</a>';
+    }
+
     return [
       '<section class="hero-v2 topo">',
         '<div class="hero-v2-inner">',
@@ -110,10 +132,7 @@
             '<div class="hv2-divider"></div>',
             '<p class="hv2-desc" id="heroDesc">' + esc(description) + '</p>',
             '<div class="hv2-ctas">',
-              '<a href="tel:' + esc(phoneDigits) + '" class="btn-call" id="callBtn">',
-                SVG_CALL,
-                '<span id="callBtnPhone">' + esc(phone) + '</span>',
-              '</a>',
+              phoneButtonHtml,
               '<a href="' + esc(primaryCtaLink) + '" class="btn-order" id="heroBtn">' + esc(primaryCtaLabel) + ' \u2192</a>',
             '</div>',
           '</div>',
@@ -167,6 +186,10 @@
     var titleHtml = d.title         ? '<h2 class="section-heading">' + esc(d.title) + '</h2>'        : '';
     var imgHtml   = imageSrc        ? '<img class="article-image" src="' + esc(imageSrc) + '" alt="" loading="lazy" style="width:100%;max-height:400px;object-fit:cover;border-radius:4px;margin:20px 0;"/>' : '';
     var bodyHtml  = d.body          ? '<div class="article-body">' + d.body + '</div>' : '';
+    var hasCta    = !!(d.cta_label && d.cta_link);
+    var ctaHtml   = hasCta
+      ? '<div style="text-align:center;margin-top:28px"><a class="article-cta-btn" href="' + esc(d.cta_link) + '">' + esc(d.cta_label) + ' \u2192</a></div>'
+      : '';
 
     return [
       '<section class="section article topo">',
@@ -175,6 +198,43 @@
           titleHtml,
           imgHtml,
           bodyHtml,
+          ctaHtml,
+        '</div>',
+      '</section>'
+    ].join('');
+  }
+
+  function renderText(d) {
+    // Dead-simple text block. Body is escaped and wrapped in <p>.
+    // Used for connecting paragraphs between custom sections (e.g. the
+    // intro/outro paragraphs around the Explore trail).
+    var body = d.body || '';
+    if (!body) return '';
+    return [
+      '<section class="section section-text">',
+        '<div class="section-inner">',
+          '<p class="section-text-body">' + esc(body).replace(/\n\n+/g, '</p><p class="section-text-body">').replace(/\n/g, '<br/>') + '</p>',
+        '</div>',
+      '</section>'
+    ].join('');
+  }
+
+  function renderHeading(d) {
+    // Standalone heading block with three sizes, three alignments, optional rule.
+    var text     = d.text || '';
+    if (!text) return '';
+    var size     = d.size  === 'small' || d.size  === 'large' ? d.size  : 'medium';
+    var align    = d.align === 'left'  || d.align === 'right' ? d.align : 'center';
+    var showRule = d.show_rule === true;
+    var classes  = 'section-heading-block section-heading-block--' + size + ' section-heading-block--' + align;
+    var ruleHtml = showRule ? '<div class="section-heading-rule"></div>' : '';
+    return [
+      '<section class="section section-heading-section">',
+        '<div class="section-inner">',
+          '<div class="' + classes + '">',
+            '<h2 class="section-heading-text">' + esc(text) + '</h2>',
+            ruleHtml,
+          '</div>',
         '</div>',
       '</section>'
     ].join('');
@@ -217,7 +277,9 @@
 
   function renderHours(d) {
     var showLocation  = d.show_location_card !== false;
-    var mapsUrl       = d.maps_url        || 'https://maps.app.goo.gl/dhU5oMRYwXpTUhmY9';
+    // Back-compat: old data had a single `maps_url` — treat it as the Google Maps URL.
+    var googleMapsUrl = d.google_maps_url != null ? d.google_maps_url : (d.maps_url != null ? d.maps_url : 'https://maps.app.goo.gl/dhU5oMRYwXpTUhmY9');
+    var appleMapsUrl  = d.apple_maps_url  != null ? d.apple_maps_url  : '';
     var addr1         = d.address_line_1  || 'HWY 264, Mile Marker 8';
     var addr2         = d.address_line_2  || 'Dyer, NV&nbsp;&nbsp;89010';
     var addrSub       = d.address_sub     || 'Fish Lake Valley \u00b7 Esmeralda County, NV';
@@ -225,6 +287,26 @@
     var marketName    = d.market_name     || 'Esmeralda Market';
     var snackbarLabel = d.snackbar_label  || 'Hot Food \u00b7 Made Fresh Daily';
     var snackbarName  = d.snackbar_name   || 'Snackbar';
+
+    var mapsButtonsHtml = '';
+    if (googleMapsUrl || appleMapsUrl) {
+      var buttons = '';
+      if (googleMapsUrl) {
+        buttons += ''
+          + '<a href="' + esc(googleMapsUrl) + '" target="_blank" rel="noopener noreferrer" class="btn-maps">'
+          +   '<span class="btn-maps-icon">\uD83D\uDCCD</span>'
+          +   'Google Maps'
+          + '</a>';
+      }
+      if (appleMapsUrl) {
+        buttons += ''
+          + '<a href="' + esc(appleMapsUrl) + '" target="_blank" rel="noopener noreferrer" class="btn-maps btn-maps-apple">'
+          +   '<span class="btn-maps-icon">\uD83D\uDCCD</span>'
+          +   'Apple Maps'
+          + '</a>';
+      }
+      mapsButtonsHtml = '<div class="btn-maps-group">' + buttons + '</div>';
+    }
 
     var locationHtml = '';
     if (showLocation) {
@@ -237,10 +319,7 @@
             '<div class="location-line">' + addr2   + '</div>',
             '<div class="location-sub">'  + addrSub + '</div>',
           '</div>',
-          '<a href="' + esc(mapsUrl) + '" target="_blank" rel="noopener noreferrer" class="btn-maps">',
-            '<span class="btn-maps-icon">\uD83D\uDCCD</span>',
-            'Open in Google Maps',
-          '</a>',
+          mapsButtonsHtml,
         '</div>'
       ].join('');
     }
@@ -310,6 +389,12 @@
       var imgAlt = stop.title || '';
       var stopNum = i + 1;
 
+      // CTA button — shared across all layouts. Only rendered when both label and link set.
+      var hasCta = !!(stop.cta_label && stop.cta_link);
+      var ctaHtml = hasCta
+        ? '<a class="explore-cta-btn" href="' + esc(stop.cta_link) + '" target="_blank" rel="noopener noreferrer">' + esc(stop.cta_label) + ' \u2192</a>'
+        : '';
+
       if (layout === 'hero') {
         var heroImgHtml = imgSrc ? '<img class="explore-hero-img" src="' + esc(imgSrc) + '" alt="' + esc(imgAlt) + '" loading="lazy"/>' : '';
         var heroTag     = stop.tag   ? '<div class="explore-tag">'       + esc(stop.tag)   + '</div>' : '';
@@ -328,6 +413,7 @@
               '</div>',
               '<div class="explore-body explore-body--hero">',
                 heroDesc,
+                ctaHtml,
               '</div>',
             '</div>',
           '</div>'
@@ -345,6 +431,7 @@
           bodyTag,
           bodyTitle,
           bodyDesc,
+          ctaHtml,
         '</div>'
       ].join('');
       var imgHtml = imgSrc
@@ -364,26 +451,15 @@
       ].join('');
     }).join('');
 
-    var ledeHtml = d.lede ? '<p class="explore-lede">' + d.lede + '</p>' : '';
-    var stripHtml = d.trail_strip_text ? [
-      '<div class="hero-trail-strip">',
-        '<span class="hero-trail-star">\u2726</span>',
-        '<p class="hero-trail-text">' + d.trail_strip_text + '</p>',
-        '<span class="hero-trail-star">\u2726</span>',
-      '</div>'
-    ].join('') : '';
-
     return [
       '<section class="section explore-section" id="explore">',
         '<div class="section-inner ">',
-          ledeHtml,
           '<div class="explore-trail" id="exploreTrail">',
             '<div class="trail-line-track">',
               '<div class="trail-line-fill" id="trailFill"></div>',
             '</div>',
             stopsHtml,
           '</div>',
-          stripHtml,
         '</div>',
       '</section>'
     ].join('');
@@ -438,16 +514,12 @@
       description: 'Large welcome section with headline, description, photos, and CTAs.',
       category: 'custom',
       schema: {
-        eyebrow:           { type: 'text',     label: 'Eyebrow',           placeholder: 'Welcome to the' },
-        name:              { type: 'text',     label: 'Name Line',         placeholder: 'Esmeralda' },
-        subtitle:          { type: 'text',     label: 'Subtitle Line',     placeholder: 'Market' },
-        tagline:           { type: 'text',     label: 'Tagline' },
         description:       { type: 'longtext', label: 'Description' },
         primary_cta_label: { type: 'text',     label: 'Button Label' },
         primary_cta_link:  { type: 'text',     label: 'Button Link' },
         bg_photo:          { type: 'image',    label: 'Background Photo' },
         store_photo:       { type: 'image',    label: 'Store Pop-out Photo' },
-        show_links_panel:  { type: 'boolean',  label: 'Show Links Panel',  defaultValue: true }
+        show_phone_button: { type: 'boolean',  label: 'Show Phone Button',  defaultValue: true }
       },
       defaults: {
         eyebrow: 'Welcome to the',
@@ -459,7 +531,8 @@
         primary_cta_link: 'menu.html',
         bg_photo: null,
         store_photo: null,
-        show_links_panel: true
+        show_links_panel: true,
+        show_phone_button: true
       },
       render: renderHero
     },
@@ -472,7 +545,7 @@
       schema: {
         title:     { type: 'text',    label: 'Title' },
         subtitle:  { type: 'text',    label: 'Subtitle' },
-        icon:      { type: 'icon',    label: 'Icon',     iconSet: ['send','sparkles','fuel','compass','map-pin'] },
+        icon:      { type: 'icon',    label: 'Icon',     iconSet: ['send','sparkles','fuel','compass','map-pin','calendar','clock','tag','star','heart','bell','gift','coffee'] },
         variant:   { type: 'select',  label: 'Color',    options: BANNER_VARIANTS },
         cta_label: { type: 'text',    label: 'Button Label (optional)' },
         cta_link:  { type: 'text',    label: 'Button Link (optional)' },
@@ -495,10 +568,47 @@
         section_label: { type: 'text',     label: 'Small Label' },
         title:         { type: 'text',     label: 'Heading' },
         image:         { type: 'image',    label: 'Hero Image' },
-        body:          { type: 'richtext', label: 'Body' }
+        body:          { type: 'richtext', label: 'Body' },
+        cta_label:     { type: 'text',     label: 'Button Label (optional)' },
+        cta_link:      { type: 'text',     label: 'Button Link (optional)' }
       },
-      defaults: { section_label: '', title: 'New Article', image: null, body: '' },
+      defaults: { section_label: '', title: 'New Article', image: null, body: '', cta_label: '', cta_link: '' },
       render: renderArticle
+    },
+
+    text: {
+      label: 'Text',
+      icon:  '\uD83D\uDCDD', // 📝
+      description: 'A plain paragraph of text. Good for connecting copy between custom sections.',
+      category: 'generic',
+      schema: {
+        body: { type: 'longtext', label: 'Text' }
+      },
+      defaults: { body: '' },
+      render: renderText
+    },
+
+    heading: {
+      label: 'Heading',
+      icon:  '\uD835\uDD44', // 𝕄 — distinctive mathematical M
+      description: 'A standalone heading. Choose size, alignment, and whether to show a rule below.',
+      category: 'generic',
+      schema: {
+        text:      { type: 'text',    label: 'Heading Text' },
+        size:      { type: 'select',  label: 'Size',  options: [
+          { value: 'small',  label: 'Small' },
+          { value: 'medium', label: 'Medium' },
+          { value: 'large',  label: 'Large' }
+        ]},
+        align:     { type: 'select',  label: 'Align', options: [
+          { value: 'left',   label: 'Left' },
+          { value: 'center', label: 'Center' },
+          { value: 'right',  label: 'Right' }
+        ]},
+        show_rule: { type: 'boolean', label: 'Show Rule Below' }
+      },
+      defaults: { text: 'New Heading', size: 'medium', align: 'center', show_rule: false },
+      render: renderHeading
     },
 
     events: {
@@ -510,10 +620,7 @@
         section_label:       { type: 'text',    label: 'Small Label' },
         heading:             { type: 'text',    label: 'Heading' },
         show_facebook_strip: { type: 'boolean', label: 'Show Facebook Follow Strip', defaultValue: true },
-        facebook_url:        { type: 'text',    label: 'Facebook URL' },
-        facebook_title:      { type: 'text',    label: 'Facebook Strip Title' },
-        facebook_sub:        { type: 'text',    label: 'Facebook Strip Subtitle' },
-        facebook_cta:        { type: 'text',    label: 'Facebook Strip Button Text' }
+        facebook_url:        { type: 'text',    label: 'Facebook URL' }
       },
       defaults: {
         section_label: 'Whats new',
@@ -535,15 +642,11 @@
       schema: {
         section_label:      { type: 'text',    label: 'Small Label' },
         heading:            { type: 'text',    label: 'Heading' },
-        market_label:       { type: 'text',    label: 'Market Card — Small Label' },
-        market_name:        { type: 'text',    label: 'Market Card — Name' },
-        snackbar_label:     { type: 'text',    label: 'Snackbar Card — Small Label' },
-        snackbar_name:      { type: 'text',    label: 'Snackbar Card — Name' },
         show_location_card: { type: 'boolean', label: 'Show Location Card', defaultValue: true },
         address_line_1:     { type: 'text',    label: 'Address Line 1' },
         address_line_2:     { type: 'text',    label: 'Address Line 2' },
-        address_sub:        { type: 'text',    label: 'Address Subtitle' },
-        maps_url:           { type: 'text',    label: 'Google Maps URL' }
+        google_maps_url:    { type: 'text',    label: 'Google Maps URL' },
+        apple_maps_url:     { type: 'text',    label: 'Apple Maps URL' }
       },
       defaults: {
         section_label: "We're here for you",
@@ -556,7 +659,8 @@
         address_line_1: 'HWY 264, Mile Marker 8',
         address_line_2: 'Dyer, NV&nbsp;&nbsp;89010',
         address_sub:    'Fish Lake Valley \u00b7 Esmeralda County, NV',
-        maps_url: 'https://maps.app.goo.gl/dhU5oMRYwXpTUhmY9'
+        google_maps_url: 'https://maps.app.goo.gl/dhU5oMRYwXpTUhmY9',
+        apple_maps_url: ''
       },
       render: renderHours
     },
@@ -602,7 +706,6 @@
       description: 'Numbered trail of destination cards with scroll-driven animation.',
       category: 'custom',
       schema: {
-        lede: { type: 'longtext', label: 'Intro Paragraph' },
         stops: {
           type: 'list', label: 'Stops',
           itemSchema: {
@@ -614,21 +717,20 @@
             tag:         { type: 'text',     label: 'Tag Line' },
             title:       { type: 'text',     label: 'Title' },
             description: { type: 'longtext', label: 'Description' },
-            image:       { type: 'image',    label: 'Photo' }
+            image:       { type: 'image',    label: 'Photo' },
+            cta_label:   { type: 'text',     label: 'Button Label (optional)' },
+            cta_link:    { type: 'text',     label: 'Button Link (optional)' }
           }
-        },
-        trail_strip_text: { type: 'longtext', label: 'Trail Strip Footer Text' }
+        }
       },
       defaults: {
-        lede: 'Come visit us and explore this little stretch of rural Nevada \u2014 wide open skies, wild horses, ancient forests, and natural hot springs, all within a short drive of the Market. In this little dust bowl there\u2019s always "on more" dirt road to explore.',
         stops: [
           { layout: 'hero',       tag: 'Come Explore The High Desert',          title: 'Welcome to Fish Lake Valley',    description: 'Sprawling across 30 miles of open high desert, Fish Lake Valley is home to free-roaming wild mustang herds, vast alkali flats, and some of the most dramatic big-sky scenery in the American West. Miles of side-by-side and OHV trails wind through the basin \u2014 and on a quiet evening out here, the silence is complete. Esmeralda Market is your basecamp for all of it.', image: 'assets/fish-lake-valley-1.webp' },
           { layout: 'text-left',  tag: 'Decompress in these beautiful springs', title: 'Fish Lake Valley Hot Springs',   description: 'One of the Great Basin\u2019s best-kept secrets \u2014 free, remote, and gloriously uncrowded. These geothermal pools rise right from the desert floor and offer a long, steaming soak beneath an enormous Nevada sky. Best at sunrise or after dark, when warm water meets cool desert air in a way you won\u2019t forget.', image: 'assets/hotsprings.webp' },
           { layout: 'text-right', tag: 'Fishing with a view',                   title: 'Trail Canyon Reservoir',         description: 'Wind up into the White Mountains and you\u2019ll find this quiet alpine pond tucked among juniper and pinyon pine. Stocked with rainbow trout and ringed by sweeping views of the valley floor below, Trail Canyon Reservoir is a perfect half-day escape from the summer heat \u2014 bring a rod and stay a while.', image: 'assets/trail-canyon-resevior.webp' },
           { layout: 'text-left',  tag: 'Brave the climb',                       title: 'Boundary Peak Trailhead',        description: 'Nevada\u2019s highest point at 13,147 feet, Boundary Peak towers over the valley from the White Mountain crest. The trailhead is just up the road \u2014 fuel up and grab a sandwich before setting out on the state\u2019s ultimate summit hike. It\u2019s roughly 8 miles round trip with 4,000 feet of gain. The views from the top stretch into four states.', image: 'assets/boundery-1.webp' },
           { layout: 'text-right', tag: '"If these trees could talk"',           title: 'Bristlecone Pine Forest',        description: 'High in the White Mountains live some of the oldest organisms on Earth. The Ancient Bristlecone Pine Forest holds trees more than 5,000 years old \u2014 gnarled, wind-twisted, and achingly beautiful. They were already ancient when the pyramids were built. Standing among them in the alpine quiet puts the scale of human time in sharp, humbling perspective.', image: 'assets/bristlecone-pine-forest.webp' }
-        ],
-        trail_strip_text: 'Make sure you stop in at the Market before hitting the trails \u2014 stock up on fuel, cold drinks, and a fresh-made snackbar sandwich to keep you going.'
+        ]
       },
       render: renderExplore
     },
@@ -676,7 +778,9 @@
       { id: 'sec_banner_fuel',  type: 'banner',   data: { title: '24-Hour Fuel',        subtitle: 'Gas &amp; Diesel &nbsp;&middot;&nbsp; Always Open',           icon: 'fuel',     variant: 'fuel',      cta_label: '',                cta_link: '',                                            show_star: true  } },
       { id: 'sec_services',     type: 'services', data: clone(SECTION_TYPES.services.defaults) },
       { id: 'sec_banner_exp',   type: 'banner',   data: { title: 'Exploring Esmeralda', subtitle: 'Off the Beaten Path &nbsp;&middot;&nbsp; Fish Lake Valley, NV', icon: 'compass',  variant: 'explore',   cta_label: '',                cta_link: '',                                            show_star: false } },
+      { id: 'sec_text_lede',    type: 'text',     data: { body: 'Come visit us and explore this little stretch of rural Nevada \u2014 wide open skies, wild horses, ancient forests, and natural hot springs, all within a short drive of the Market. In this little dust bowl there\u2019s always "on more" dirt road to explore.' } },
       { id: 'sec_explore',      type: 'explore',  data: clone(SECTION_TYPES.explore.defaults) },
+      { id: 'sec_text_outro',   type: 'text',     data: { body: 'Make sure you stop in at the Market before hitting the trails \u2014 stock up on fuel, cold drinks, and a fresh-made snackbar sandwich to keep you going.' } },
       { id: 'sec_banner_bye',   type: 'banner',   data: { title: 'See You Soon',        subtitle: 'HWY 264 Mile Marker 8 &nbsp;&middot;&nbsp; Dyer, NV 89010',   icon: 'map-pin',  variant: 'see-you',   cta_label: 'Get Directions', cta_link: 'https://maps.app.goo.gl/dhU5oMRYwXpTUhmY9', show_star: false } }
     ];
   }
@@ -721,6 +825,12 @@
         return title + tail + (variant ? ' \u00b7 ' + variant : '');
       case 'article':
         return decodeEntities(d.title || 'Untitled Article') + (d.body ? ' \u00b7 ' + truncate(d.body, 60) : '');
+      case 'text':
+        return d.body ? truncate(d.body, 80) : 'Empty text block';
+      case 'heading':
+        var sizeLabel = d.size === 'small' ? 'S' : d.size === 'large' ? 'L' : 'M';
+        var alignLabel = d.align === 'left' ? '\u2190' : d.align === 'right' ? '\u2192' : '\u2194';
+        return (d.text ? decodeEntities(d.text) : 'Empty heading') + ' \u00b7 ' + sizeLabel + ' ' + alignLabel + (d.show_rule ? ' \u00b7 rule' : '');
       case 'events':
         return decodeEntities(d.heading || 'Upcoming Events') + (d.show_facebook_strip !== false ? ' \u00b7 Facebook strip on' : '');
       case 'hours':

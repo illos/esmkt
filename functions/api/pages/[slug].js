@@ -102,8 +102,10 @@ const HOME_DEFAULT_SECTIONS = [
     icon: 'compass', variant: 'explore',
     cta_label: '', cta_link: '', show_star: false,
   }},
+  { id: 'sec_text_lede', type: 'text', data: {
+    body: 'Come visit us and explore this little stretch of rural Nevada \u2014 wide open skies, wild horses, ancient forests, and natural hot springs, all within a short drive of the Market. In this little dust bowl there\u2019s always "on more" dirt road to explore.',
+  }},
   { id: 'sec_explore', type: 'explore', data: {
-    lede: 'Come visit us and explore this little stretch of rural Nevada \u2014 wide open skies, wild horses, ancient forests, and natural hot springs, all within a short drive of the Market. In this little dust bowl there\u2019s always "on more" dirt road to explore.',
     stops: [
       { layout: 'hero',       tag: 'Come Explore The High Desert',         title: 'Welcome to Fish Lake Valley',      description: 'Sprawling across 30 miles of open high desert, Fish Lake Valley is home to free-roaming wild mustang herds, vast alkali flats, and some of the most dramatic big-sky scenery in the American West. Miles of side-by-side and OHV trails wind through the basin \u2014 and on a quiet evening out here, the silence is complete. Esmeralda Market is your basecamp for all of it.', image: 'assets/fish-lake-valley-1.webp' },
       { layout: 'text-left',  tag: 'Decompress in these beautiful springs', title: 'Fish Lake Valley Hot Springs', description: 'One of the Great Basin\u2019s best-kept secrets \u2014 free, remote, and gloriously uncrowded. These geothermal pools rise right from the desert floor and offer a long, steaming soak beneath an enormous Nevada sky. Best at sunrise or after dark, when warm water meets cool desert air in a way you won\u2019t forget.', image: 'assets/hotsprings.webp' },
@@ -111,7 +113,9 @@ const HOME_DEFAULT_SECTIONS = [
       { layout: 'text-left',  tag: 'Brave the climb',                      title: 'Boundary Peak Trailhead',          description: 'Nevada\u2019s highest point at 13,147 feet, Boundary Peak towers over the valley from the White Mountain crest. The trailhead is just up the road \u2014 fuel up and grab a sandwich before setting out on the state\u2019s ultimate summit hike. It\u2019s roughly 8 miles round trip with 4,000 feet of gain. The views from the top stretch into four states.', image: 'assets/boundery-1.webp' },
       { layout: 'text-right', tag: '"If these trees could talk"',          title: 'Bristlecone Pine Forest',          description: 'High in the White Mountains live some of the oldest organisms on Earth. The Ancient Bristlecone Pine Forest holds trees more than 5,000 years old \u2014 gnarled, wind-twisted, and achingly beautiful. They were already ancient when the pyramids were built. Standing among them in the alpine quiet puts the scale of human time in sharp, humbling perspective.', image: 'assets/bristlecone-pine-forest.webp' },
     ],
-    trail_strip_text: 'Make sure you stop in at the Market before hitting the trails \u2014 stock up on fuel, cold drinks, and a fresh-made snackbar sandwich to keep you going.',
+  }},
+  { id: 'sec_text_outro', type: 'text', data: {
+    body: 'Make sure you stop in at the Market before hitting the trails \u2014 stock up on fuel, cold drinks, and a fresh-made snackbar sandwich to keep you going.',
   }},
   { id: 'sec_banner_bye', type: 'banner', data: {
     title: 'See You Soon', subtitle: 'HWY 264 Mile Marker 8 &nbsp;&middot;&nbsp; Dyer, NV 89010',
@@ -140,7 +144,42 @@ export async function onRequestGet({ env, params }) {
   if (raw) {
     try {
       const data = JSON.parse(raw);
-      return json({ sections: Array.isArray(data.sections) ? data.sections : [] });
+      let sections = Array.isArray(data.sections) ? data.sections : [];
+
+      // ─── One-time migration: Explore `lede` + `trail_strip_text` → Text sections ───
+      // If an explore section has legacy fields, split them out into sibling Text
+      // sections before/after the Explore section, and remove the fields from Explore.
+      // Idempotent: after migration, the `lede` and `trail_strip_text` fields are
+      // deleted from the explore data, so this runs at most once per explore section.
+      const migrated = [];
+      let didMigrate = false;
+      for (const s of sections) {
+        if (s && s.type === 'explore' && s.data && (s.data.lede || s.data.trail_strip_text)) {
+          const ledeText  = s.data.lede || '';
+          const outroText = s.data.trail_strip_text || '';
+          const cleanedExplore = { ...s, data: { ...s.data } };
+          delete cleanedExplore.data.lede;
+          delete cleanedExplore.data.trail_strip_text;
+
+          if (ledeText) {
+            migrated.push({ id: 'sec_text_lede_' + Math.random().toString(16).slice(2, 10),  type: 'text', data: { body: ledeText  } });
+          }
+          migrated.push(cleanedExplore);
+          if (outroText) {
+            migrated.push({ id: 'sec_text_outro_' + Math.random().toString(16).slice(2, 10), type: 'text', data: { body: outroText } });
+          }
+          didMigrate = true;
+        } else {
+          migrated.push(s);
+        }
+      }
+
+      if (didMigrate) {
+        await env.MENU_KV.put(kvKey, JSON.stringify({ sections: migrated }));
+        sections = migrated;
+      }
+
+      return json({ sections });
     } catch (_) {
       // Corrupt data — fall through and return defaults (don't overwrite KV here;
       // that could stomp on data that's recoverable).
