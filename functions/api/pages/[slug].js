@@ -1,12 +1,16 @@
 /**
- * GET  /api/pages/home  — public, returns { sections: [...] }
- * PUT  /api/pages/home  — save sections (auth required)
+ * GET  /api/pages/:slug  — public, returns { sections: [...] }
+ * PUT  /api/pages/:slug  — save sections (auth required)
  *
- * On first request, synthesizes a default sections[] from built-in defaults
- * that exactly mirror the legacy hand-authored homepage. Writes the result
- * back to KV so subsequent requests are fast and edits take over.
+ * KV key format:  "page_<slug>"  (e.g. "page_home", "page_menu")
  *
- * KV key:  "page_home"  (separate from "settings", "menu", "events")
+ * On first GET for a slug that doesn't exist in KV yet, synthesizes defaults:
+ *   - home:    full default homepage layout mirroring the legacy hand-authored HTML
+ *   - others:  empty { sections: [] }
+ *
+ * Only whitelisted slugs are accepted — unknown slugs return 404. This is a
+ * safety net while "+ New Page" is disabled in the admin. To add a new page
+ * type, add its slug to PAGE_SLUGS below.
  *
  * Required KV binding:  MENU_KV
  * Required env var:     AUTH_SECRET  (HMAC signing secret)
@@ -18,11 +22,16 @@ const CORS = {
   'Access-Control-Allow-Headers': 'Authorization, Content-Type',
 };
 
-// ─── DEFAULT SECTIONS ────────────────────────────────────────────────────────
-// These data values match the legacy hand-authored index.html byte-for-byte.
-// js/sections.js holds a mirror of these defaults for the admin UI; this file
-// has its own copy because server and client do not share code at runtime.
-const DEFAULT_SECTIONS = [
+// Only these slugs are accepted. Adding a new page type = add a slug here.
+// (When "+ New Page" is enabled in a future phase, this check gets replaced
+// with a lookup against a pages index KV key.)
+const PAGE_SLUGS = ['home', 'menu', 'contact'];
+
+// ─── DEFAULT SECTIONS PER SLUG ──────────────────────────────────────────────
+// Home's defaults mirror the legacy hand-authored index.html byte-for-byte.
+// Menu and Contact start empty — their hand-authored pages keep working as
+// before until someone adds sections via the admin.
+const HOME_DEFAULT_SECTIONS = [
   { id: 'sec_hero', type: 'hero', data: {
     eyebrow: 'Welcome to the',
     name: 'Esmeralda',
@@ -111,7 +120,10 @@ const DEFAULT_SECTIONS = [
   }},
 ];
 
-const DEFAULT_PAGE = { sections: DEFAULT_SECTIONS };
+function defaultsForSlug(slug) {
+  if (slug === 'home') return { sections: HOME_DEFAULT_SECTIONS };
+  return { sections: [] };
+}
 
 // ─── Route handlers ──────────────────────────────────────────────────────────
 
@@ -119,23 +131,31 @@ export async function onRequestOptions() {
   return new Response(null, { status: 204, headers: CORS });
 }
 
-export async function onRequestGet({ env }) {
-  const raw = await env.MENU_KV.get('page_home');
+export async function onRequestGet({ env, params }) {
+  const slug = String(params.slug || '');
+  if (!PAGE_SLUGS.includes(slug)) return json({ error: 'Unknown page.' }, 404);
+
+  const kvKey = 'page_' + slug;
+  const raw = await env.MENU_KV.get(kvKey);
   if (raw) {
     try {
       const data = JSON.parse(raw);
-      return json({ sections: Array.isArray(data.sections) ? data.sections : DEFAULT_SECTIONS });
+      return json({ sections: Array.isArray(data.sections) ? data.sections : [] });
     } catch (_) {
       // Corrupt data — fall through and return defaults (don't overwrite KV here;
       // that could stomp on data that's recoverable).
     }
   }
-  // First run: seed KV with defaults so admin sees them on first open
-  await env.MENU_KV.put('page_home', JSON.stringify(DEFAULT_PAGE));
-  return json(DEFAULT_PAGE);
+  // First run for this slug: seed KV with defaults so admin sees them on first open
+  const defaults = defaultsForSlug(slug);
+  await env.MENU_KV.put(kvKey, JSON.stringify(defaults));
+  return json(defaults);
 }
 
-export async function onRequestPut({ request, env }) {
+export async function onRequestPut({ request, env, params }) {
+  const slug = String(params.slug || '');
+  if (!PAGE_SLUGS.includes(slug)) return json({ error: 'Unknown page.' }, 404);
+
   if (!await isAuthorized(request, env)) return unauthorized();
 
   const body = await request.json();
@@ -154,7 +174,7 @@ export async function onRequestPut({ request, env }) {
     }))
     .filter(s => s.type);
 
-  await env.MENU_KV.put('page_home', JSON.stringify({ sections }));
+  await env.MENU_KV.put('page_' + slug, JSON.stringify({ sections }));
   return json({ success: true, sections });
 }
 

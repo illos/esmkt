@@ -87,7 +87,7 @@ function switchTab(tab) {
   document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1))?.classList.add('active');
   if (tab === 'settings') { showPage('pageSettings'); loadSettings(); }
   if (tab === 'hours')    { showPage('pageHours');    loadHours(); }
-  if (tab === 'pages')    { showPage('pagePages');    loadPageHome(); }
+  if (tab === 'pages')    { showPage('pagePages');    loadPagesList(); }
   if (tab === 'menu')     { showPage('pageList');     loadMenu(); }
   if (tab === 'events')   { showPage('pageEvents');   loadEvents(); }
 }
@@ -1374,21 +1374,91 @@ async function saveLinks() {
   }
 }
 
-// ─── PAGES ADMIN ─────────────────────────────────────────────────────────────
-// Manages the Pages tab: loads /api/pages/home, renders sections as a
-// drag-reorderable list, and saves the new order back to the API.
-// Phase 2 scope: reorder only. No field editing, no add/delete.
+// ─── PAGES ADMIN (master/detail) ─────────────────────────────────────────────
+// Pages tab flow:
+//   1. switchTab('pages')     → shows pagePages (master list of pages)
+//   2. openPageEditor(slug)   → shows pagePageEditor (sections list for that page)
+//   3. back button            → switchTab('pages')
+//
+// Each page slug maps to a KV key "page_<slug>" via /api/pages/<slug>.
+// Phase 3 scope: reorder + per-field editing (editing is built on top of this in a follow-up file).
 
-let pageHomeSections = [];       // current in-memory list (edited)
-let pageHomeOriginal = null;     // JSON snapshot of what we loaded (for dirty check)
-let dragSectionId   = null;      // id of section currently being dragged
+// Registry of pages available in the admin. "+ New Page" is disabled for now,
+// so this list is fixed. Adding a new page type = add an entry here AND add
+// the slug to PAGE_SLUGS in functions/api/pages/[slug].js.
+const ADMIN_PAGES = [
+  { slug: 'home',    title: 'Home',    icon: '\uD83C\uDFE0' }, // 🏠
+  { slug: 'menu',    title: 'Menu',    icon: '\uD83C\uDF54' }, // 🍔
+  { slug: 'contact', title: 'Contact', icon: '\u2709'         } // ✉
+];
 
-async function loadPageHome() {
+// Editor state — which page is open and what its sections look like
+let currentPageSlug    = null;
+let pageHomeSections   = [];     // kept name for backward-compat with other code; now holds "current page" sections
+let pageHomeOriginal   = null;   // snapshot for dirty-check
+let dragSectionId      = null;
+
+// ─── MASTER LIST: list of pages ──────────────────────────────────────────────
+async function loadPagesList() {
+  const container = document.getElementById('pagesList');
+  if (!container) return;
+  container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--cream-dim);font-style:italic"><span class="spinner"></span> Loading&hellip;</div>';
+
+  // Fetch section counts for each page in parallel. Failures degrade to "—".
+  const results = await Promise.all(ADMIN_PAGES.map(async p => {
+    try {
+      const res = await fetch('/api/pages/' + p.slug);
+      if (!res.ok) return { ...p, count: null };
+      const data = await res.json();
+      return { ...p, count: Array.isArray(data.sections) ? data.sections.length : 0 };
+    } catch (_) {
+      return { ...p, count: null };
+    }
+  }));
+
+  container.innerHTML = results.map(p => renderPageListRow(p)).join('');
+}
+
+function renderPageListRow(p) {
+  const countStr = p.count == null
+    ? '<span style="color:var(--brand-red)">failed to load</span>'
+    : `${p.count} section${p.count !== 1 ? 's' : ''}`;
+  return `
+    <div class="category-block" style="cursor:pointer;transition:border-color 0.15s,background 0.15s" onclick="openPageEditor('${esc(p.slug)}')"
+      onmouseover="this.style.borderColor='var(--gold-dark)'"
+      onmouseout="this.style.borderColor=''">
+      <div class="category-header" style="gap:12px">
+        <span style="font-size:20px;width:28px;text-align:center;flex-shrink:0">${p.icon}</span>
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+          <span style="font-family:'Oswald',sans-serif;font-size:15px;color:var(--gold);letter-spacing:1px;text-transform:uppercase">${esc(p.title)}</span>
+          <span style="font-size:12px;color:var(--cream-dim)">${countStr}</span>
+        </div>
+        <span style="color:rgba(184,176,160,0.4);font-size:18px;flex-shrink:0">&rsaquo;</span>
+      </div>
+    </div>
+  `;
+}
+
+// ─── DETAIL VIEW: sections for a specific page ───────────────────────────────
+function openPageEditor(slug) {
+  const pageMeta = ADMIN_PAGES.find(p => p.slug === slug);
+  if (!pageMeta) { showToast('Unknown page.', true); return; }
+  currentPageSlug = slug;
+
+  const titleEl = document.getElementById('pageEditorTitle');
+  if (titleEl) titleEl.textContent = pageMeta.title + ' — Sections';
+
+  showPage('pagePageEditor');
+  loadCurrentPage();
+}
+
+async function loadCurrentPage() {
+  if (!currentPageSlug) return;
   const container = document.getElementById('sectionsList');
   if (!container) return;
   container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--cream-dim);font-style:italic"><span class="spinner"></span> Loading&hellip;</div>';
   try {
-    const res = await fetch('/api/pages/home');
+    const res = await fetch('/api/pages/' + currentPageSlug);
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     pageHomeSections = Array.isArray(data.sections) ? data.sections : [];
@@ -1404,7 +1474,7 @@ function renderPageSections() {
   const container = document.getElementById('sectionsList');
   if (!container) return;
   if (!pageHomeSections.length) {
-    container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--cream-dim);font-style:italic">No sections.</div>';
+    container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--cream-dim);font-style:italic">No sections on this page yet.</div>';
     return;
   }
   container.innerHTML = pageHomeSections.map((s, idx) => renderSectionRow(s, idx)).join('');
@@ -1496,13 +1566,14 @@ function updatePageHomeDirty() {
 
 // ─── Save ────────────────────────────────────────────────────────────────────
 async function savePageHome() {
+  if (!currentPageSlug) return;
   const btn = document.getElementById('savePageHomeBtn');
   const ind = document.getElementById('savingPageHomeIndicator');
   if (btn && btn.disabled) return;
   if (btn) btn.disabled = true;
   if (ind) ind.style.display = 'inline-flex';
   try {
-    const res = await apiFetch('/api/pages/home', {
+    const res = await apiFetch('/api/pages/' + currentPageSlug, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sections: pageHomeSections })
