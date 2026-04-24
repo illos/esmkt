@@ -248,15 +248,17 @@
   </div>
 
   <p style="font-size:12px;color:var(--cream-dim);margin:0 0 16px;line-height:1.6;max-width:700px">
-    Drag the <span style="color:var(--gold)">&#8942;&#8942;</span> handle to reorder sections. Click any section to edit its fields. Adding and removing sections is coming in a future update.
+    Drag the <span style="color:var(--gold)">&#8942;&#8942;</span> handle to reorder sections. Click any section to edit its fields. Use the eye icon to hide a section without deleting it. Click Save Layout when you're done.
   </p>
 
   <div id="sectionsList">
     <div style="padding:40px;text-align:center;color:var(--cream-dim);font-style:italic"><span class="spinner"></span> Loading&hellip;</div>
   </div>
 
+  <button class="btn-add-item" style="margin-top:12px" onclick="openAddSectionModal()">+ Add Section</button>
+
   <div class="form-actions" style="margin-top:20px">
-    <button class="btn-save" id="savePageHomeBtn" onclick="savePageHome()" disabled style="opacity:0.5;cursor:not-allowed">Save Order</button>
+    <button class="btn-save" id="savePageHomeBtn" onclick="savePageHome()" disabled style="opacity:0.5;cursor:not-allowed">Save Layout</button>
     <button class="btn-cancel" id="resetPageHomeBtn" onclick="loadCurrentPage()" style="margin-left:8px">Reset</button>
     <span id="savingPageHomeIndicator" style="display:none;align-items:center;color:var(--cream-dim);font-size:13px;margin-left:16px">
       <span class="spinner"></span> Saving&hellip;
@@ -265,7 +267,23 @@
 
 </div>
 
-<!-- ─── SECTION EDITOR (edits one section's fields) ─── -->
+<!-- ─── ADD SECTION MODAL ─── -->
+<div class="modal-overlay" id="addSectionModal">
+  <div class="modal-box" style="max-width:720px;width:92%">
+    <div class="modal-title">Add a Section</div>
+    <div class="modal-body" style="padding:0;max-height:60vh;overflow-y:auto">
+      <p style="font-size:12px;color:var(--cream-dim);margin:0 0 16px;line-height:1.6">
+        Pick a section type. The new section will be added at the end of the list \u2014 drag to reorder. Click Save Layout when you're done.
+      </p>
+      <div id="addSectionGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px"></div>
+    </div>
+    <div class="modal-actions" style="margin-top:20px">
+      <button class="btn-confirm-cancel" onclick="closeAddSectionModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── SECTION EDITOR (edits one section's fields) ─── ->
 <div class="page" id="pageSectionEditor">
 
   <button class="form-back" onclick="backToPageEditor()">&#8592; Back to Sections</button>

@@ -1610,6 +1610,14 @@
   /* Apple Maps gets a subtler treatment so Google reads as primary */
   opacity: 0.9;
 }
+.btn-maps-glyph {
+  /* Brand SVGs (Google G, Apple logo) inside .btn-maps buttons */
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  display: inline-block;
+  vertical-align: middle;
+}
 
 /* ── Explore per-stop CTA button ──
    Sits at the end of .explore-body. Matches the visual language of other

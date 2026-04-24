@@ -1488,38 +1488,59 @@ function renderSectionRow(section, idx) {
   const summary  = window.SECTIONS ? window.SECTIONS.sectionSummary(section) : '';
   const id       = esc(section.id || '');
   const editable = T && T.schema && Object.keys(T.schema).length > 0;
+  const isHidden = section.hidden === true;
 
   const catBadge = category === 'reserved'
     ? '<span style="display:inline-block;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--cream-dim);border:1px solid var(--charcoal-border);padding:1px 6px;border-radius:2px;margin-left:8px;opacity:0.6">reserved</span>'
     : '';
+  const hiddenBadge = isHidden
+    ? '<span style="display:inline-block;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:rgba(230,120,110,0.9);border:1px solid rgba(170,60,50,0.4);padding:1px 6px;border-radius:2px;margin-left:8px">hidden</span>'
+    : '';
+
+  // When a row is hidden, dim the content side but keep actions fully visible
+  const contentDimStyle = isHidden ? 'opacity:0.5' : '';
 
   const clickAttr = editable
     ? `onclick="openSectionEditor('${id}')" style="cursor:pointer"`
     : '';
-  const caret = editable
-    ? '<span style="color:rgba(184,176,160,0.4);font-size:16px;flex-shrink:0">&rsaquo;</span>'
-    : '';
+
+  // SVG eye icons — open when visible, slashed when hidden
+  const eyeIconOpen = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+  const eyeIconSlash = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+  const eyeBtn = `
+    <button type="button" title="${isHidden ? 'Show on page' : 'Hide from page'}"
+      onclick="event.stopPropagation(); toggleSectionHidden('${id}')"
+      style="background:transparent;border:1px solid var(--charcoal-border);color:${isHidden ? 'rgba(230,120,110,0.9)' : 'var(--cream-dim)'};width:32px;height:32px;border-radius:3px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;flex-shrink:0">
+      ${isHidden ? eyeIconSlash : eyeIconOpen}
+    </button>`;
+
+  const deleteBtn = `
+    <button type="button" title="Delete section"
+      onclick="event.stopPropagation(); promptDeleteSection('${id}')"
+      style="background:transparent;border:1px solid rgba(170,60,50,0.5);color:rgba(230,120,110,0.9);width:32px;height:32px;border-radius:3px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;flex-shrink:0;font-size:16px">&times;</button>`;
 
   return `
     <div class="category-block" data-section-id="${id}" ${clickAttr}
       ondragover="onSectionDragOver(event,'${id}')"
       ondrop="onSectionDrop(event,'${id}')"
       ondragend="onSectionDragEnd(event)">
-      <div class="category-header" style="gap:12px">
+      <div class="category-header" style="gap:10px">
         <span class="cat-drag-handle" draggable="true"
           ondragstart="onSectionDragStart(event,'${id}')"
           onclick="event.stopPropagation()"
           title="Drag to reorder">&#8942;&#8942;</span>
-        <span style="font-size:18px;width:24px;text-align:center;flex-shrink:0">${icon}</span>
-        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+        <span style="font-size:18px;width:24px;text-align:center;flex-shrink:0;${contentDimStyle}">${icon}</span>
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;${contentDimStyle}">
           <div style="display:flex;align-items:center;gap:8px;min-width:0">
             <span style="font-family:'Oswald',sans-serif;font-size:14px;color:var(--gold);letter-spacing:1px;text-transform:uppercase;flex-shrink:0">${esc(label)}</span>
             ${catBadge}
+            ${hiddenBadge}
           </div>
           <div style="font-size:12px;color:var(--cream-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(summary)}</div>
         </div>
-        <span style="font-size:11px;color:rgba(184,176,160,0.4);letter-spacing:1px;font-family:'Oswald',sans-serif;flex-shrink:0">#${idx + 1}</span>
-        ${caret}
+        <span style="font-size:11px;color:rgba(184,176,160,0.4);letter-spacing:1px;font-family:'Oswald',sans-serif;flex-shrink:0;${contentDimStyle}">#${idx + 1}</span>
+        ${eyeBtn}
+        ${deleteBtn}
       </div>
     </div>
   `;
@@ -2257,4 +2278,103 @@ async function saveEditingSection() {
     if (btn) btn.disabled = false;
     if (ind) ind.style.display = 'none';
   }
+}
+
+// ─── PHASE 4 — Add / Delete / Hide sections ──────────────────────────────────
+// These operations all mutate the in-memory pageHomeSections list and trigger
+// the dirty check; they do NOT persist to the server until the user clicks
+// "Save Layout" on the page editor. This matches the reorder flow from Phase 2.
+
+// Simple unique-id generator for new sections
+function newSectionId() {
+  return 'sec_' + Math.random().toString(16).slice(2, 10) + Date.now().toString(16).slice(-4);
+}
+
+// ─── ADD SECTION ─────────────────────────────────────────────────────────────
+function openAddSectionModal() {
+  if (!window.SECTIONS || !window.SECTIONS.TYPES) return;
+  const grid = document.getElementById('addSectionGrid');
+  if (!grid) return;
+
+  // Filter: exclude 'reserved' types (menu, contact_form, footer).
+  // Order: custom types first, then generic, each group alphabetical by label
+  const types = Object.keys(window.SECTIONS.TYPES)
+    .map(key => ({ key, ...window.SECTIONS.TYPES[key] }))
+    .filter(t => t.category !== 'reserved');
+
+  const custom  = types.filter(t => t.category === 'custom').sort((a, b) => a.label.localeCompare(b.label));
+  const generic = types.filter(t => t.category === 'generic').sort((a, b) => a.label.localeCompare(b.label));
+  const ordered = [...custom, ...generic];
+
+  grid.innerHTML = ordered.map(t => `
+    <button type="button" onclick="addSectionOfType('${esc(t.key)}')"
+      style="text-align:left;padding:14px;border:1px solid var(--charcoal-border);border-radius:4px;background:var(--charcoal-card);color:var(--cream);cursor:pointer;display:flex;flex-direction:column;gap:6px;transition:border-color 0.15s,background 0.15s"
+      onmouseover="this.style.borderColor='var(--gold-dark)'; this.style.background='rgba(201,169,110,0.05)'"
+      onmouseout="this.style.borderColor=''; this.style.background='var(--charcoal-card)'">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:20px;width:24px;text-align:center;flex-shrink:0">${t.icon || '\u25A1'}</span>
+        <span style="font-family:'Oswald',sans-serif;font-size:13px;color:var(--gold);letter-spacing:1.5px;text-transform:uppercase">${esc(t.label)}</span>
+      </div>
+      <div style="font-size:11px;color:var(--cream-dim);line-height:1.5">${esc(t.description || '')}</div>
+    </button>
+  `).join('');
+
+  document.getElementById('addSectionModal').classList.add('visible');
+}
+
+function closeAddSectionModal() {
+  const modal = document.getElementById('addSectionModal');
+  if (modal) modal.classList.remove('visible');
+}
+
+function addSectionOfType(typeKey) {
+  const T = window.SECTIONS && window.SECTIONS.TYPES && window.SECTIONS.TYPES[typeKey];
+  if (!T) { showToast('Unknown section type.', true); return; }
+
+  // Deep-clone the defaults so subsequent edits don't mutate the registry
+  const defaults = T.defaults ? JSON.parse(JSON.stringify(T.defaults)) : {};
+
+  pageHomeSections.push({
+    id:   newSectionId(),
+    type: typeKey,
+    data: defaults
+  });
+
+  closeAddSectionModal();
+  renderPageSections();
+  updatePageHomeDirty();
+  showToast('Section added. Click Save Layout to persist.');
+
+  // Scroll to bottom so the user sees the new row
+  const list = document.getElementById('sectionsList');
+  if (list) list.scrollIntoView({ behavior: 'smooth', block: 'end' });
+}
+
+// ─── DELETE SECTION ──────────────────────────────────────────────────────────
+function promptDeleteSection(sectionId) {
+  const idx = pageHomeSections.findIndex(s => s.id === sectionId);
+  if (idx < 0) { showToast('Section not found.', true); return; }
+  const section = pageHomeSections[idx];
+  const T = window.SECTIONS && window.SECTIONS.TYPES && window.SECTIONS.TYPES[section.type];
+  const label = T ? T.label : section.type;
+  showConfirmModal(
+    'Delete Section?',
+    `Remove the "${label}" section at position #${idx + 1}? You'll still need to click Save Layout to persist this deletion.`,
+    () => {
+      pageHomeSections.splice(idx, 1);
+      renderPageSections();
+      updatePageHomeDirty();
+      showToast('Section removed. Click Save Layout to persist.');
+    }
+  );
+}
+
+// ─── HIDE / SHOW SECTION ─────────────────────────────────────────────────────
+function toggleSectionHidden(sectionId) {
+  const section = pageHomeSections.find(s => s.id === sectionId);
+  if (!section) return;
+  section.hidden = !section.hidden;
+  renderPageSections();
+  updatePageHomeDirty();
+  showToast(section.hidden ? 'Section hidden. Click Save Layout to persist.' : 'Section shown. Click Save Layout to persist.');
 }

@@ -290,18 +290,23 @@
 
     var mapsButtonsHtml = '';
     if (googleMapsUrl || appleMapsUrl) {
+      // Brand glyphs. Both inherit currentColor so they pick up .btn-maps' gold.
+      // Google: simplified "G" mark in a single path. Apple: classic apple silhouette.
+      var googleGlyph = '<svg class="btn-maps-glyph" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M12 10.2v3.9h5.48c-.24 1.45-1.71 4.25-5.48 4.25-3.3 0-5.99-2.73-5.99-6.1s2.69-6.1 5.99-6.1c1.88 0 3.13.8 3.85 1.48l2.63-2.54C16.75 3.48 14.56 2.5 12 2.5 6.75 2.5 2.5 6.75 2.5 12S6.75 21.5 12 21.5c6.92 0 11.5-4.86 11.5-11.7 0-.79-.08-1.39-.18-1.99H12z"/></svg>';
+      var appleGlyph  = '<svg class="btn-maps-glyph" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M17.05 12.54c-.02-2.8 2.29-4.14 2.39-4.21-1.31-1.91-3.34-2.17-4.06-2.2-1.72-.17-3.37 1.01-4.25 1.01-.89 0-2.24-.98-3.69-.96-1.9.03-3.65 1.1-4.62 2.8-1.97 3.42-.5 8.48 1.42 11.26.94 1.37 2.05 2.9 3.5 2.85 1.4-.06 1.93-.9 3.63-.9 1.69 0 2.16.9 3.64.88 1.5-.03 2.45-1.39 3.37-2.77 1.06-1.59 1.5-3.13 1.53-3.21-.03-.01-2.93-1.13-2.96-4.55zm-2.79-8.38c.78-.94 1.3-2.26 1.16-3.56-1.12.05-2.48.75-3.28 1.69-.72.83-1.35 2.16-1.18 3.45 1.24.1 2.52-.63 3.3-1.58z"/></svg>';
+
       var buttons = '';
       if (googleMapsUrl) {
         buttons += ''
           + '<a href="' + esc(googleMapsUrl) + '" target="_blank" rel="noopener noreferrer" class="btn-maps">'
-          +   '<span class="btn-maps-icon">\uD83D\uDCCD</span>'
+          +   googleGlyph
           +   'Google Maps'
           + '</a>';
       }
       if (appleMapsUrl) {
         buttons += ''
           + '<a href="' + esc(appleMapsUrl) + '" target="_blank" rel="noopener noreferrer" class="btn-maps btn-maps-apple">'
-          +   '<span class="btn-maps-icon">\uD83D\uDCCD</span>'
+          +   appleGlyph
           +   'Apple Maps'
           + '</a>';
       }
@@ -851,6 +856,12 @@
 
   // ─── renderSection / renderSectionList ────────────────────────────────────
   function renderSection(section, ctx) {
+    // Hidden sections emit a comment and render nothing on the page.
+    // The `hidden` flag lives at the section level (not inside data) so it
+    // works for every type without needing per-type schema changes.
+    if (section && section.hidden === true) {
+      return '<!-- hidden section: ' + esc(section.id || '') + ' -->';
+    }
     var type = SECTION_TYPES[section.type];
     if (!type) return '<!-- unknown section type: ' + esc(section.type) + ' -->';
     return type.render(section.data || {}, ctx || {});
