@@ -48,6 +48,10 @@ const DEFAULT_SETTINGS = {
   quickLinks: DEFAULT_QUICK_LINKS,
   contactEmail:     '',
   turnstileSiteKey: '',
+  // Phase 5: print-server placeholder. When true, online ordering will require a
+  // running print server to accept orders. Currently wired but not enforced —
+  // menu.js has a commented-out gate ready for when the server is deployed.
+  printServerRequired: false,
 };
 
 export async function onRequestOptions() {
@@ -83,6 +87,7 @@ export async function onRequestPut({ request, env }) {
     ...(body.quickLinks        !== undefined && { quickLinks:        Array.isArray(body.quickLinks) ? body.quickLinks : existing.quickLinks }),
     ...(body.contactEmail      !== undefined && { contactEmail:      String(body.contactEmail).trim() }),
     ...(body.turnstileSiteKey  !== undefined && { turnstileSiteKey:  String(body.turnstileSiteKey).trim() }),
+    ...(body.printServerRequired !== undefined && { printServerRequired: body.printServerRequired === true }),
   };
 
   await env.MENU_KV.put('settings', JSON.stringify(data));
@@ -109,6 +114,7 @@ function migrateSettings(data) {
     quickLinks:       Array.isArray(data.quickLinks) ? data.quickLinks : DEFAULT_QUICK_LINKS,
     contactEmail:     data.contactEmail     ?? '',
     turnstileSiteKey: data.turnstileSiteKey ?? '',
+    printServerRequired: data.printServerRequired === true,
   };
 }
 

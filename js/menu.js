@@ -203,6 +203,24 @@ function checkSnackbarHours() {
   }
 
   orderingOpen = snackbarIsOpen && onlineOrderingEnabled;
+
+  // ─── Future: print-server gate ───────────────────────────────────────────
+  // When the print server is wired up, uncomment this block. It adds a third
+  // required condition: if the owner has toggled "Require Print Server for
+  // Orders" on in Settings, the server must be online to accept orders.
+  //
+  // if (sData.printServerRequired === true) {
+  //   try {
+  //     const psRes  = await fetch('/api/print-server/status');
+  //     const psData = await psRes.json();
+  //     if (!psData.online) orderingOpen = false;
+  //   } catch (_) {
+  //     // If status endpoint fails, err on the side of blocking orders
+  //     orderingOpen = false;
+  //   }
+  // }
+  // ─────────────────────────────────────────────────────────────────────────
+
   document.getElementById('snackbarOpenContent').style.display = orderingOpen ? 'block' : 'none';
   // Floating cart is only meaningful when ordering is available
   if (!orderingOpen) document.getElementById('floatingCart').classList.remove('visible');

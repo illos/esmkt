@@ -183,6 +183,35 @@
     </div>
   </div>
 
+  <!-- ─── PRINT SERVER ─── -->
+  <div class="hours-section-title">Print Server <span style="font-size:10px;color:var(--cream-dim);letter-spacing:2px;margin-left:8px">&middot; not yet deployed</span></div>
+  <div class="form-card" style="margin-bottom:28px">
+    <p style="font-size:12px;color:var(--cream-dim);margin-bottom:16px;line-height:1.6">
+      When deployed, a small server running on a PC at the store will receive online orders and send them to a receipt printer. This UI is a placeholder &mdash; the print server isn't running yet, so ordering currently works regardless of the setting below.
+    </p>
+
+    <!-- Status indicator -->
+    <div class="ordering-status-bar" style="margin-bottom:20px">
+      <div class="ordering-status-left">
+        <span class="ordering-status-label">Server Status</span>
+        <span class="ordering-status-desc" id="printServerStatusDesc">&mdash;</span>
+      </div>
+      <span id="printServerStatusDot" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:rgba(184,176,160,0.4);flex-shrink:0"></span>
+    </div>
+
+    <!-- Require-print-server toggle -->
+    <div class="ordering-status-bar">
+      <div class="ordering-status-left">
+        <span class="ordering-status-label">Require Print Server for Orders</span>
+        <span class="ordering-status-desc" id="printServerRequiredDesc">When on, online ordering is blocked if the print server is offline.</span>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="printServerRequiredToggle" onchange="savePrintServerRequired(this.checked)"/>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+  </div>
+
 
 </div>
 

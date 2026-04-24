@@ -82,6 +82,12 @@ function showPage(id) {
 let activeTab = 'menu';
 
 function switchTab(tab) {
+  // Unsaved-changes guard: when leaving the Pages tab with pending edits.
+  if (activeTab === 'pages' && tab !== 'pages' && hasUnsavedPageChanges()) {
+    if (!confirm('You have unsaved layout changes on this page. Leave without saving?')) return;
+    // User opted to discard — clear the dirty state so subsequent checks don't re-prompt
+    pageHomeOriginal = JSON.stringify(pageHomeSections);
+  }
   activeTab = tab;
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1))?.classList.add('active');
@@ -91,6 +97,25 @@ function switchTab(tab) {
   if (tab === 'menu')     { showPage('pageList');     loadMenu(); }
   if (tab === 'events')   { showPage('pageEvents');   loadEvents(); }
 }
+
+// Returns true if the current Pages admin state has unsaved changes
+// (differs from what was last loaded/saved). Used by navigation guards.
+function hasUnsavedPageChanges() {
+  if (!pageHomeOriginal) return false;
+  try {
+    return pageHomeOriginal !== JSON.stringify(pageHomeSections);
+  } catch (_) { return false; }
+}
+
+// Browser-level warning on refresh/close with pending Pages changes
+window.addEventListener('beforeunload', function (e) {
+  if (hasUnsavedPageChanges()) {
+    e.preventDefault();
+    // Modern browsers ignore custom text, but returning a truthy value still triggers the dialog
+    e.returnValue = 'You have unsaved layout changes. Leave anyway?';
+    return e.returnValue;
+  }
+});
 
 async function showList() {
   document.getElementById('navLogout').classList.add('visible');
@@ -731,6 +756,7 @@ async function loadSettings() {
   loadSiteInfo();
   loadContactSettings();
   renderAdminLinks(settingsData?.quickLinks);
+  loadPrintServerUI();
 }
 
 async function loadHours() {
@@ -1649,6 +1675,13 @@ function nextFieldId() { _formFieldIdCounter++; return 'ff_' + _formFieldIdCount
 
 // ─── Navigation ──────────────────────────────────────────────────────────────
 function openSectionEditor(sectionId) {
+  // Unsaved-changes guard: if the page has pending reorders/adds/deletes/hides,
+  // warn before navigating into the per-section editor because returning will
+  // show fresh data (potentially discarding in-progress list edits).
+  if (hasUnsavedPageChanges() && !confirm('You have unsaved layout changes. Opening the section editor will keep them in memory, but they\'re not saved yet. Continue?')) {
+    return;
+  }
+
   const idx = pageHomeSections.findIndex(s => s.id === sectionId);
   if (idx < 0) { showToast('Section not found.', true); return; }
   editingSectionIdx = idx;
@@ -1658,7 +1691,7 @@ function openSectionEditor(sectionId) {
   const typeLabel = T ? T.label : editingSection.type;
 
   const titleEl = document.getElementById('sectionEditorTitle');
-  if (titleEl) titleEl.textContent = 'Edit ' + typeLabel;
+  if (titleEl) titleEl.textContent = 'Edit ' + typeLabel + ' \u00b7 Position #' + (idx + 1);
 
   showPage('pageSectionEditor');
   renderSectionEditor();
@@ -2377,4 +2410,67 @@ function toggleSectionHidden(sectionId) {
   renderPageSections();
   updatePageHomeDirty();
   showToast(section.hidden ? 'Section hidden. Click Save Layout to persist.' : 'Section shown. Click Save Layout to persist.');
+}
+
+// ─── PRINT SERVER (Phase 5 placeholder) ──────────────────────────────────────
+// The Print Server card in Settings. Shows server status (not configured /
+// offline / online) and offers a "require for orders" toggle. The print
+// server itself doesn't exist yet — this UI is scaffolding.
+async function loadPrintServerUI() {
+  // 1. Status indicator — pull current status from the placeholder endpoint
+  const statusDesc = document.getElementById('printServerStatusDesc');
+  const statusDot  = document.getElementById('printServerStatusDot');
+  if (statusDesc && statusDot) {
+    try {
+      const res  = await fetch('/api/print-server/status');
+      const data = await res.json();
+      if (!data.configured) {
+        statusDesc.textContent = 'Not configured (no heartbeat ever received)';
+        statusDot.style.background = 'rgba(184,176,160,0.4)'; // gray
+      } else if (data.online) {
+        const s = data.secondsSinceLastSeen || 0;
+        statusDesc.textContent = 'Online \u00b7 last heartbeat ' + formatAgo(s);
+        statusDot.style.background = 'rgba(80,180,120,0.9)'; // green
+      } else {
+        const s = data.secondsSinceLastSeen || 0;
+        statusDesc.textContent = 'Offline \u00b7 last heartbeat ' + formatAgo(s);
+        statusDot.style.background = 'rgba(230,120,110,0.9)'; // red
+      }
+    } catch (_) {
+      statusDesc.textContent = 'Could not reach status endpoint';
+      statusDot.style.background = 'rgba(230,120,110,0.9)';
+    }
+  }
+
+  // 2. Require-print-server toggle — reflect current settings value
+  const toggle = document.getElementById('printServerRequiredToggle');
+  if (toggle && settingsData) {
+    toggle.checked = settingsData.printServerRequired === true;
+  }
+}
+
+function formatAgo(seconds) {
+  if (seconds < 60) return seconds + 's ago';
+  if (seconds < 3600) return Math.floor(seconds / 60) + 'm ago';
+  if (seconds < 86400) return Math.floor(seconds / 3600) + 'h ago';
+  return Math.floor(seconds / 86400) + 'd ago';
+}
+
+async function savePrintServerRequired(enabled) {
+  if (!settingsData) return;
+  try {
+    const res = await apiFetch('/api/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ printServerRequired: enabled === true }),
+    });
+    if (!res.ok) throw new Error('Save failed');
+    settingsData.printServerRequired = enabled === true;
+    showToast(enabled ? 'Print server will be required for orders.' : 'Print server requirement disabled.');
+  } catch (e) {
+    showToast(e.message, true);
+    // Revert toggle
+    const toggle = document.getElementById('printServerRequiredToggle');
+    if (toggle) toggle.checked = !enabled;
+  }
 }
