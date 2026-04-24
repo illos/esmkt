@@ -256,7 +256,13 @@ function initSite() {
       // Scroll-driven trail animation must initialize AFTER sections render
       initExploreTrail();
     });
-  }).then(revealPage).catch(revealPage);
+  }).then(function () {
+    revealPage();
+    // Deep-link support: if the URL had a hash, sections weren't in the DOM
+    // when the browser first tried to scroll to it. Now that they are,
+    // scroll to the target manually.
+    scrollToHash();
+  }).catch(revealPage);
 }
 
 // Page-load fade-in: remove .page-loading, add .page-loaded so base.css
@@ -265,6 +271,29 @@ function initSite() {
 function revealPage() {
   document.body.classList.remove('page-loading');
   document.body.classList.add('page-loaded');
+}
+
+// Deep-link hash scrolling. Native browser behavior tries to scroll to
+// `#events`, `#explore`, etc. on page load, but our sections are rendered
+// by JS *after* that scroll attempt fires, so the target doesn't exist
+// yet. This function is called after sections are in the DOM and scrolls
+// to the target if a hash is present and matches a real element.
+function scrollToHash() {
+  var hash = window.location.hash;
+  if (!hash || hash.length < 2) return;
+  var id = hash.slice(1);
+  // Try a few times in case a specific section finishes layout slightly after
+  // innerHTML assignment (images loading, font metrics, etc.)
+  var attempts = 0;
+  function tryScroll() {
+    var el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    if (++attempts < 5) setTimeout(tryScroll, 80);
+  }
+  tryScroll();
 }
 
 // ─── Render events into the Events section's grid ────────────────────────────

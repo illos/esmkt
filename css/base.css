@@ -226,8 +226,12 @@
     z-index: 0;
   }
 
-  a:visited {
-    color: var(--cream-dim); /* Default browser color is typically #800080 */
+  /* Anchors inherit the parent color by default. This prevents the browser's
+     default :visited purple from leaking into styled buttons like .btn-order
+     without hijacking explicit component colors. Styled anchors (e.g.
+     .btn-order, .info-card-body a) override this with higher specificity. */
+  a, a:visited {
+    color: inherit;
   }
 
 
