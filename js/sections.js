@@ -683,6 +683,62 @@
 
   function clone(v) { return JSON.parse(JSON.stringify(v)); }
 
+  // ─── sectionSummary(section) ──────────────────────────────────────────────
+  // Returns a short one-line preview used by the admin's section list rows.
+  // Each type gets a purpose-built summary; unknown types fall back to type.
+  function stripTags(s) { return String(s || '').replace(/<[^>]*>/g, ''); }
+  function decodeEntities(s) {
+    return String(s || '')
+      .replace(/&nbsp;/g,  ' ')
+      .replace(/&middot;/g, '\u00b7')
+      .replace(/&mdash;/g,  '\u2014')
+      .replace(/&ndash;/g,  '\u2013')
+      .replace(/&amp;/g,    '&')
+      .replace(/&lt;/g,     '<')
+      .replace(/&gt;/g,     '>')
+      .replace(/&quot;/g,   '"')
+      .replace(/&#39;/g,    "'");
+  }
+  function truncate(s, n) {
+    s = decodeEntities(stripTags(s)).replace(/\s+/g, ' ').trim();
+    return s.length > n ? s.slice(0, n - 1) + '\u2026' : s;
+  }
+  function sectionSummary(section) {
+    var d = (section && section.data) || {};
+    switch (section && section.type) {
+      case 'hero':
+        var bits = [];
+        if (d.name || d.subtitle) bits.push(decodeEntities([d.name, d.subtitle].filter(Boolean).join(' ')));
+        if (d.primary_cta_label) bits.push('\u2192 ' + decodeEntities(d.primary_cta_label));
+        return bits.join('  \u00b7  ') || 'Hero';
+      case 'banner':
+        var title = decodeEntities(d.title || 'Banner');
+        var variant = '';
+        for (var i = 0; i < BANNER_VARIANTS.length; i++) {
+          if (BANNER_VARIANTS[i].value === d.variant) { variant = BANNER_VARIANTS[i].label; break; }
+        }
+        var tail = d.subtitle ? (' \u00b7 ' + truncate(d.subtitle, 50)) : '';
+        return title + tail + (variant ? ' \u00b7 ' + variant : '');
+      case 'article':
+        return decodeEntities(d.title || 'Untitled Article') + (d.body ? ' \u00b7 ' + truncate(d.body, 60) : '');
+      case 'events':
+        return decodeEntities(d.heading || 'Upcoming Events') + (d.show_facebook_strip !== false ? ' \u00b7 Facebook strip on' : '');
+      case 'hours':
+        return decodeEntities(d.heading || 'Business Hours') + (d.show_location_card !== false ? ' \u00b7 with Location card' : '');
+      case 'services':
+        var count = (d.items && d.items.length) || 0;
+        var first = d.items && d.items.slice(0, 3).map(function (i) { return i.label; }).filter(Boolean).join(', ');
+        return count + ' service' + (count !== 1 ? 's' : '') + (first ? ' \u00b7 ' + first + (count > 3 ? '\u2026' : '') : '');
+      case 'explore':
+        var stopCount = (d.stops && d.stops.length) || 0;
+        return stopCount + ' stop' + (stopCount !== 1 ? 's' : '');
+      case 'menu':         return 'Menu placeholder \u2014 links to menu.html';
+      case 'contact_form': return 'Contact form placeholder \u2014 links to contact.html';
+      case 'footer':       return 'Footer placeholder';
+      default:             return section && section.type || '';
+    }
+  }
+
   // ─── renderSection / renderSectionList ────────────────────────────────────
   function renderSection(section, ctx) {
     var type = SECTION_TYPES[section.type];
@@ -704,6 +760,7 @@
     svgIcon:                 svgIcon,
     renderSection:           renderSection,
     renderSectionList:       renderSectionList,
+    sectionSummary:          sectionSummary,
     defaultHomepageSections: defaultHomepageSections,
     esc:                     esc,
     clone:                   clone

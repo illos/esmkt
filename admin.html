@@ -27,6 +27,7 @@
 <div class="admin-tabs" id="adminTabs">
   <button class="tab-btn active" id="tabSettings" onclick="switchTab('settings')">Settings</button>
   <button class="tab-btn"        id="tabHours"    onclick="switchTab('hours')">Hours</button>
+  <button class="tab-btn"        id="tabPages"    onclick="switchTab('pages')">Pages</button>
   <button class="tab-btn"        id="tabMenu"     onclick="switchTab('menu')">Menu</button>
   <button class="tab-btn"        id="tabEvents"   onclick="switchTab('events')">Events</button>
 </div>
@@ -215,6 +216,31 @@
 
 </div>
 
+<!-- ─── PAGES LIST PAGE ─── -->
+<div class="page" id="pagePages">
+
+  <div class="list-header">
+    <span class="section-title" style="margin:0;flex:1">Homepage Sections</span>
+  </div>
+
+  <p style="font-size:12px;color:var(--cream-dim);margin:0 0 16px;line-height:1.6;max-width:700px">
+    These are the sections that make up your homepage, in the order they appear. Drag the <span style="color:var(--gold)">&#8942;&#8942;</span> handle to reorder. Click Save when you're happy with the new order. Editing individual sections and adding/removing sections will come in a later update.
+  </p>
+
+  <div id="sectionsList">
+    <div style="padding:40px;text-align:center;color:var(--cream-dim);font-style:italic"><span class="spinner"></span> Loading&hellip;</div>
+  </div>
+
+  <div class="form-actions" style="margin-top:20px">
+    <button class="btn-save" id="savePageHomeBtn" onclick="savePageHome()" disabled style="opacity:0.5;cursor:not-allowed">Save Order</button>
+    <button class="btn-cancel" id="resetPageHomeBtn" onclick="loadPageHome()" style="margin-left:8px">Reset</button>
+    <span id="savingPageHomeIndicator" style="display:none;align-items:center;color:var(--cream-dim);font-size:13px;margin-left:16px">
+      <span class="spinner"></span> Saving&hellip;
+    </span>
+  </div>
+
+</div>
+
 <!-- ─── EVENTS LIST PAGE ─── -->
 <div class="page" id="pageEvents">
   <div class="list-header">
@@ -368,6 +394,7 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="js/sections.js"></script>
 <script src="js/admin.js"></script>
 </body>
 </html>

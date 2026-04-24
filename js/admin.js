@@ -87,6 +87,7 @@ function switchTab(tab) {
   document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1))?.classList.add('active');
   if (tab === 'settings') { showPage('pageSettings'); loadSettings(); }
   if (tab === 'hours')    { showPage('pageHours');    loadHours(); }
+  if (tab === 'pages')    { showPage('pagePages');    loadPageHome(); }
   if (tab === 'menu')     { showPage('pageList');     loadMenu(); }
   if (tab === 'events')   { showPage('pageEvents');   loadEvents(); }
 }
@@ -1369,6 +1370,157 @@ async function saveLinks() {
     showToast(e.message, true);
   } finally {
     if (btn) btn.disabled = false;
+    if (ind) ind.style.display = 'none';
+  }
+}
+
+// ─── PAGES ADMIN ─────────────────────────────────────────────────────────────
+// Manages the Pages tab: loads /api/pages/home, renders sections as a
+// drag-reorderable list, and saves the new order back to the API.
+// Phase 2 scope: reorder only. No field editing, no add/delete.
+
+let pageHomeSections = [];       // current in-memory list (edited)
+let pageHomeOriginal = null;     // JSON snapshot of what we loaded (for dirty check)
+let dragSectionId   = null;      // id of section currently being dragged
+
+async function loadPageHome() {
+  const container = document.getElementById('sectionsList');
+  if (!container) return;
+  container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--cream-dim);font-style:italic"><span class="spinner"></span> Loading&hellip;</div>';
+  try {
+    const res = await fetch('/api/pages/home');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    pageHomeSections = Array.isArray(data.sections) ? data.sections : [];
+    pageHomeOriginal = JSON.stringify(pageHomeSections);
+    renderPageSections();
+    updatePageHomeDirty();
+  } catch (err) {
+    container.innerHTML = `<div style="padding:40px;text-align:center;color:var(--brand-red)">Failed to load sections: ${esc(err.message)}</div>`;
+  }
+}
+
+function renderPageSections() {
+  const container = document.getElementById('sectionsList');
+  if (!container) return;
+  if (!pageHomeSections.length) {
+    container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--cream-dim);font-style:italic">No sections.</div>';
+    return;
+  }
+  container.innerHTML = pageHomeSections.map((s, idx) => renderSectionRow(s, idx)).join('');
+}
+
+function renderSectionRow(section, idx) {
+  const T = (window.SECTIONS && window.SECTIONS.TYPES && window.SECTIONS.TYPES[section.type]) || null;
+  const icon     = T ? T.icon  : '\u25A1';
+  const label    = T ? T.label : section.type;
+  const category = T ? T.category : '';
+  const summary  = window.SECTIONS ? window.SECTIONS.sectionSummary(section) : '';
+  const id       = esc(section.id || '');
+
+  const catBadge = category === 'reserved'
+    ? '<span style="display:inline-block;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--cream-dim);border:1px solid var(--charcoal-border);padding:1px 6px;border-radius:2px;margin-left:8px;opacity:0.6">reserved</span>'
+    : '';
+
+  return `
+    <div class="category-block" data-section-id="${id}"
+      ondragover="onSectionDragOver(event,'${id}')"
+      ondrop="onSectionDrop(event,'${id}')"
+      ondragend="onSectionDragEnd(event)">
+      <div class="category-header" style="gap:12px">
+        <span class="cat-drag-handle" draggable="true"
+          ondragstart="onSectionDragStart(event,'${id}')"
+          title="Drag to reorder">&#8942;&#8942;</span>
+        <span style="font-size:18px;width:24px;text-align:center;flex-shrink:0">${icon}</span>
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+          <div style="display:flex;align-items:center;gap:8px;min-width:0">
+            <span style="font-family:'Oswald',sans-serif;font-size:14px;color:var(--gold);letter-spacing:1px;text-transform:uppercase;flex-shrink:0">${esc(label)}</span>
+            ${catBadge}
+          </div>
+          <div style="font-size:12px;color:var(--cream-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(summary)}</div>
+        </div>
+        <span style="font-size:11px;color:rgba(184,176,160,0.4);letter-spacing:1px;font-family:'Oswald',sans-serif;flex-shrink:0">#${idx + 1}</span>
+      </div>
+    </div>
+  `;
+}
+
+// ─── Section drag handlers ───────────────────────────────────────────────────
+function onSectionDragStart(e, sectionId) {
+  dragSectionId = sectionId;
+  e.currentTarget.closest('.category-block')?.classList.add('cat-dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', 'section');
+  e.stopPropagation();
+}
+
+function onSectionDragOver(e, targetSectionId) {
+  if (!dragSectionId || targetSectionId === dragSectionId) return;
+  e.preventDefault();
+  clearSectionDragOver();
+  e.currentTarget.classList.add('cat-drag-over');
+}
+
+function onSectionDrop(e, targetSectionId) {
+  if (!dragSectionId) return;
+  e.preventDefault();
+  if (dragSectionId === targetSectionId) return;
+  const srcIdx = pageHomeSections.findIndex(s => s.id === dragSectionId);
+  const tgtIdx = pageHomeSections.findIndex(s => s.id === targetSectionId);
+  if (srcIdx === -1 || tgtIdx === -1) return;
+  const [moved] = pageHomeSections.splice(srcIdx, 1);
+  pageHomeSections.splice(tgtIdx, 0, moved);
+  renderPageSections();
+  updatePageHomeDirty();
+}
+
+function onSectionDragEnd() {
+  clearSectionDragOver();
+  document.querySelectorAll('.cat-dragging').forEach(el => el.classList.remove('cat-dragging'));
+  dragSectionId = null;
+}
+
+function clearSectionDragOver() {
+  document.querySelectorAll('.cat-drag-over').forEach(el => el.classList.remove('cat-drag-over'));
+}
+
+// ─── Dirty-state gating for Save button ──────────────────────────────────────
+function updatePageHomeDirty() {
+  const btn = document.getElementById('savePageHomeBtn');
+  if (!btn) return;
+  const dirty = pageHomeOriginal !== JSON.stringify(pageHomeSections);
+  btn.disabled = !dirty;
+  btn.style.opacity = dirty ? '1'   : '0.5';
+  btn.style.cursor  = dirty ? 'pointer' : 'not-allowed';
+}
+
+// ─── Save ────────────────────────────────────────────────────────────────────
+async function savePageHome() {
+  const btn = document.getElementById('savePageHomeBtn');
+  const ind = document.getElementById('savingPageHomeIndicator');
+  if (btn && btn.disabled) return;
+  if (btn) btn.disabled = true;
+  if (ind) ind.style.display = 'inline-flex';
+  try {
+    const res = await apiFetch('/api/pages/home', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sections: pageHomeSections })
+    });
+    if (!res.ok) {
+      const txt = await res.text();
+      throw new Error(res.status === 401 ? 'Session expired — please sign in again.' : (txt || ('HTTP ' + res.status)));
+    }
+    const data = await res.json();
+    pageHomeSections = Array.isArray(data.sections) ? data.sections : pageHomeSections;
+    pageHomeOriginal = JSON.stringify(pageHomeSections);
+    renderPageSections();
+    updatePageHomeDirty();
+    showToast('Sections saved.');
+  } catch (err) {
+    showToast(err.message, true);
+  } finally {
+    if (btn) btn.disabled = pageHomeOriginal === JSON.stringify(pageHomeSections);
     if (ind) ind.style.display = 'none';
   }
 }
