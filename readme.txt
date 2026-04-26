@@ -9,8 +9,14 @@ Full-featured website for Esmeralda Market — a gas station, grocery, and
 snackbar in Fish Lake Valley, Nevada.
 
 No build step. Plain HTML, CSS, and JS. Hosted on Cloudflare Pages (free tier)
-with a serverless backend on Cloudflare Pages Functions, Workers KV, and R2.
+with a serverless backend on Cloudflare Pages Functions, Workers KV, R2,
+and D1 (used for the orders queue + print-server heartbeat).
 Push the repo or run `wrangler pages deploy .` to deploy.
+
+Cron triggers for the offline-alert email live in a small companion Worker
+under `cron-worker/` (deployed separately with `wrangler deploy` from that
+directory). It shares the same D1 database and KV namespace as the Pages
+project.
 
 
 ================================================================================
@@ -69,6 +75,11 @@ FILE STRUCTURE
                             section editor, legacy menu/events CRUD. Large
                             file (~2900 lines); see "ADMIN STRUCTURE" below.
 
+  functions/_lib/         Shared helpers (not exposed as routes — folders
+                          beginning with "_" are import-only in Pages).
+    ps-auth.js            Verifies Authorization: Bearer ps:<secret> for
+                          print-server-issued requests.
+
   functions/api/          Cloudflare Pages Functions (serverless API routes).
     auth.js               POST login → HMAC token (8hr expiry).
                           Verifies Turnstile before password (when configured).
@@ -79,16 +90,40 @@ FILE STRUCTURE
     contact.js            POST contact form → Resend email + Turnstile check.
     pages/[slug].js       ★ GET/PUT page sections by slug.
                           Whitelisted slugs: home, menu, contact.
+    orders/
+      index.js            POST /api/orders — public; customer submits an
+                          order. Persists into D1 (`orders` table).
+      pending.js          GET — print server polls for unprinted orders.
+                          (auth: Bearer ps:<PRINT_SERVER_SECRET>)
+      [id]/printed.js     POST — print server marks an order printed
+                          (or failed with an error).
     print-server/
-      status.js           Placeholder endpoint — reports print server status.
+      status.js           GET — public liveness read (configured/online,
+                          last heartbeat age, pending order count).
+      heartbeat.js        POST — print server reports it's alive.
+                          (auth: Bearer ps:<PRINT_SERVER_SECRET>)
 
   functions/images/[filename].js
                           Serves uploaded images from R2.
 
+  schema/
+    d1_init.sql           D1 schema (orders + print_server_state). Apply
+                          with `wrangler d1 execute esmeralda-orders ...`.
+
+  cron-worker/            Companion Cloudflare Worker (NOT a Pages Function).
+    worker.js             Cron-triggered every 5 min. Reads heartbeat from
+                          D1; emails an alert if offline beyond threshold.
+                          Manual trigger via /manual-check (auth required).
+    wrangler.toml         Separate config; deploy with `wrangler deploy`
+                          from inside this directory.
+
   assets/                 Static images (logo, landscape photos, etc.).
-  print-server/           Separate Node project (not wired in yet).
+  print-server/           Polling Node client that runs on the snackbar PC.
+                          Pulls pending orders, prints, plays a chime,
+                          heartbeats, and self-updates from this repo.
+                          See print-server/README.md.
   readme.txt              This file.
-  wrangler.toml           Cloudflare Pages config (KV + R2 bindings).
+  wrangler.toml           Cloudflare Pages config (KV + R2 + D1 bindings).
 
 
 ================================================================================
@@ -176,15 +211,34 @@ KV KEYS
 ================================================================================
 
   settings                Site settings (phone, hours, links, flags,
-                          turnstileSiteKey, contactEmail)
+                          turnstileSiteKey, contactEmail,
+                          printServerRequired, printServerAlertEmail,
+                          printServerOfflineAlertMinutes)
   menu                    Snackbar menu (categories + items)
   events                  Events list
   page_home               Homepage sections array
   page_menu               Menu page sections (empty today — hand-authored)
   page_contact            Contact page sections array
-  print_server_last_seen  Unix ms of last print-server heartbeat (future)
+  print_server_last_seen  LEGACY heartbeat key — kept as a fallback while
+                          the D1 migration is rolling out, then removable.
 
 All keys are in the MENU_KV binding defined in wrangler.toml.
+
+================================================================================
+D1 TABLES (binding: ORDERS_DB)
+================================================================================
+
+Schema lives in schema/d1_init.sql. Apply with:
+  wrangler d1 execute esmeralda-orders --remote --file=./schema/d1_init.sql
+
+  orders                  One row per customer order.
+                          Columns: id, payload_json, status (pending /
+                          printed / failed), created_at, printed_at,
+                          print_error.
+
+  print_server_state      Singleton key/value table.
+                          Keys: last_heartbeat_ms, last_alert_sent_ms,
+                          last_alert_recipient, print_server_version.
 
 
 ================================================================================
@@ -239,25 +293,49 @@ settling).
 
 
 ================================================================================
-FUTURE INTEGRATION: PRINT SERVER
+PRINT SERVER INTEGRATION
 ================================================================================
 
-Planned but not yet deployed. A small Node process runs on the snackbar PC:
+A small Node process (in print-server/) runs on the snackbar PC. It is a
+polling client — no inbound port is exposed. See print-server/README.md
+for the full setup walkthrough.
 
-  - Polls /api/orders (not yet built) for pending orders
-  - Prints them to a thermal receipt printer
-  - POSTs /api/print-server/heartbeat every 30s to prove it's alive
+Loops it runs:
+  - POLL  every 5s  → GET /api/orders/pending → print → POST /printed
+  - HEART every 30s → POST /api/print-server/heartbeat
+  - UPDATE every 10m → git fetch + pull + restart on new commits
 
-The Settings → Print Server card in admin shows status (offline/online/
-not configured) and lets the owner toggle "require print server for orders".
+Order flow:
+  1. Customer submits via menu.html → POST /api/orders.
+  2. Order persists in D1 with status='pending'.
+  3. Print server picks it up on next poll, prints, plays a chime,
+     marks it 'printed' (or 'failed' with an error message).
 
-When that toggle is on, js/menu.js will refuse to accept orders if the
-print server hasn't heartbeated recently. The gate exists as a
-commented-out block in menu.js — uncomment it to enable.
+Liveness:
+  - GET /api/print-server/status considers the server "online" if a
+    heartbeat arrived in the last 90s (lets us miss 2 of the 30s
+    heartbeats before flipping to offline).
+  - When admin → Settings → "Require Print Server for Orders" is on,
+    js/menu.js refuses orders while the server is offline.
 
-Endpoints reserved:
-  GET  /api/print-server/status        — returns current state (live today)
-  POST /api/print-server/heartbeat     — (not built)
+Offline alert email (cron-worker/worker.js):
+  - Every 5 minutes the companion Worker checks heartbeat age.
+  - If it exceeds settings.printServerOfflineAlertMinutes (default 10)
+    AND no alert was sent in the last hour, send a Resend email to
+    settings.printServerAlertEmail (or contactEmail if blank).
+
+Auth:
+  - Print-server endpoints use a static shared secret in
+    `Authorization: Bearer ps:<PRINT_SERVER_SECRET>`. The same value
+    must be set as a Cloudflare Pages secret AND in the snackbar PC's
+    print-server/.env file.
+
+Endpoints (live):
+  POST /api/orders                       — public; customer submits order
+  GET  /api/orders/pending               — print server polls    (ps-auth)
+  POST /api/orders/:id/printed           — print server marks done (ps-auth)
+  GET  /api/print-server/status          — public liveness probe
+  POST /api/print-server/heartbeat       — print server pings    (ps-auth)
 
 
 ================================================================================
@@ -267,26 +345,46 @@ DEPLOYMENT & ENVIRONMENT
 Required environment variables (Cloudflare Pages dashboard → Settings → Env):
   ADMIN_PASSWORD        Admin login password
   AUTH_SECRET           HMAC secret for token signing (separate from password)
-  RESEND_API_KEY        For contact form emails
+  PRINT_SERVER_SECRET   Shared secret for the print-server PC. Set the same
+                        value in print-server/.env on the snackbar PC.
+  RESEND_API_KEY        For contact form emails AND offline-alert emails.
   RESEND_FROM           Verified sender email
   TURNSTILE_SECRET      Used by BOTH /api/contact AND /api/auth.
                         When set, enables bot protection on contact form
                         AND admin login. When unset, both fall back to
                         unprotected behavior.
 
+The companion `cron-worker/` needs its own copies of RESEND_API_KEY,
+RESEND_FROM, and PRINT_SERVER_SECRET (set with `wrangler secret put …`
+from inside the cron-worker directory).
+
 Required bindings (wrangler.toml / Pages dashboard → Settings → Bindings):
   MENU_KV               Workers KV namespace
   IMAGES_BUCKET         R2 bucket
+  ORDERS_DB             D1 database — the cron-worker uses the same one
 
 Turnstile site key:
   Stored in KV settings (turnstileSiteKey), editable in admin Settings tab.
   Exposed via the public GET /api/settings so both the contact form and
   the admin login can fetch it without auth.
 
-To deploy:
+To deploy the website:
   git push                      (Cloudflare auto-deploys on push)
     OR
   wrangler pages deploy .       (from repo root)
+
+To deploy the cron-worker (separate from Pages — only needs to be run
+when cron-worker/ changes):
+  cd cron-worker
+  wrangler deploy
+
+To apply D1 schema changes:
+  wrangler d1 execute esmeralda-orders --remote --file=./schema/d1_init.sql
+  wrangler d1 execute esmeralda-orders --local  --file=./schema/d1_init.sql
+
+The print server on the snackbar PC self-updates by `git pull`-ing this
+repo every 10 minutes. So a `git push` to main also rolls out new print
+server code to the snackbar PC. See print-server/README.md.
 
 
 ================================================================================

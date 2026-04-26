@@ -1,141 +1,63 @@
 /**
- * Esmeralda Market — Local Print Server
- * ──────────────────────────────────────
- * Runs on the snackbar PC. Receives order data from menu.html, logs each
- * order to orders.log (newline-delimited JSON), and sends a formatted receipt
- * to the system's default (or configured) printer.
+ * Esmeralda Market — Print Server (polling client)
+ * ────────────────────────────────────────────────────
+ * Runs on the snackbar PC as a long-lived Node process. Three concurrent
+ * loops:
  *
- * Usage:
- *   npm start                                         — use defaults
- *   PORT=3001 node server.js                          — custom port
- *   ALLOWED_ORIGIN=https://esmeralda.market node server.js
- *   node server.js --printer "EPSON TM-T88VI"        — pick a printer by name
- *   node server.js --list-printers                   — see available printers
+ *   1. POLLER     — every POLL_INTERVAL_MS hits GET /api/orders/pending,
+ *                   prints each order, plays a chime, then POSTs
+ *                   /api/orders/:id/printed (or /printed with an error).
+ *   2. HEARTBEAT  — every HEARTBEAT_INTERVAL_MS hits POST /api/print-server/heartbeat
+ *                   so the website knows we're alive.
+ *   3. UPDATER    — every UPDATER_INTERVAL_MS runs `git fetch`; if the
+ *                   public GitHub repo has new commits, pulls them, runs
+ *                   `npm install --omit=dev` if package.json changed,
+ *                   then exits with code 0 — systemd restarts the unit.
  *
- * Requires Node.js 18+ and:  npm install
+ * No inbound HTTP is exposed — the snackbar PC only makes outbound calls.
+ *
+ * See README.md for setup. Configuration via env vars (or print-server/.env
+ * if dotenv is installed; we read .env manually so there's no extra dep).
+ *
+ *   API_BASE_URL          required — e.g. https://esmeraldamarket.com
+ *   PRINT_SERVER_SECRET   required — must match Cloudflare side
+ *   PRINTER_NAME          optional — CUPS / Windows printer name. Default = system default.
+ *   POLL_INTERVAL_MS      optional — default 5000  (5s)
+ *   HEARTBEAT_INTERVAL_MS optional — default 30000 (30s)
+ *   UPDATER_INTERVAL_MS   optional — default 600000 (10min). 0 disables auto-update.
+ *   CHIME_CMD             optional — shell command to play the chime. Default = `aplay /usr/share/sounds/alsa/Front_Center.wav`
+ *                                    Set CHIME_CMD="" to disable the chime.
+ *   LOG_FILE              optional — path to NDJSON order log. Default ./orders.log
+ *   GIT_BRANCH            optional — branch to track. Default `main`.
  */
 
-const express  = require('express');
-const cors     = require('cors');
-const { exec } = require('child_process');
-const fs       = require('fs');
-const path     = require('path');
-const os       = require('os');
+'use strict';
 
-// ─── CONFIG ──────────────────────────────────────────────────────────────────
+const { execFile, exec } = require('child_process');
+const fs   = require('fs');
+const os   = require('os');
+const path = require('path');
 
-// Port the server listens on. Override with PORT env var.
-const PORT = parseInt(process.env.PORT, 10) || 3000;
+// ── load .env (no dependency) ───────────────────────────────────────────────
+loadEnvFile(path.join(__dirname, '.env'));
 
-// CORS origin. Set ALLOWED_ORIGIN env var to restrict to your site domain.
-// Default '*' allows any origin (safe for localhost-only use).
-const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || '*';
+// ── version ─────────────────────────────────────────────────────────────────
+const VERSION = readPackageVersion();
 
-// Optional: set a specific printer name via CLI arg, or use system default.
-const PRINTER_NAME = getPrinterArg() || null;
+// ── config ──────────────────────────────────────────────────────────────────
+const API_BASE_URL          = (process.env.API_BASE_URL || '').replace(/\/+$/, '');
+const PRINT_SERVER_SECRET   = process.env.PRINT_SERVER_SECRET || '';
+const PRINTER_NAME          = getPrinterArg() || process.env.PRINTER_NAME || '';
+const POLL_INTERVAL_MS      = parseIntDefault(process.env.POLL_INTERVAL_MS,      5_000);
+const HEARTBEAT_INTERVAL_MS = parseIntDefault(process.env.HEARTBEAT_INTERVAL_MS, 30_000);
+const UPDATER_INTERVAL_MS   = parseIntDefault(process.env.UPDATER_INTERVAL_MS,   10 * 60 * 1000);
+const CHIME_CMD             = process.env.CHIME_CMD == null
+                                ? 'aplay -q /usr/share/sounds/alsa/Front_Center.wav'
+                                : process.env.CHIME_CMD;
+const LOG_FILE              = process.env.LOG_FILE || path.join(__dirname, 'orders.log');
+const GIT_BRANCH            = process.env.GIT_BRANCH || 'main';
 
-// Path to the local order log file (one JSON object per line).
-const LOG_FILE = path.join(__dirname, 'orders.log');
-
-// ─── APP SETUP ───────────────────────────────────────────────────────────────
-
-const app = express();
-
-// Enable CORS — restricts which origins can POST to this server.
-app.use(cors({ origin: ALLOWED_ORIGIN }));
-
-// Parse incoming JSON bodies.
-app.use(express.json());
-
-// ─── ROUTES ──────────────────────────────────────────────────────────────────
-
-/**
- * GET /health
- * Health check endpoint. Returns ok + timestamp so the web page can verify
- * the print server is reachable before attempting to send an order.
- */
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
-
-/**
- * POST /print
- * Accepts a JSON order object from menu.html.
- * Required fields: id, customer_name, items (array).
- * Logs the order to orders.log, then sends it to the printer.
- */
-app.post('/print', (req, res) => {
-  const order = req.body;
-
-  // ── Validate required fields ──────────────────────────────────────────────
-  if (!order || typeof order !== 'object') {
-    return res.status(400).json({ success: false, error: 'Request body must be a JSON object.' });
-  }
-  if (!order.id) {
-    return res.status(400).json({ success: false, error: 'Missing required field: id.' });
-  }
-  if (!order.customer_name) {
-    return res.status(400).json({ success: false, error: 'Missing required field: customer_name.' });
-  }
-  if (!Array.isArray(order.items) || !order.items.length) {
-    return res.status(400).json({ success: false, error: 'Missing required field: items (must be a non-empty array).' });
-  }
-
-  // ── Log to orders.log (newline-delimited JSON) ────────────────────────────
-  try {
-    const logEntry = JSON.stringify({ ...order, _received: new Date().toISOString() });
-    fs.appendFileSync(LOG_FILE, logEntry + '\n', 'utf8');
-  } catch (logErr) {
-    // Logging failure is non-fatal — proceed with printing.
-    console.warn('[warn] Could not write to orders.log:', logErr.message);
-  }
-
-  // ── Format and print ──────────────────────────────────────────────────────
-  const receipt = formatReceipt(order);
-  const tmpFile = path.join(os.tmpdir(), `esmeralda-${order.id}.txt`);
-
-  try {
-    fs.writeFileSync(tmpFile, receipt, 'utf8');
-  } catch (writeErr) {
-    console.error('[error] Could not write temp file:', writeErr.message);
-    return res.status(500).json({ success: false, error: 'File write failed.' });
-  }
-
-  // Log to console for visibility at the register
-  console.log(`\n[${new Date().toLocaleTimeString()}] Order received: ${order.id}`);
-  console.log(`  Customer : ${order.customer_name} (${order.customer_phone || '—'})`);
-  console.log(`  Items    : ${order.items.map(i => i.name).join(', ')}`);
-  if (order.total != null) console.log(`  Total    : $${Number(order.total).toFixed(2)}`);
-  console.log(`  Printing to: ${PRINTER_NAME || 'system default'} ...`);
-
-  printFile(tmpFile, (printErr) => {
-    // Clean up temp file regardless of outcome
-    try { fs.unlinkSync(tmpFile); } catch (_) {}
-
-    if (printErr) {
-      console.error('  [error] Print failed:', printErr.message);
-      return res.status(500).json({ success: false, error: printErr.message });
-    }
-
-    console.log('  Print job sent successfully.\n');
-    res.json({ success: true, orderId: order.id });
-  });
-});
-
-/**
- * GET /printers
- * Returns a list of printer names installed on this machine — useful during setup.
- */
-app.get('/printers', (req, res) => {
-  listPrinters((err, printers) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ printers });
-  });
-});
-
-// ─── START ───────────────────────────────────────────────────────────────────
-
-// Handle --list-printers flag: print list and exit without starting the server.
+// ── CLI: --list-printers ────────────────────────────────────────────────────
 if (process.argv.includes('--list-printers')) {
   listPrinters((err, printers) => {
     if (err) { console.error('Could not list printers:', err.message); process.exit(1); }
@@ -143,60 +65,231 @@ if (process.argv.includes('--list-printers')) {
     printers.forEach(p => console.log('  -', p));
     process.exit(0);
   });
-} else {
-  app.listen(PORT, () => {
-    console.log('\n  ╔══════════════════════════════════════╗');
-    console.log('  ║     ESMERALDA PRINT SERVER           ║');
-    console.log('  ╚══════════════════════════════════════╝');
-    console.log(`\n  Listening on   http://localhost:${PORT}`);
-    console.log(`  Printer        ${PRINTER_NAME || '(system default)'}`);
-    console.log(`  Allowed origin ${ALLOWED_ORIGIN}`);
-    console.log(`  Order log      ${LOG_FILE}`);
-    console.log('\n  Ready to receive orders. Keep this window open.\n');
-    console.log('  Tip: node server.js --list-printers  to see available printers.');
-    console.log('  Tip: node server.js --printer "Name"  to select a specific printer.\n');
-  });
+  return;
 }
 
-// ─── PRINTING ────────────────────────────────────────────────────────────────
+// ── boot banner + sanity checks ─────────────────────────────────────────────
+banner();
 
-/**
- * Send a text file to the printer.
- * Uses PowerShell on Windows, lp on Linux/Mac.
- * @param {string}   filePath  Path to the temp receipt text file.
- * @param {Function} callback  Called with (err) on completion.
- */
-function printFile(filePath, callback) {
-  const platform = os.platform();
-  let cmd;
+if (!API_BASE_URL || !/^https?:\/\//.test(API_BASE_URL)) {
+  fatal('API_BASE_URL is required and must start with http(s)://');
+}
+if (!PRINT_SERVER_SECRET) {
+  fatal('PRINT_SERVER_SECRET is required (set it in print-server/.env)');
+}
 
-  if (platform === 'win32') {
-    // Windows: PowerShell Out-Printer
-    cmd = PRINTER_NAME
-      ? `powershell -Command "Get-Content '${filePath}' | Out-Printer -Name '${PRINTER_NAME}'"`
-      : `powershell -Command "Get-Content '${filePath}' | Out-Printer"`;
-  } else {
-    // Linux / macOS: lp command
-    cmd = PRINTER_NAME
-      ? `lp -d "${PRINTER_NAME}" "${filePath}"`
-      : `lp "${filePath}"`;
+console.log(`  API base:      ${API_BASE_URL}`);
+console.log(`  Printer:       ${PRINTER_NAME || '(system default)'}`);
+console.log(`  Poll:          every ${POLL_INTERVAL_MS / 1000}s`);
+console.log(`  Heartbeat:     every ${HEARTBEAT_INTERVAL_MS / 1000}s`);
+console.log(`  Auto-update:   ${UPDATER_INTERVAL_MS > 0 ? `every ${Math.round(UPDATER_INTERVAL_MS / 60000)}m from origin/${GIT_BRANCH}` : 'disabled'}`);
+console.log(`  Chime:         ${CHIME_CMD ? CHIME_CMD : '(disabled)'}`);
+console.log(`  Log file:      ${LOG_FILE}`);
+console.log(`  Version:       ${VERSION}\n`);
+
+// ── start loops ─────────────────────────────────────────────────────────────
+runHeartbeatLoop();
+runPollLoop();
+if (UPDATER_INTERVAL_MS > 0) runUpdaterLoop();
+
+// Keep the event loop alive even if all timers were somehow cleared.
+setInterval(() => {}, 1 << 30);
+
+// ════════════════════════════════════════════════════════════════════════════
+// HEARTBEAT
+// ════════════════════════════════════════════════════════════════════════════
+
+let heartbeatFailures = 0;
+
+async function runHeartbeatLoop() {
+  // Fire one immediately so the website learns we're back fast on restart.
+  await heartbeatOnce();
+  setInterval(heartbeatOnce, HEARTBEAT_INTERVAL_MS);
+}
+
+async function heartbeatOnce() {
+  try {
+    const res = await psFetch('/api/print-server/heartbeat', {
+      method: 'POST',
+      body:   JSON.stringify({ version: VERSION }),
+    });
+    if (!res.ok) throw new Error(`heartbeat ${res.status}`);
+    if (heartbeatFailures > 0) {
+      console.log(`[${ts()}] heartbeat recovered after ${heartbeatFailures} failures`);
+    }
+    heartbeatFailures = 0;
+  } catch (e) {
+    heartbeatFailures += 1;
+    // Quiet log — log every 10th failure so we don't spam during outages.
+    if (heartbeatFailures === 1 || heartbeatFailures % 10 === 0) {
+      console.warn(`[${ts()}] heartbeat failed (${heartbeatFailures}): ${e.message}`);
+    }
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// POLL → PRINT
+// ════════════════════════════════════════════════════════════════════════════
+
+let polling = false;
+
+async function runPollLoop() {
+  await pollOnce();
+  setInterval(() => { if (!polling) pollOnce(); }, POLL_INTERVAL_MS);
+}
+
+async function pollOnce() {
+  polling = true;
+  try {
+    const res = await psFetch('/api/orders/pending', { method: 'GET' });
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`pending ${res.status}: ${body.slice(0, 120)}`);
+    }
+    const data = await res.json();
+    const orders = Array.isArray(data && data.orders) ? data.orders : [];
+    for (const row of orders) {
+      await processOrder(row);
+    }
+  } catch (e) {
+    console.warn(`[${ts()}] poll failed: ${e.message}`);
+  } finally {
+    polling = false;
+  }
+}
+
+async function processOrder(row) {
+  const order = row.payload;
+  if (!order || !order.id) {
+    console.warn(`[${ts()}] skipping malformed row id=${row && row.id}`);
+    await markOrder(row.id, { error: 'Malformed payload on print server' });
+    return;
   }
 
-  exec(cmd, (err, stdout, stderr) => {
-    if (err) return callback(new Error(stderr || err.message));
-    callback(null);
+  console.log(`\n[${ts()}] ── Order ${order.id} ──`);
+  console.log(`  Customer : ${order.customer_name || ''} (${order.customer_phone || '—'})`);
+  console.log(`  Pickup   : ${order.pickup_time || 'ASAP'}`);
+  console.log(`  Items    : ${(order.items || []).map(i => i.name).join(', ')}`);
+  if (order.total != null) console.log(`  Total    : $${Number(order.total).toFixed(2)}`);
+
+  // Append to local NDJSON log (best-effort)
+  try {
+    const entry = JSON.stringify({ ...order, _received: new Date().toISOString() });
+    fs.appendFileSync(LOG_FILE, entry + '\n', 'utf8');
+  } catch (e) {
+    console.warn(`  [warn] order log write failed: ${e.message}`);
+  }
+
+  // Print
+  const receipt = formatReceipt(order);
+  const tmpFile = path.join(os.tmpdir(), `esmeralda-${order.id}.txt`);
+
+  try {
+    fs.writeFileSync(tmpFile, receipt, 'utf8');
+  } catch (e) {
+    console.error(`  [error] temp file write failed: ${e.message}`);
+    await markOrder(row.id, { error: `temp file: ${e.message}` });
+    return;
+  }
+
+  printFile(tmpFile, async (err) => {
+    try { fs.unlinkSync(tmpFile); } catch (_) {}
+    if (err) {
+      console.error(`  [error] print failed: ${err.message}`);
+      await markOrder(row.id, { error: `print: ${err.message}` });
+      return;
+    }
+    console.log('  printed.');
+    playChime();
+    await markOrder(row.id, {});
   });
 }
 
-/**
- * Return a list of printer names installed on this machine.
- * @param {Function} callback  Called with (err, printers[]).
- */
+async function markOrder(id, body) {
+  try {
+    const res = await psFetch(`/api/orders/${encodeURIComponent(id)}/printed`, {
+      method: 'POST',
+      body:   JSON.stringify(body || {}),
+    });
+    if (!res.ok) {
+      console.warn(`  [warn] mark-printed ${res.status} for ${id}`);
+    }
+  } catch (e) {
+    // If marking fails the order will reappear on next poll — we'll retry.
+    console.warn(`  [warn] mark-printed network error for ${id}: ${e.message}`);
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// AUTO-UPDATER
+// ════════════════════════════════════════════════════════════════════════════
+//
+// Every UPDATER_INTERVAL_MS we run `git fetch` and compare the local commit
+// to origin/<GIT_BRANCH>. If they differ, we pull, optionally `npm install`,
+// then exit with status 0. systemd's Restart=always will bring us back up
+// on the new code.
+//
+// This requires the print-server PC's working copy to be a git checkout
+// of the public esmkt repo (the repo that contains this file). Setup
+// instructions are in print-server/README.md.
+
+async function runUpdaterLoop() {
+  setInterval(checkForUpdates, UPDATER_INTERVAL_MS);
+}
+
+async function checkForUpdates() {
+  try {
+    await sh('git', ['fetch', '--quiet', 'origin', GIT_BRANCH], { cwd: repoRoot() });
+    const local  = (await sh('git', ['rev-parse', 'HEAD'],                { cwd: repoRoot() })).stdout.trim();
+    const remote = (await sh('git', ['rev-parse', `origin/${GIT_BRANCH}`], { cwd: repoRoot() })).stdout.trim();
+    if (!local || !remote || local === remote) return;
+
+    console.log(`\n[${ts()}] update available: ${local.slice(0, 7)} → ${remote.slice(0, 7)}. pulling…`);
+
+    // Was package.json touched? If so, we'll npm install after pull.
+    const diffOut = (await sh('git', ['diff', '--name-only', `${local}..${remote}`], { cwd: repoRoot() })).stdout;
+    const needsInstall = diffOut.split('\n').some(p => p === 'print-server/package.json' || p === 'print-server/package-lock.json');
+
+    await sh('git', ['pull', '--ff-only', '--quiet', 'origin', GIT_BRANCH], { cwd: repoRoot() });
+
+    if (needsInstall) {
+      console.log(`[${ts()}] running npm install (package.json changed)…`);
+      await sh('npm', ['install', '--omit=dev', '--no-audit', '--no-fund'], { cwd: __dirname });
+    }
+
+    console.log(`[${ts()}] update applied. exiting for systemd to restart on new code.`);
+    process.exit(0);
+  } catch (e) {
+    console.warn(`[${ts()}] update check failed: ${e.message}`);
+  }
+}
+
+function repoRoot() {
+  // print-server/ lives at the repo root, so cwd one level up.
+  return path.resolve(__dirname, '..');
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// PRINTING
+// ════════════════════════════════════════════════════════════════════════════
+
+function printFile(filePath, callback) {
+  if (os.platform() === 'win32') {
+    const cmd = PRINTER_NAME
+      ? `powershell -Command "Get-Content '${filePath}' | Out-Printer -Name '${PRINTER_NAME.replace(/'/g, "''")}'"`
+      : `powershell -Command "Get-Content '${filePath}' | Out-Printer"`;
+    exec(cmd, (err, _, stderr) => callback(err ? new Error(stderr || err.message) : null));
+  } else {
+    const args = PRINTER_NAME ? ['-d', PRINTER_NAME, filePath] : [filePath];
+    execFile('lp', args, (err, _, stderr) => callback(err ? new Error(stderr || err.message) : null));
+  }
+}
+
 function listPrinters(callback) {
   if (os.platform() === 'win32') {
     exec(`powershell -Command "Get-Printer | Select-Object -ExpandProperty Name"`, (err, stdout) => {
       if (err) return callback(err);
-      callback(null, stdout.split('\n').map(s => s.trim()).filter(Boolean));
+      callback(null, stdout.split(/\r?\n/).map(s => s.trim()).filter(Boolean));
     });
   } else {
     exec('lpstat -a 2>/dev/null || lpstat -p 2>/dev/null', (err, stdout) => {
@@ -206,14 +299,24 @@ function listPrinters(callback) {
   }
 }
 
-// ─── RECEIPT FORMATTING ───────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════════════
+// CHIME
+// ════════════════════════════════════════════════════════════════════════════
+//
+// Fire-and-forget. We don't want a misconfigured audio device to block
+// the print pipeline. CHIME_CMD="" disables it entirely.
 
-/**
- * Format an order object as plain-text receipt.
- * 40-character width fits standard 80 mm thermal paper.
- * @param {Object} order  The order object from menu.html / menu.js.
- * @returns {string}      Formatted receipt text ready to print.
- */
+function playChime() {
+  if (!CHIME_CMD) return;
+  exec(CHIME_CMD, (err) => {
+    if (err) console.warn(`  [warn] chime failed: ${err.message}`);
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// RECEIPT FORMATTING (40-char wide, fits 80mm thermal paper)
+// ════════════════════════════════════════════════════════════════════════════
+
 function formatReceipt(order) {
   const W    = 40;
   const WIDE = '='.repeat(W);
@@ -223,89 +326,112 @@ function formatReceipt(order) {
     hour: 'numeric', minute: '2-digit',
   });
 
-  // Center a string within the receipt width
-  function center(str) {
-    const pad = Math.max(0, Math.floor((W - str.length) / 2));
-    return ' '.repeat(pad) + str;
-  }
+  const center = s => ' '.repeat(Math.max(0, Math.floor((W - s.length) / 2))) + s;
+  const row    = (l, r) => l + ' '.repeat(Math.max(1, W - l.length - r.length)) + r;
 
-  // Two-column row: label left, value right, padded to width W
-  function row(label, value) {
-    const space = W - label.length - value.length;
-    return label + ' '.repeat(Math.max(1, space)) + value;
-  }
+  let out = '';
+  out += WIDE + '\n';
+  out += center('ESMERALDA MARKET') + '\n';
+  out += center('HWY 264, Mile Marker 8') + '\n';
+  out += center('Dyer, NV  89010') + '\n';
+  out += center('(775) 572-3200') + '\n';
+  out += WIDE + '\n\n';
 
-  let r = '';
-  r += WIDE + '\n';
-  r += center('ESMERALDA MARKET') + '\n';
-  r += center('HWY 264, Mile Marker 8') + '\n';
-  r += center('Dyer, NV  89010') + '\n';
-  r += center('(775) 572-3200') + '\n';
-  r += WIDE + '\n\n';
-
-  // Pickup time — prominent at the top so staff see it immediately
   const pickupLabel = (order.pickup_time || 'AS SOON AS READY').toUpperCase();
-  r += center('*** DESIRED PICKUP TIME ***') + '\n';
-  r += center(pickupLabel) + '\n';
-  r += WIDE + '\n\n';
+  out += center('*** DESIRED PICKUP TIME ***') + '\n';
+  out += center(pickupLabel) + '\n';
+  out += WIDE + '\n\n';
 
-  // Order metadata
-  r += `Order # : ${order.id}\n`;
-  r += `Time    : ${d}\n`;
-  r += `Name    : ${order.customer_name}\n`;
-  if (order.customer_phone) r += `Phone   : ${order.customer_phone}\n`;
-  if (order.notes) r += `Notes   : ${order.notes}\n`;
-  r += '\n' + THIN + '\n';
-  r += 'ITEMS\n';
-  r += THIN + '\n';
+  out += `Order # : ${order.id}\n`;
+  out += `Time    : ${d}\n`;
+  out += `Name    : ${order.customer_name || ''}\n`;
+  if (order.customer_phone) out += `Phone   : ${order.customer_phone}\n`;
+  if (order.notes)          out += `Notes   : ${order.notes}\n`;
 
-  // Line items
-  order.items.forEach(item => {
-    r += row(truncate(item.name, W - 8), `$${Number(item.base_price || 0).toFixed(2)}`) + '\n';
-    // Choices (dropdown selections — no price change)
-    (item.choices || []).forEach(opt => {
-      r += `  > ${opt.name}: ${opt.choice}\n`;
-    });
-    // Options (checkboxes — may affect price)
-    (item.options || []).forEach(addon => {
-      const addonName  = addon.replace(/\s*\+\$[\d.]+$/, '');
-      const addonPrice = parseAddonPrice(addon);
-      if (addonPrice > 0) {
-        r += row(`  + ${truncate(addonName, W - 12)}`, `+$${addonPrice.toFixed(2)}`) + '\n';
-      } else {
-        r += `  + ${addonName}\n`;
-      }
+  out += '\n' + THIN + '\nITEMS\n' + THIN + '\n';
+  for (const item of order.items || []) {
+    out += row(truncate(item.name || '', W - 8), `$${Number(item.base_price || 0).toFixed(2)}`) + '\n';
+    for (const opt of item.choices || []) {
+      out += `  > ${opt.name}: ${opt.choice}\n`;
+    }
+    for (const addon of item.options || []) {
+      const name  = String(addon).replace(/\s*\+\$[\d.]+$/, '');
+      const price = parseAddonPrice(addon);
+      out += price > 0
+        ? row(`  + ${truncate(name, W - 12)}`, `+$${price.toFixed(2)}`) + '\n'
+        : `  + ${name}\n`;
+    }
+  }
+  out += '\n' + THIN + '\n';
+  out += row('Subtotal', `$${Number(order.subtotal || 0).toFixed(2)}`) + '\n';
+  out += row(order.taxRate ? `Tax (${order.taxRate}%)` : 'Tax', `$${Number(order.tax || 0).toFixed(2)}`) + '\n';
+  out += WIDE + '\n';
+  out += row('TOTAL', `$${Number(order.total || 0).toFixed(2)}`) + '\n';
+  out += WIDE + '\n\n';
+  out += center('Thank you for stopping by!') + '\n';
+  out += center('Ride safe out there.') + '\n';
+  out += '\n\n\n'; // feed paper
+  return out;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════════════════════════════════════
+
+function psFetch(pathname, init = {}) {
+  const url = API_BASE_URL + pathname;
+  const headers = {
+    Authorization: `Bearer ps:${PRINT_SERVER_SECRET}`,
+    'Content-Type': 'application/json',
+    ...(init.headers || {}),
+  };
+  // Node 18+ has global fetch.
+  return fetch(url, { ...init, headers });
+}
+
+function sh(cmd, args, opts) {
+  return new Promise((resolve, reject) => {
+    execFile(cmd, args, opts || {}, (err, stdout, stderr) => {
+      if (err) return reject(new Error((stderr && stderr.toString()) || err.message));
+      resolve({ stdout: String(stdout), stderr: String(stderr) });
     });
   });
-
-  r += '\n' + THIN + '\n';
-  r += row('Subtotal', `$${Number(order.subtotal || 0).toFixed(2)}`) + '\n';
-  r += row(order.taxRate ? `Tax (${order.taxRate}%)` : 'Tax', `$${Number(order.tax || 0).toFixed(2)}`) + '\n';
-  r += WIDE + '\n';
-  r += row('TOTAL', `$${Number(order.total || 0).toFixed(2)}`) + '\n';
-  r += WIDE + '\n\n';
-  r += center('Thank you for stopping by!') + '\n';
-  r += center('Ride safe out there.') + '\n';
-  r += '\n\n\n'; // Feed paper so the receipt can be torn off cleanly
-
-  return r;
 }
 
-// ─── UTILITIES ───────────────────────────────────────────────────────────────
+function truncate(s, n)        { return s.length > n ? s.slice(0, n - 1) + '…' : s; }
+function parseAddonPrice(label) { const m = String(label).match(/\+\$(\d+(?:\.\d+)?)/); return m ? parseFloat(m[1]) : 0; }
+function parseIntDefault(v, d)  { const n = parseInt(v, 10); return Number.isFinite(n) && n >= 0 ? n : d; }
+function ts()                   { return new Date().toLocaleTimeString(); }
+function getPrinterArg()        { const i = process.argv.indexOf('--printer'); return i !== -1 ? process.argv[i + 1] : null; }
 
-/** Truncate a string to maxLen chars, adding ellipsis if needed. */
-function truncate(str, maxLen) {
-  return str.length > maxLen ? str.slice(0, maxLen - 1) + '\u2026' : str;
+function readPackageVersion() {
+  try { return JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version || '0.0.0'; }
+  catch (_) { return '0.0.0'; }
 }
 
-/** Extract the numeric dollar amount from an addon label like "Avocado +$1". */
-function parseAddonPrice(label) {
-  const m = String(label).match(/\+\$(\d+(?:\.\d+)?)/);
-  return m ? parseFloat(m[1]) : 0;
+function loadEnvFile(file) {
+  if (!fs.existsSync(file)) return;
+  const lines = fs.readFileSync(file, 'utf8').split(/\r?\n/);
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line || line.startsWith('#')) continue;
+    const eq = line.indexOf('=');
+    if (eq === -1) continue;
+    const key = line.slice(0, eq).trim();
+    let   val = line.slice(eq + 1).trim();
+    if (val.startsWith('"') && val.endsWith('"')) val = val.slice(1, -1);
+    if (val.startsWith("'") && val.endsWith("'")) val = val.slice(1, -1);
+    if (process.env[key] == null) process.env[key] = val;
+  }
 }
 
-/** Read --printer <name> from CLI args. */
-function getPrinterArg() {
-  const idx = process.argv.indexOf('--printer');
-  return idx !== -1 ? process.argv[idx + 1] : null;
+function banner() {
+  console.log('\n  ╔══════════════════════════════════════╗');
+  console.log('  ║   ESMERALDA MARKET PRINT SERVER      ║');
+  console.log('  ╚══════════════════════════════════════╝\n');
+}
+
+function fatal(msg) {
+  console.error('  [fatal] ' + msg + '\n');
+  process.exit(1);
 }

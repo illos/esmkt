@@ -48,10 +48,16 @@ const DEFAULT_SETTINGS = {
   quickLinks: DEFAULT_QUICK_LINKS,
   contactEmail:     '',
   turnstileSiteKey: '',
-  // Phase 5: print-server placeholder. When true, online ordering will require a
-  // running print server to accept orders. Currently wired but not enforced —
-  // menu.js has a commented-out gate ready for when the server is deployed.
+  // When true, online ordering refuses new orders if the print server is
+  // not currently online. The gate lives in js/menu.js; the status check
+  // hits /api/print-server/status.
   printServerRequired: false,
+  // Where to email when the print server has been offline beyond the
+  // threshold below. Empty string = fall back to contactEmail.
+  printServerAlertEmail: '',
+  // How many minutes the print server must be offline before the cron
+  // worker emails an alert. Range is clamped 2–120 on save.
+  printServerOfflineAlertMinutes: 10,
 };
 
 export async function onRequestOptions() {
@@ -88,10 +94,22 @@ export async function onRequestPut({ request, env }) {
     ...(body.contactEmail      !== undefined && { contactEmail:      String(body.contactEmail).trim() }),
     ...(body.turnstileSiteKey  !== undefined && { turnstileSiteKey:  String(body.turnstileSiteKey).trim() }),
     ...(body.printServerRequired !== undefined && { printServerRequired: body.printServerRequired === true }),
+    ...(body.printServerAlertEmail !== undefined && { printServerAlertEmail: String(body.printServerAlertEmail).trim() }),
+    ...(body.printServerOfflineAlertMinutes !== undefined && {
+      printServerOfflineAlertMinutes: clampMinutes(body.printServerOfflineAlertMinutes),
+    }),
   };
 
   await env.MENU_KV.put('settings', JSON.stringify(data));
   return json({ success: true });
+}
+
+// Clamp the offline-alert threshold to a sane range so a typo in the
+// admin form can't disable alerts (0) or fire instantly (1).
+function clampMinutes(v) {
+  const n = parseInt(v, 10);
+  if (!Number.isFinite(n)) return 10;
+  return Math.max(2, Math.min(120, n));
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -114,7 +132,9 @@ function migrateSettings(data) {
     quickLinks:       Array.isArray(data.quickLinks) ? data.quickLinks : DEFAULT_QUICK_LINKS,
     contactEmail:     data.contactEmail     ?? '',
     turnstileSiteKey: data.turnstileSiteKey ?? '',
-    printServerRequired: data.printServerRequired === true,
+    printServerRequired:            data.printServerRequired === true,
+    printServerAlertEmail:          data.printServerAlertEmail ?? '',
+    printServerOfflineAlertMinutes: clampMinutes(data.printServerOfflineAlertMinutes ?? DEFAULT_SETTINGS.printServerOfflineAlertMinutes),
   };
 }
 

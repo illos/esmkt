@@ -1,0 +1,47 @@
+# ============================================================================
+#  Esmeralda Market — Offline-alert cron worker
+# ============================================================================
+#
+# This is a SEPARATE Cloudflare Worker (deployed independently from the Pages
+# site). It runs every 5 minutes via a cron trigger and sends an email if the
+# print server has been offline beyond the threshold configured in admin
+# Settings.
+#
+# It shares the SAME D1 database and KV namespace as the Pages site by
+# referencing the same database_id and KV id below.
+#
+# Deploy:
+#   cd cron-worker
+#   wrangler deploy
+#
+# Set secrets (one-time):
+#   wrangler secret put RESEND_API_KEY
+#   wrangler secret put RESEND_FROM
+#   wrangler secret put PRINT_SERVER_SECRET   # used for the manual /manual-check endpoint
+#
+# ============================================================================
+
+name = "esmkt-cron"
+main = "worker.js"
+compatibility_date = "2024-09-23"
+
+# ── Cron Trigger: every 5 minutes ────────────────────────────────────────────
+[triggers]
+crons = ["*/5 * * * *"]
+
+# ── D1 Database (same as Pages project) ──────────────────────────────────────
+# IMPORTANT: database_id must match the value in the root wrangler.toml.
+[[d1_databases]]
+binding       = "ORDERS_DB"
+database_name = "esmeralda-orders"
+database_id   = "79bc49ca-32c3-42df-9d79-cb8a53a205fd"
+
+# ── KV Namespace (same as Pages project) ─────────────────────────────────────
+# IMPORTANT: id must match the value in the root wrangler.toml.
+[[kv_namespaces]]
+binding = "MENU_KV"
+id      = "27fea57448dd4e98acd8d8e12f3a57aa"
+
+# ── Optional: surface the public site URL inside alert email bodies ──────────
+[vars]
+SITE_URL = "https://esmeraldamarket.com"

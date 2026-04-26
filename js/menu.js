@@ -29,6 +29,7 @@ let orderingOpen = false;          // true only when deli is open AND online ord
 let onlineOrderingEnabled = true;  // loaded from /api/settings
 let sitePhone = '775-572-3200';    // loaded from /api/settings
 let snackbarTaxRate = 0;            // loaded from /api/settings (0–100, percent)
+let printServerRequired = false;   // loaded from /api/settings — when true, ordering is gated on print-server liveness
 
 // ─── BOOT ────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
@@ -79,6 +80,7 @@ async function initMenu() {
         snackbarHours = sData.deliHours;
       }
       onlineOrderingEnabled = sData.onlineOrdering !== false;
+      printServerRequired   = sData.printServerRequired === true;
       if (sData.phone)    sitePhone       = sData.phone;
       if (typeof sData.deliTax === 'number') snackbarTaxRate = sData.deliTax;
 
@@ -94,7 +96,7 @@ async function initMenu() {
     MENU = MENU_FALLBACK;
   }
   populatePickupTimes();
-  checkSnackbarHours();
+  await checkSnackbarHours();
   renderMenu();
 }
 
@@ -175,7 +177,7 @@ function todayHoursText() {
   return `${fmt12(today.open)} &ndash; ${fmt12(today.close)}`;
 }
 
-function checkSnackbarHours() {
+async function checkSnackbarHours() {
   const today = getTodaySnackbarHours();
   const now   = new Date();
   const mins  = now.getHours() * 60 + now.getMinutes();
@@ -210,21 +212,26 @@ function checkSnackbarHours() {
 
   orderingOpen = snackbarIsOpen && onlineOrderingEnabled;
 
-  // ─── Future: print-server gate ───────────────────────────────────────────
-  // When the print server is wired up, uncomment this block. It adds a third
-  // required condition: if the owner has toggled "Require Print Server for
-  // Orders" on in Settings, the server must be online to accept orders.
-  //
-  // if (sData.printServerRequired === true) {
-  //   try {
-  //     const psRes  = await fetch('/api/print-server/status');
-  //     const psData = await psRes.json();
-  //     if (!psData.online) orderingOpen = false;
-  //   } catch (_) {
-  //     // If status endpoint fails, err on the side of blocking orders
-  //     orderingOpen = false;
-  //   }
-  // }
+  // ─── Print-server gate ───────────────────────────────────────────────────
+  // If the owner has toggled "Require Print Server for Orders" on in admin
+  // Settings, the server must be currently online for ordering to be open.
+  // If the status endpoint fails, we err on the side of blocking orders so
+  // we don't accept an order we can't actually deliver to the snackbar.
+  if (printServerRequired) {
+    try {
+      const psRes  = await fetch('/api/print-server/status');
+      const psData = await psRes.json();
+      if (!psData.online) {
+        orderingOpen = false;
+        if (orderingEl) {
+          orderingEl.style.display = '';
+          orderingEl.innerHTML = `<span class="status-card-icon">&#10022;</span><span class="status-card-title">Snackbar offline</span><span class="status-card-sub">We can't accept new orders right now &nbsp;&middot;&nbsp; ${sitePhone}</span>`;
+        }
+      }
+    } catch (_) {
+      orderingOpen = false;
+    }
+  }
   // ─────────────────────────────────────────────────────────────────────────
 
   document.getElementById('snackbarOpenContent').style.display = orderingOpen ? 'block' : 'none';
@@ -540,22 +547,27 @@ function submitOrder() {
     subtotal, tax, total, taxRate: snackbarTaxRate,
   };
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // TODO — FUTURE INTEGRATIONS (uncomment when ready):
-  //
-  // 1. Log to Google Sheets via Apps Script Web App:
-  //    fetch('https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec', {
-  //      method: 'POST',
-  //      body: JSON.stringify(order),
-  //    });
-  //
-  // 2. Send to local print server (Node.js running on deli PC):
-  //    fetch('http://localhost:3000/print', {
-  //      method: 'POST',
-  //      headers: { 'Content-Type': 'application/json' },
-  //      body: JSON.stringify(order),
-  //    });
-  // ─────────────────────────────────────────────────────────────────────────
+  // ─── Submit to the orders API ────────────────────────────────────────────
+  // POST the order to /api/orders. The print server polls that queue and
+  // prints the receipt at the snackbar. We submit fire-and-forget — the
+  // success screen shows immediately so the customer isn't waiting on
+  // network. If the POST fails we surface a toast but still show the
+  // receipt (so the customer has their order id to read at the counter).
+  fetch('/api/orders', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(order),
+  })
+    .then(res => {
+      if (!res.ok) {
+        return res.json().then(b => Promise.reject(new Error(b && b.error || 'Order submission failed')));
+      }
+    })
+    .catch(err => {
+      // Non-blocking error toast — receipt is already on screen.
+      console.warn('[order submit]', err);
+      showToast('We couldn’t reach the snackbar — please show this receipt at the counter.');
+    });
 
   buildReceipt(order);
 

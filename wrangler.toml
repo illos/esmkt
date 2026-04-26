@@ -17,13 +17,27 @@
 #        wrangler r2 bucket create esmeralda-images
 #      (No ID needed — bucket_name is enough.)
 #
-#  5.  Set your secrets (you'll be prompted to type the value):
-#        wrangler pages secret put ADMIN_PASSWORD --project-name esmeralda-market
-#        wrangler pages secret put AUTH_SECRET     --project-name esmeralda-market
-#      For AUTH_SECRET, use a long random string (40+ chars). It never
-#      needs to be typed by hand — a password manager can generate it.
+#  5.  Create the D1 database (used for the orders queue + print-server
+#      heartbeat). Paste the "database_id" value into [[d1_databases]] below:
+#        wrangler d1 create esmeralda-orders
 #
-#  6.  Deploy:
+#      Then apply the schema (one-time):
+#        wrangler d1 execute esmeralda-orders --remote --file=./schema/d1_init.sql
+#      And for local dev:
+#        wrangler d1 execute esmeralda-orders --local  --file=./schema/d1_init.sql
+#
+#  6.  Set your secrets (you'll be prompted to type the value):
+#        wrangler pages secret put ADMIN_PASSWORD       --project-name esmeralda-market
+#        wrangler pages secret put AUTH_SECRET          --project-name esmeralda-market
+#        wrangler pages secret put PRINT_SERVER_SECRET  --project-name esmeralda-market
+#        wrangler pages secret put RESEND_API_KEY       --project-name esmeralda-market
+#        wrangler pages secret put RESEND_FROM          --project-name esmeralda-market
+#
+#      AUTH_SECRET and PRINT_SERVER_SECRET should each be a long random string
+#      (40+ chars). The PRINT_SERVER_SECRET is shared with the print server PC
+#      via its local .env file (see print-server/README.md).
+#
+#  7.  Deploy:
 #        wrangler pages deploy . --project-name esmeralda-market
 #      On first run Cloudflare will create the project automatically.
 #      Subsequent deploys: just run the same command again.
@@ -34,18 +48,32 @@ name = "esmkt"
 pages_build_output_dir = "."
 compatibility_date = "2024-09-23"
 
-# ── KV Namespace (stores menu JSON) ─────────────────────────
+# ── KV Namespace (stores menu JSON, settings, page sections, events) ───────
 # Paste the "id" output from:  wrangler kv namespace create "esmeralda-menu"
 [[kv_namespaces]]
 binding     = "MENU_KV"
 id          = "27fea57448dd4e98acd8d8e12f3a57aa"
 
-# ── R2 Bucket (stores uploaded photos) ──────────────────────
+# ── R2 Bucket (stores uploaded photos) ─────────────────────────────────────
 [[r2_buckets]]
 binding     = "IMAGES_BUCKET"
 bucket_name = "esmeralda-images"
 
-# ── Environment variables ────────────────────────────────────
-# Secrets (ADMIN_PASSWORD, AUTH_SECRET) must be set via:
+# ── D1 Database (orders queue + print-server heartbeat) ────────────────────
+# Paste the "database_id" output from:
+#   wrangler d1 create esmeralda-orders
+[[d1_databases]]
+binding       = "ORDERS_DB"
+database_name = "esmeralda-orders"
+database_id   = "79bc49ca-32c3-42df-9d79-cb8a53a205fd"
+
+# ── Cron Triggers ──────────────────────────────────────────────────────────
+# Pages Functions don't support cron triggers directly — those live in a
+# companion Worker (./cron-worker/) that's deployed separately and shares
+# the same D1 database + KV namespace. See ./cron-worker/wrangler.toml.
+
+# ── Environment variables ──────────────────────────────────────────────────
+# Secrets (ADMIN_PASSWORD, AUTH_SECRET, PRINT_SERVER_SECRET, RESEND_*) must
+# be set via:
 #   wrangler pages secret put <NAME> --project-name esmeralda-market
 # Do NOT put secret values in this file — it will be in your git repo.

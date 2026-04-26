@@ -1,0 +1,58 @@
+; ─────────────────────────────────────────────────────────────────────────────
+;  Esmeralda Market — Print Server systemd unit
+;
+;  Install:
+;    sudo cp print-server/esmkt-print.service /etc/systemd/system/
+;    sudo systemctl daemon-reload
+;    sudo systemctl enable --now esmkt-print
+;
+;  Watch logs:
+;    sudo journalctl -u esmkt-print -f
+;
+;  Restart after config change:
+;    sudo systemctl restart esmkt-print
+;
+;  NOTE: this file uses semicolon ';' for the help block above so systemd
+;  doesn't try to parse it. The actual unit definition starts at [Unit].
+; ─────────────────────────────────────────────────────────────────────────────
+[Unit]
+Description=Esmeralda Market print server (polling client)
+Documentation=https://github.com/REPLACE_WITH_YOUR_GITHUB_USER/esmkt
+After=network-online.target cups.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+
+# REPLACE these two values with the actual user + checkout path on the
+# print-server PC. The user needs:
+#   - read access to print-server/.env
+#   - permission to print (member of `lp` group on Debian/Ubuntu)
+#   - ability to run `git fetch` / `git pull` for auto-update
+User=esmkt
+Group=esmkt
+WorkingDirectory=/home/esmkt/esmkt/print-server
+ExecStart=/usr/bin/node /home/esmkt/esmkt/print-server/server.js
+
+# The auto-updater exits with code 0 when it pulls new code; systemd
+# restarts us within RestartSec.
+Restart=always
+RestartSec=3
+
+# Keep stdout/stderr in journalctl.
+StandardOutput=journal
+StandardError=journal
+
+# Resource hygiene — small headless PC.
+LimitNOFILE=4096
+MemoryMax=256M
+
+# Hardening — the server only needs to read its own dir + tmp + run lp/aplay/git.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/esmkt/esmkt /tmp
+
+[Install]
+WantedBy=multi-user.target

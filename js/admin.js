@@ -2858,6 +2858,16 @@ async function loadPrintServerUI() {
   if (toggle && settingsData) {
     toggle.checked = settingsData.printServerRequired === true;
   }
+
+  // 3. Offline-alert email + threshold inputs — reflect current settings
+  const alertEmailInput = document.getElementById('siPrintAlertEmail');
+  const alertMinsInput  = document.getElementById('siPrintAlertMinutes');
+  if (alertEmailInput && settingsData) {
+    alertEmailInput.value = settingsData.printServerAlertEmail || '';
+  }
+  if (alertMinsInput && settingsData) {
+    alertMinsInput.value = settingsData.printServerOfflineAlertMinutes || 10;
+  }
 }
 
 function formatAgo(seconds) {
@@ -2883,5 +2893,50 @@ async function savePrintServerRequired(enabled) {
     // Revert toggle
     const toggle = document.getElementById('printServerRequiredToggle');
     if (toggle) toggle.checked = !enabled;
+  }
+}
+
+// Saves both the alert email AND the threshold-minutes inputs in a single
+// PUT, since they're a single feature from the user's perspective.
+async function savePrintServerAlerts() {
+  if (!settingsData) return;
+  const emailInput = document.getElementById('siPrintAlertEmail');
+  const minsInput  = document.getElementById('siPrintAlertMinutes');
+  if (!emailInput || !minsInput) return;
+
+  const email = emailInput.value.trim();
+  const mins  = parseInt(minsInput.value, 10);
+
+  // Bail if neither field changed — avoids spurious PUTs on tab-out.
+  const noChange = email === (settingsData.printServerAlertEmail || '')
+                && mins  === (settingsData.printServerOfflineAlertMinutes || 10);
+  if (noChange) return;
+
+  // Light client-side validation. Server clamps the minutes value too.
+  if (!Number.isFinite(mins) || mins < 2 || mins > 120) {
+    showToast('Alert threshold must be between 2 and 120 minutes', true);
+    minsInput.value = settingsData.printServerOfflineAlertMinutes || 10;
+    return;
+  }
+  if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    showToast('That doesn’t look like a valid email address', true);
+    return;
+  }
+
+  try {
+    const res = await apiFetch('/api/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        printServerAlertEmail:          email,
+        printServerOfflineAlertMinutes: mins,
+      }),
+    });
+    if (!res.ok) throw new Error('Save failed');
+    settingsData.printServerAlertEmail          = email;
+    settingsData.printServerOfflineAlertMinutes = mins;
+    showToast('Offline-alert settings saved');
+  } catch (e) {
+    showToast(e.message, true);
   }
 }
