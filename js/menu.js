@@ -221,14 +221,19 @@ async function checkSnackbarHours() {
 
   // ─── Print-server gate ───────────────────────────────────────────────────
   // If the owner has toggled "Require Print Server for Orders" on in admin
-  // Settings, the server must be currently online for ordering to be open.
+  // Settings, the print server must be online AND the printer must be ready
+  // for ordering to be open. The status endpoint exposes a `ready` field
+  // that combines both checks (server online + printer not in error state).
   // If the status endpoint fails, we err on the side of blocking orders so
   // we don't accept an order we can't actually deliver to the snackbar.
+  // The customer-facing banner stays generic ("Online ordering unavailable")
+  // — never leaks "out of paper" / "cover open" details.
   if (printServerRequired) {
     try {
       const psRes  = await fetch('/api/print-server/status');
       const psData = await psRes.json();
-      if (!psData.online) {
+      const ok = (psData.ready === true) || (psData.online && (!psData.printer || !psData.printer.known));
+      if (!ok) {
         orderingOpen = false;
         if (orderingEl) {
           orderingEl.style.display = '';
@@ -518,6 +523,29 @@ function scrollToOrder() {
   document.getElementById('orderPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
+// ─── PHONE: AUTO-FORMAT + VALIDATE ──────────────────────────────────────────
+// Caller is the input element's `oninput` handler. As the user types, strip
+// everything that isn't a digit and reinsert dashes in the standard
+// XXX-XXX-XXXX shape. Caps at 10 digits; extra keystrokes are ignored.
+// Handles paste of formats like "(775) 572-3200" → "775-572-3200".
+function formatPhoneInput(el) {
+  if (!el) return;
+  const digits = (el.value || '').replace(/\D/g, '').slice(0, 10);
+  let out = digits;
+  if (digits.length > 6)      out = digits.slice(0,3) + '-' + digits.slice(3,6) + '-' + digits.slice(6);
+  else if (digits.length > 3) out = digits.slice(0,3) + '-' + digits.slice(3);
+  el.value = out;
+}
+
+// True if `phone` is a valid 10-digit US number (after stripping non-digits)
+// and isn't a degenerate "all the same digit" case (5555555555, 0000000000).
+function isValidPhone(phone) {
+  const digits = String(phone || '').replace(/\D/g, '');
+  if (digits.length !== 10) return false;
+  if (/^(\d)\1{9}$/.test(digits)) return false; // all same digit
+  return true;
+}
+
 // ─── SUBMIT ORDER ─────────────────────────────────────────────────────────────
 function submitOrder() {
   const name     = document.getElementById('custName').value.trim();
@@ -525,9 +553,10 @@ function submitOrder() {
   const notes    = document.getElementById('custNotes').value.trim();
   const pickup   = document.getElementById('pickupTime').value || 'As soon as ready';
 
-  if (!name)        { showToast('Please enter your name');         return; }
-  if (!phone)       { showToast('Please enter your phone number'); return; }
-  if (!cart.length) { showToast('Your order is empty');            return; }
+  if (!name)              { showToast('Please enter your name');                          return; }
+  if (!phone)             { showToast('Please enter your phone number');                  return; }
+  if (!isValidPhone(phone)){ showToast('Please enter a valid 10-digit phone number');     return; }
+  if (!cart.length)        { showToast('Your order is empty');                            return; }
 
   const subtotal = calcSubtotal();
   const tax      = Math.round(subtotal * (snackbarTaxRate / 100) * 100) / 100;

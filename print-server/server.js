@@ -47,6 +47,12 @@ loadEnvFile(path.join(__dirname, '.env'));
 // hit the temporal dead zone if the `let` declarations were further down.
 let polling = false;
 let heartbeatFailures = 0;
+// Most recent printer status snapshot from `lpstat -p -l`. Refreshed on
+// every heartbeat, also read by the error-chime loop.
+let lastPrinterStatus = null; // { state, reasons, enabled, queued_jobs, ready }
+// Used by the error-chime timer to decide whether to play the immediate
+// "first time bad" chime (vs. the periodic repeat).
+let lastPrinterReady = true;
 
 // ── version ─────────────────────────────────────────────────────────────────
 const VERSION = readPackageVersion();
@@ -61,8 +67,25 @@ const UPDATER_INTERVAL_MS   = parseIntDefault(process.env.UPDATER_INTERVAL_MS,  
 const CHIME_CMD             = process.env.CHIME_CMD == null
                                 ? 'aplay -q /usr/share/sounds/alsa/Front_Center.wav'
                                 : process.env.CHIME_CMD;
+// Played immediately when the printer transitions from ready → unready,
+// then every PRINTER_ERROR_CHIME_INTERVAL_MS while it stays unready.
+// More urgent sound than the order chime by default. CHIME_CMD="" disables
+// both; PRINTER_ERROR_CHIME_CMD="" disables only the error chime.
+const PRINTER_ERROR_CHIME_CMD          = process.env.PRINTER_ERROR_CHIME_CMD == null
+  ? 'paplay /usr/share/sounds/freedesktop/stereo/dialog-warning.oga'
+  : process.env.PRINTER_ERROR_CHIME_CMD;
+const PRINTER_ERROR_CHIME_INTERVAL_MS  = parseIntDefault(process.env.PRINTER_ERROR_CHIME_INTERVAL_MS, 3 * 60 * 1000);
+// Default CUPS queue name that we'll lpstat. If PRINTER_NAME is set, use
+// that. Otherwise fall back to whatever lpstat -d says is the default.
+const PRINTER_QUEUE_NAME    = PRINTER_NAME || '';
 const LOG_FILE              = process.env.LOG_FILE || path.join(__dirname, 'orders.log');
 const GIT_BRANCH            = process.env.GIT_BRANCH || 'main';
+
+// Reasons we treat as "still ready" (warnings only, printer keeps printing)
+const BENIGN_REASONS = new Set([
+  'none', '',
+  'marker-supply-low-warning', 'media-low-warning', 'toner-low-warning',
+]);
 
 // ── CLI: --list-printers ────────────────────────────────────────────────────
 if (process.argv.includes('--list-printers')) {
@@ -91,12 +114,14 @@ console.log(`  Poll:          every ${POLL_INTERVAL_MS / 1000}s`);
 console.log(`  Heartbeat:     every ${HEARTBEAT_INTERVAL_MS / 1000}s`);
 console.log(`  Auto-update:   ${UPDATER_INTERVAL_MS > 0 ? `every ${Math.round(UPDATER_INTERVAL_MS / 60000)}m from origin/${GIT_BRANCH}` : 'disabled'}`);
 console.log(`  Chime:         ${CHIME_CMD ? CHIME_CMD : '(disabled)'}`);
+console.log(`  Error chime:   ${PRINTER_ERROR_CHIME_CMD ? PRINTER_ERROR_CHIME_CMD : '(disabled)'}${PRINTER_ERROR_CHIME_INTERVAL_MS > 0 ? ` (every ${Math.round(PRINTER_ERROR_CHIME_INTERVAL_MS / 60000)}m)` : ''}`);
 console.log(`  Log file:      ${LOG_FILE}`);
 console.log(`  Version:       ${VERSION}\n`);
 
 // ── start loops ─────────────────────────────────────────────────────────────
 runHeartbeatLoop();
 runPollLoop();
+runPrinterErrorChimeLoop();
 if (UPDATER_INTERVAL_MS > 0) runUpdaterLoop();
 
 // Keep the event loop alive even if all timers were somehow cleared.
@@ -113,10 +138,36 @@ async function runHeartbeatLoop() {
 }
 
 async function heartbeatOnce() {
+  // Refresh printer status from CUPS BEFORE shipping the heartbeat so the
+  // website always sees a fresh snapshot. Best-effort — if lpstat fails,
+  // we still send the heartbeat without a printer block.
+  let printerPayload = null;
+  try {
+    const status = await collectPrinterStatus();
+    if (status) {
+      lastPrinterStatus = status;
+      // Track ready/unready transitions for the chime loop (immediate first chime)
+      if (lastPrinterReady !== status.ready) {
+        if (!status.ready) {
+          // Just transitioned from ready → unready: play the error chime once now.
+          console.warn(`[${ts()}] printer became unready: ${humanizeReasons(status)}`);
+          playErrorChime();
+        } else {
+          console.log(`[${ts()}] printer recovered: ready`);
+        }
+        lastPrinterReady = status.ready;
+      }
+      printerPayload = status;
+    }
+  } catch (_) { /* ignore — heartbeat still runs */ }
+
   try {
     const res = await psFetch('/api/print-server/heartbeat', {
       method: 'POST',
-      body:   JSON.stringify({ version: VERSION }),
+      body:   JSON.stringify({
+        version: VERSION,
+        ...(printerPayload ? { printer: printerPayload } : {}),
+      }),
     });
     if (!res.ok) throw new Error(`heartbeat ${res.status}`);
     if (heartbeatFailures > 0) {
@@ -314,6 +365,108 @@ function playChime() {
   exec(CHIME_CMD, (err) => {
     if (err) console.warn(`  [warn] chime failed: ${err.message}`);
   });
+}
+
+// Distinct chime for printer errors. Fires once when the printer transitions
+// ready → unready (from heartbeatOnce), then every PRINTER_ERROR_CHIME_INTERVAL_MS
+// from runPrinterErrorChimeLoop while the printer remains unready.
+function playErrorChime() {
+  if (!PRINTER_ERROR_CHIME_CMD) return;
+  exec(PRINTER_ERROR_CHIME_CMD, (err) => {
+    if (err) console.warn(`  [warn] error chime failed: ${err.message}`);
+  });
+}
+
+// Periodic reminder while the printer is unready. Polls the in-memory
+// `lastPrinterStatus.ready` flag (refreshed by heartbeatOnce every 30s)
+// and chimes if we're still unready. Disabled when interval = 0.
+function runPrinterErrorChimeLoop() {
+  if (PRINTER_ERROR_CHIME_INTERVAL_MS <= 0) return;
+  setInterval(() => {
+    if (lastPrinterStatus && lastPrinterStatus.ready === false) {
+      playErrorChime();
+    }
+  }, PRINTER_ERROR_CHIME_INTERVAL_MS);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// PRINTER STATUS (from `lpstat -p <queue> -l`)
+// ════════════════════════════════════════════════════════════════════════════
+//
+// Returns { state, reasons, enabled, queued_jobs, ready } or null on Windows
+// (Windows status is harder; the print-server runs on Linux per the README,
+// so we only collect status there). The shape matches what the heartbeat
+// endpoint expects.
+
+async function collectPrinterStatus() {
+  if (os.platform() === 'win32') return null;
+  const queue = PRINTER_QUEUE_NAME; // empty string → no -p flag → default printer
+  return new Promise((resolve) => {
+    const cmd = queue ? `lpstat -l -p "${queue.replace(/"/g, '\\"')}"` : 'lpstat -l -p';
+    exec(cmd, { timeout: 5000 }, (err, stdout) => {
+      if (err) return resolve(null);
+      const status = parseLpstatOutput(String(stdout || ''));
+      // Best-effort queued jobs count
+      exec(queue ? `lpstat -W not-completed -P "${queue.replace(/"/g, '\\"')}" 2>/dev/null` : 'lpstat -W not-completed 2>/dev/null',
+        { timeout: 5000 },
+        (_jerr, jstdout) => {
+          const lines = String(jstdout || '').split(/\r?\n/).filter(Boolean);
+          status.queued_jobs = lines.length;
+          status.ready = computeReady(status);
+          resolve(status);
+        }
+      );
+    });
+  });
+}
+
+// `lpstat -l -p <q>` typical output:
+//   printer snackbar is idle.  enabled since Sun 26 Apr 2026 03:00:00 PM PDT
+//           reasons: none
+// or:
+//   printer snackbar disabled since Sun 26 Apr 2026 03:00:00 PM PDT -
+//           Out of paper
+//           reasons: media-empty-error
+function parseLpstatOutput(stdout) {
+  const out = { state: '', reasons: [], enabled: true };
+  const lines = stdout.split(/\r?\n/);
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (line.startsWith('printer ')) {
+      // "printer <name> is idle.  enabled since ..."
+      // or "printer <name> disabled since ..."
+      if (/\bdisabled\b/i.test(line))      out.enabled = false;
+      if (/\bis printing\b/i.test(line))   out.state = 'printing';
+      else if (/\bis idle\b/i.test(line))  out.state = 'idle';
+      else if (/\bis stopped\b/i.test(line) || /\bdisabled\b/i.test(line)) out.state = 'stopped';
+    }
+    const m = line.match(/reasons:\s*(.+)$/i);
+    if (m) {
+      out.reasons = m[1].split(/[,\s]+/).filter(Boolean);
+    }
+  }
+  if (!out.reasons.length) out.reasons = ['none'];
+  return out;
+}
+
+function computeReady(s) {
+  if (s.enabled === false) return false;
+  if (s.state === 'stopped') return false;
+  for (const r of s.reasons || []) {
+    if (!BENIGN_REASONS.has(r)) return false;
+  }
+  return true;
+}
+
+function humanizeReasons(s) {
+  if (!s) return 'unknown';
+  if (s.enabled === false) return 'printer disabled';
+  if (s.state === 'stopped') return 'printer stopped';
+  for (const r of s.reasons || []) {
+    if (!r || r === 'none') continue;
+    return r;
+  }
+  return 'not ready';
 }
 
 // ════════════════════════════════════════════════════════════════════════════

@@ -45,7 +45,13 @@ INSERT OR IGNORE INTO print_server_state(key, value) VALUES
   ('last_heartbeat_ms',      '0'),  -- unix ms of most recent heartbeat
   ('last_alert_sent_ms',     '0'),  -- unix ms of most recent offline-alert email
   ('last_alert_recipient',   ''),   -- the email it was sent to (for log/debug)
-  ('print_server_version',   '');   -- version reported by the heartbeat (informational)
+  ('print_server_version',   ''),   -- version reported by the heartbeat (informational)
+  -- Printer health (added with the printer-health feature):
+  ('printer_status_json',     '{}'), -- last { state, reasons[], enabled, queued_jobs } shipped by the print server
+  ('printer_status_at',       '0'),  -- unix ms when printer_status_json was last updated
+  ('printer_unready_since',   '0'),  -- unix ms when the printer first went unready (0 = currently ready)
+  ('last_printer_alert_ms',   '0'),  -- unix ms of most recent printer-error alert email
+  ('last_printer_alert_recip','');   -- recipient of last printer-error email
 
 -- ── HOUSEKEEPING ────────────────────────────────────────────────────────────
 -- Optional: clean out printed orders older than 30 days. Run manually or

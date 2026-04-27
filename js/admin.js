@@ -240,9 +240,13 @@ window.addEventListener('beforeunload', function (e) {
 });
 
 async function showList() {
+  // Called from the menu item editor's "Back to Menu" button. The legacy
+  // implementation switched to 'storeinfo' which sent users to the wrong
+  // tab — fixed to 'menu' so the user lands back on the menu list they
+  // were editing from.
   document.getElementById('navLogout').classList.add('visible');
   document.getElementById('adminTabs').classList.add('visible');
-  switchTab('storeinfo');
+  switchTab('menu');
 }
 
 // ─── ORDERING UI HELPER ───────────────────────────────────────────────────────
@@ -957,37 +961,52 @@ async function loadSettings() {
 }
 
 // ─── ONLINE ORDERS LOG ───────────────────────────────────────────────────────
-// Lives in admin Settings tab. Surfaces today's orders on open; each click of
-// "Load earlier orders" pulls one full previous day. Each row has a View
-// button that opens a receipt-style modal with a "Print at Snackbar" action
-// that re-queues the order via /api/orders/:id/reprint.
+// Lives in admin Settings tab. Surfaces all of today's orders on open; each
+// click of "Load 20 more" pulls the next 20 oldest orders before whatever's
+// currently in the table, regardless of how those 20 are distributed across
+// days. Day separators are inserted in render based on the data, not on
+// load behavior.
 
-// State for paging through days. The "oldestDayLoaded" is a Date pinned to
-// midnight in the user's local timezone — each "load more" decrements by 1d.
+const ORDERS_LOG_PAGE_SIZE = 20;
+
 let ordersLogState = {
-  oldestDayLoaded: null, // Date at local midnight of the earliest day shown
-  rowsById:        {},   // id → order object (for the view modal lookup)
-  currentlyViewing: null, // id of the order currently open in the modal
+  oldestLoadedTs:   null,  // unix ms of the oldest row currently in the table
+  lastDayShown:     null,  // local-midnight ms of the last day-separator emitted
+  rowsById:         {},    // id → order object (for the modal lookup)
+  currentlyViewing: null,  // id of the order open in the modal
+  noMore:           false, // true once a load returned fewer than PAGE_SIZE
 };
 
 async function loadOrdersLogToday() {
-  // Reset state in case the tab is re-entered.
-  ordersLogState.oldestDayLoaded = startOfLocalDay(new Date());
-  ordersLogState.rowsById = {};
+  // Reset state on every (re)open of the Settings tab.
+  ordersLogState = {
+    oldestLoadedTs:   null,
+    lastDayShown:     null,
+    rowsById:         {},
+    currentlyViewing: null,
+    noMore:           false,
+  };
   const body = document.getElementById('ordersLogBody');
   if (body) body.innerHTML = '';
-  await fetchAndRenderOrdersForDay(ordersLogState.oldestDayLoaded, /* isToday */ true);
+
+  // Initial load: today's midnight → now (range mode).
+  const todayStart = startOfLocalDay(new Date()).getTime();
+  const now        = Date.now();
+  await fetchAndRenderOrdersWindow({ mode: 'range', from: todayStart, to: now, isInitial: true });
 }
 
 async function loadMoreOrdersDay() {
-  if (!ordersLogState.oldestDayLoaded) return;
-  const prev = new Date(ordersLogState.oldestDayLoaded);
-  prev.setDate(prev.getDate() - 1);
-  ordersLogState.oldestDayLoaded = prev;
-  await fetchAndRenderOrdersForDay(prev, /* isToday */ false);
+  // Cursor mode: 20 oldest rows before our current oldest.
+  if (!ordersLogState.oldestLoadedTs || ordersLogState.noMore) return;
+  await fetchAndRenderOrdersWindow({
+    mode:      'cursor',
+    before:    ordersLogState.oldestLoadedTs,
+    limit:     ORDERS_LOG_PAGE_SIZE,
+    isInitial: false,
+  });
 }
 
-async function fetchAndRenderOrdersForDay(day, isToday) {
+async function fetchAndRenderOrdersWindow(opts) {
   const status      = document.getElementById('ordersLogStatus');
   const loading     = document.getElementById('ordersLogLoading');
   const empty       = document.getElementById('ordersLogEmpty');
@@ -996,56 +1015,83 @@ async function fetchAndRenderOrdersForDay(day, isToday) {
   const loadMoreBtn = document.getElementById('ordersLogLoadMoreBtn');
 
   if (loading) loading.style.display = '';
-  if (status)  status.textContent = `Loading ${formatDayLabel(day)}…`;
+  if (status)  status.textContent = opts.isInitial ? 'Loading today’s orders…' : 'Loading more…';
   if (loadMoreBtn) loadMoreBtn.disabled = true;
 
-  // Day window: [00:00 of `day`, 00:00 of next day)
-  const from = day.getTime();
-  const next = new Date(day); next.setDate(next.getDate() + 1);
-  const to   = next.getTime();
+  let url;
+  if (opts.mode === 'range')  url = `/api/orders/log?from=${opts.from}&to=${opts.to}`;
+  else                        url = `/api/orders/log?before=${opts.before}&limit=${opts.limit}`;
 
   let orders = [];
   try {
-    const res = await apiFetch(`/api/orders/log?from=${from}&to=${to}`);
+    const res = await apiFetch(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     orders = Array.isArray(data.orders) ? data.orders : [];
   } catch (e) {
-    if (status) status.textContent = `Could not load orders for ${formatDayLabel(day)}: ${e.message}`;
+    if (status) status.textContent = `Could not load orders: ${e.message}`;
     if (loading) loading.style.display = 'none';
     if (loadMoreBtn) loadMoreBtn.disabled = false;
     return;
   }
 
-  // Cache by id for the modal lookup
+  // Cache by id for modal lookup
   for (const o of orders) ordersLogState.rowsById[o.id] = o;
 
-  // Append rows. If no rows for this day AND it's the only day we've loaded
-  // (i.e. today is empty), show the "no orders today yet" hint.
+  // Append rows + data-driven day separators
   if (body) {
-    // Day separator
-    const sep = document.createElement('tr');
-    sep.className = 'ot-day-sep';
-    sep.innerHTML = `<td colspan="5">${formatDayLabel(day)}${orders.length === 0 ? ' &middot; <span style="text-transform:none;letter-spacing:0;color:var(--cream-dim)">No orders</span>' : ''}</td>`;
-    body.appendChild(sep);
-
     for (const o of orders) {
+      const dayMs = startOfLocalDay(new Date(o.created_at)).getTime();
+      if (ordersLogState.lastDayShown !== dayMs) {
+        const sep = document.createElement('tr');
+        sep.className = 'ot-day-sep';
+        sep.innerHTML = `<td colspan="5">${formatDayLabel(new Date(dayMs))}</td>`;
+        body.appendChild(sep);
+        ordersLogState.lastDayShown = dayMs;
+      }
       body.appendChild(renderOrderRow(o));
+    }
+
+    // Update oldest-loaded cursor
+    if (orders.length > 0) {
+      const oldestInBatch = orders[orders.length - 1].created_at;
+      if (ordersLogState.oldestLoadedTs == null || oldestInBatch < ordersLogState.oldestLoadedTs) {
+        ordersLogState.oldestLoadedTs = oldestInBatch;
+      }
     }
   }
 
+  // "No more" detection: cursor mode returning < PAGE_SIZE means we hit the end.
+  if (opts.mode === 'cursor' && orders.length < ORDERS_LOG_PAGE_SIZE) {
+    ordersLogState.noMore = true;
+  }
+
+  // Empty-state hint shown only when the very first load returned nothing.
   const totalRows = body ? body.querySelectorAll('tr:not(.ot-day-sep)').length : 0;
   if (tableWrap) tableWrap.style.display = totalRows > 0 ? '' : 'none';
-  if (empty)     empty.style.display     = totalRows === 0 && isToday ? '' : 'none';
+  if (empty)     empty.style.display     = (totalRows === 0 && opts.isInitial) ? '' : 'none';
 
   if (loading) loading.style.display = 'none';
+
   if (loadMoreBtn) {
-    loadMoreBtn.style.display = '';
-    loadMoreBtn.disabled = false;
-    const nextDay = new Date(day); nextDay.setDate(nextDay.getDate() - 1);
-    loadMoreBtn.textContent = `Load orders from ${formatDayLabel(nextDay)}`;
+    if (totalRows === 0 || ordersLogState.noMore) {
+      loadMoreBtn.style.display = 'none';
+    } else {
+      loadMoreBtn.style.display = '';
+      loadMoreBtn.disabled = false;
+      loadMoreBtn.textContent = `Load ${ORDERS_LOG_PAGE_SIZE} more`;
+    }
   }
-  if (status) status.textContent = `Showing orders from ${formatDayLabel(ordersLogState.oldestDayLoaded)} through today.`;
+
+  if (status) {
+    if (totalRows === 0) {
+      status.textContent = '';
+    } else if (ordersLogState.noMore) {
+      status.textContent = `Showing all ${totalRows} order${totalRows === 1 ? '' : 's'}.`;
+    } else {
+      status.textContent = `Showing ${totalRows} order${totalRows === 1 ? '' : 's'}.`;
+    }
+  }
 }
 
 function renderOrderRow(o) {
@@ -1127,6 +1173,125 @@ function renderOrderModalBody(o) {
   html += '</div>';
 
   return html;
+}
+
+// Build a document-style PDF for the currently-open order using jsPDF.
+// Loaded as a UMD bundle from cdnjs in admin.html — `window.jspdf.jsPDF` is
+// the constructor. Filename: esmkt-order-<id>.pdf.
+function downloadCurrentOrderPdf() {
+  const id = ordersLogState.currentlyViewing;
+  if (!id) return;
+  const o = ordersLogState.rowsById[id];
+  if (!o) return;
+  if (!window.jspdf || !window.jspdf.jsPDF) {
+    showToast('PDF library still loading — try again in a second.', true);
+    return;
+  }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'pt', format: 'letter' });
+
+  const W = doc.internal.pageSize.getWidth();
+  const M = 56; // 0.78" margin
+  let   y = M;
+
+  // Header (brand)
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(20);
+  doc.text('ESMERALDA MARKET', M, y);
+  y += 22;
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
+  doc.setTextColor(100);
+  doc.text('HWY 264 MM8, Dyer, NV 89010', M, y);
+  doc.text('775-572-3200 · esmeraldamarket.com', M, y + 13);
+  doc.setTextColor(0);
+  y += 34;
+
+  // Horizontal rule
+  doc.setDrawColor(180); doc.setLineWidth(0.5);
+  doc.line(M, y, W - M, y);
+  y += 22;
+
+  // Order title
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(14);
+  doc.text(`Order ${o.id}`, M, y);
+  y += 18;
+
+  // Meta
+  const p = o.payload || {};
+  const dateStr = new Date(o.created_at).toLocaleString('en-US', {
+    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
+    hour: 'numeric', minute: '2-digit',
+  });
+  const meta = [
+    ['Date',     dateStr],
+    ['Status',   String(o.status || '').toUpperCase()],
+    ['Pickup',   p.pickup_time || 'As soon as ready'],
+    ['Customer', p.customer_name || '—'],
+    ['Phone',    p.customer_phone || '—'],
+  ];
+  if (p.notes)       meta.push(['Notes',      p.notes]);
+  if (p._reprint_of) meta.push(['Reprint of', p._reprint_of]);
+
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(11);
+  for (const [k, v] of meta) {
+    doc.setTextColor(100); doc.text(k + ':', M, y);
+    doc.setTextColor(0);   doc.text(String(v), M + 80, y);
+    y += 15;
+  }
+  y += 8;
+
+  // Items header bar
+  doc.setFillColor(245); doc.rect(M, y, W - 2 * M, 18, 'F');
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
+  doc.setTextColor(80);
+  doc.text('ITEM',  M + 8,           y + 12);
+  doc.text('PRICE', W - M - 50,      y + 12, { align: 'left' });
+  doc.setTextColor(0);
+  y += 24;
+
+  // Items rows
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(11);
+  for (const it of (p.items || [])) {
+    if (y > 720) { doc.addPage(); y = M; }
+    doc.text(String(it.name || ''), M + 8, y);
+    doc.text(`$${Number(it.base_price || 0).toFixed(2)}`, W - M - 50, y);
+    y += 14;
+    doc.setFontSize(10); doc.setTextColor(110);
+    for (const c of (it.choices || [])) {
+      if (y > 740) { doc.addPage(); y = M; }
+      doc.text(`› ${c.name}: ${c.choice}`, M + 22, y);
+      y += 12;
+    }
+    for (const opt of (it.options || [])) {
+      if (y > 740) { doc.addPage(); y = M; }
+      doc.text(`+ ${opt}`, M + 22, y);
+      y += 12;
+    }
+    doc.setTextColor(0); doc.setFontSize(11);
+    y += 4;
+  }
+
+  // Totals
+  y += 6;
+  doc.setDrawColor(180); doc.line(M, y, W - M, y);
+  y += 14;
+  const totalsRow = (label, value, bold) => {
+    doc.setFont('helvetica', bold ? 'bold' : 'normal');
+    doc.setFontSize(bold ? 13 : 11);
+    doc.text(label, W - M - 130, y);
+    doc.text(value, W - M,        y, { align: 'right' });
+    y += bold ? 18 : 14;
+  };
+  if (p.subtotal != null) totalsRow('Subtotal', `$${Number(p.subtotal).toFixed(2)}`);
+  if (p.tax      != null) totalsRow(p.taxRate ? `Tax (${p.taxRate}%)` : 'Tax', `$${Number(p.tax).toFixed(2)}`);
+  if (p.total    != null) totalsRow('TOTAL',   `$${Number(p.total).toFixed(2)}`, true);
+
+  // Footer
+  y = Math.max(y, doc.internal.pageSize.getHeight() - M - 14);
+  doc.setFont('helvetica', 'italic'); doc.setFontSize(9);
+  doc.setTextColor(140);
+  doc.text(`Generated ${new Date().toLocaleString()}`, M, y);
+
+  doc.save(`esmkt-order-${o.id}.pdf`);
 }
 
 async function reprintCurrentOrder() {
@@ -3077,46 +3242,70 @@ function toggleSectionHidden(sectionId) {
 // offline / online) and offers a "require for orders" toggle. The print
 // server itself doesn't exist yet — this UI is scaffolding.
 async function loadPrintServerUI() {
-  // 1. Status indicator — pull current status from the placeholder endpoint
-  const statusDesc = document.getElementById('printServerStatusDesc');
-  const statusDot  = document.getElementById('printServerStatusDot');
-  if (statusDesc && statusDot) {
-    try {
-      const res  = await fetch('/api/print-server/status');
-      const data = await res.json();
-      if (!data.configured) {
-        statusDesc.textContent = 'Not configured (no heartbeat ever received)';
-        statusDot.style.background = 'rgba(184,176,160,0.4)'; // gray
-      } else if (data.online) {
-        const s = data.secondsSinceLastSeen || 0;
-        statusDesc.textContent = 'Online \u00b7 last heartbeat ' + formatAgo(s);
-        statusDot.style.background = 'rgba(80,180,120,0.9)'; // green
-      } else {
-        const s = data.secondsSinceLastSeen || 0;
-        statusDesc.textContent = 'Offline \u00b7 last heartbeat ' + formatAgo(s);
-        statusDot.style.background = 'rgba(230,120,110,0.9)'; // red
-      }
-    } catch (_) {
-      statusDesc.textContent = 'Could not reach status endpoint';
+  const statusDesc  = document.getElementById('printServerStatusDesc');
+  const statusDot   = document.getElementById('printServerStatusDot');
+  const printerDesc = document.getElementById('printerStatusDesc');
+  const printerDot  = document.getElementById('printerStatusDot');
+
+  let data = null;
+  try {
+    const res = await fetch('/api/print-server/status');
+    data = await res.json();
+  } catch (_) {
+    if (statusDesc)  statusDesc.textContent  = 'Could not reach status endpoint';
+    if (statusDot)   statusDot.style.background  = 'rgba(230,120,110,0.9)';
+    if (printerDesc) printerDesc.textContent = '—';
+    if (printerDot)  printerDot.style.background = 'rgba(184,176,160,0.4)';
+  }
+
+  // Print server line
+  if (data && statusDesc && statusDot) {
+    if (!data.configured) {
+      statusDesc.textContent = 'Not configured (no heartbeat ever received)';
+      statusDot.style.background = 'rgba(184,176,160,0.4)';
+    } else if (data.online) {
+      const s = data.secondsSinceLastSeen || 0;
+      statusDesc.textContent = 'Online · last heartbeat ' + formatAgo(s);
+      statusDot.style.background = 'rgba(80,180,120,0.9)';
+    } else {
+      const s = data.secondsSinceLastSeen || 0;
+      statusDesc.textContent = 'Offline · last heartbeat ' + formatAgo(s);
       statusDot.style.background = 'rgba(230,120,110,0.9)';
     }
   }
 
-  // 2. Require-print-server toggle — reflect current settings value
-  const toggle = document.getElementById('printServerRequiredToggle');
-  if (toggle && settingsData) {
-    toggle.checked = settingsData.printServerRequired === true;
+  // Printer (CUPS) line
+  if (data && printerDesc && printerDot) {
+    const pr = data.printer;
+    if (!pr || !pr.known) {
+      printerDesc.textContent = 'Status unknown (waiting for first heartbeat)';
+      printerDot.style.background = 'rgba(184,176,160,0.4)';
+    } else if (!data.online) {
+      printerDesc.textContent = pr.human_status + ' (server offline, status may be stale)';
+      printerDot.style.background = 'rgba(184,176,160,0.6)';
+    } else if (pr.ready) {
+      printerDesc.textContent = 'Ready';
+      printerDot.style.background = 'rgba(80,180,120,0.9)';
+    } else {
+      printerDesc.textContent = pr.human_status;
+      printerDot.style.background = 'rgba(230,120,110,0.9)';
+    }
   }
 
-  // 3. Offline-alert email + threshold inputs — reflect current settings
+  // Require-print-server toggle
+  const toggle = document.getElementById('printServerRequiredToggle');
+  if (toggle && settingsData) toggle.checked = settingsData.printServerRequired === true;
+
+  // Form fields
   const alertEmailInput = document.getElementById('siPrintAlertEmail');
   const alertMinsInput  = document.getElementById('siPrintAlertMinutes');
-  if (alertEmailInput && settingsData) {
-    alertEmailInput.value = settingsData.printServerAlertEmail || '';
-  }
-  if (alertMinsInput && settingsData) {
-    alertMinsInput.value = settingsData.printServerOfflineAlertMinutes || 10;
-  }
+  if (alertEmailInput && settingsData) alertEmailInput.value = settingsData.printServerAlertEmail || '';
+  if (alertMinsInput  && settingsData) alertMinsInput.value  = settingsData.printServerOfflineAlertMinutes || 10;
+
+  const printerEmailInput = document.getElementById('siPrinterAlertEmail');
+  const printerMinsInput  = document.getElementById('siPrinterAlertMinutes');
+  if (printerEmailInput && settingsData) printerEmailInput.value = settingsData.printerAlertEmail || '';
+  if (printerMinsInput  && settingsData) printerMinsInput.value  = settingsData.printerAlertMinutes || 3;
 }
 
 function formatAgo(seconds) {
@@ -3185,6 +3374,49 @@ async function savePrintServerAlerts() {
     settingsData.printServerAlertEmail          = email;
     settingsData.printServerOfflineAlertMinutes = mins;
     showToast('Offline-alert settings saved');
+  } catch (e) {
+    showToast(e.message, true);
+  }
+}
+
+// Sibling of savePrintServerAlerts(), but for the PRINTER (out-of-paper /
+// jam / cover-open) alert email + threshold. Saves both fields together.
+async function savePrinterAlerts() {
+  if (!settingsData) return;
+  const emailInput = document.getElementById('siPrinterAlertEmail');
+  const minsInput  = document.getElementById('siPrinterAlertMinutes');
+  if (!emailInput || !minsInput) return;
+
+  const email = emailInput.value.trim();
+  const mins  = parseInt(minsInput.value, 10);
+
+  const noChange = email === (settingsData.printerAlertEmail || '')
+                && mins  === (settingsData.printerAlertMinutes || 3);
+  if (noChange) return;
+
+  if (!Number.isFinite(mins) || mins < 1 || mins > 60) {
+    showToast('Printer alert threshold must be between 1 and 60 minutes', true);
+    minsInput.value = settingsData.printerAlertMinutes || 3;
+    return;
+  }
+  if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    showToast('That doesn’t look like a valid email address', true);
+    return;
+  }
+
+  try {
+    const res = await apiFetch('/api/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        printerAlertEmail:   email,
+        printerAlertMinutes: mins,
+      }),
+    });
+    if (!res.ok) throw new Error('Save failed');
+    settingsData.printerAlertEmail   = email;
+    settingsData.printerAlertMinutes = mins;
+    showToast('Printer-alert settings saved');
   } catch (e) {
     showToast(e.message, true);
   }

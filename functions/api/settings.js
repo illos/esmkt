@@ -61,6 +61,14 @@ const DEFAULT_SETTINGS = {
   // How many minutes the print server must be offline before the cron
   // worker emails an alert. Range is clamped 2–120 on save.
   printServerOfflineAlertMinutes: 10,
+  // Where to email when the PRINTER (not the print server itself) has been
+  // unready beyond the threshold below. Empty string = fall back to
+  // printServerAlertEmail, which itself falls back to contactEmail.
+  printerAlertEmail: '',
+  // Minutes the printer must be unready before the cron worker emails a
+  // printer-error alert. Tighter default than the server-offline threshold
+  // because paper-out should be addressable fast. Clamped 1–60 on save.
+  printerAlertMinutes: 3,
 };
 
 export async function onRequestOptions() {
@@ -102,6 +110,10 @@ export async function onRequestPut({ request, env }) {
     ...(body.printServerOfflineAlertMinutes !== undefined && {
       printServerOfflineAlertMinutes: clampMinutes(body.printServerOfflineAlertMinutes),
     }),
+    ...(body.printerAlertEmail !== undefined && { printerAlertEmail: String(body.printerAlertEmail).trim() }),
+    ...(body.printerAlertMinutes !== undefined && {
+      printerAlertMinutes: clampPrinterMinutes(body.printerAlertMinutes),
+    }),
   };
 
   await env.MENU_KV.put('settings', JSON.stringify(data));
@@ -140,7 +152,18 @@ function migrateSettings(data) {
     printServerRequired:            data.printServerRequired === true,
     printServerAlertEmail:          data.printServerAlertEmail ?? '',
     printServerOfflineAlertMinutes: clampMinutes(data.printServerOfflineAlertMinutes ?? DEFAULT_SETTINGS.printServerOfflineAlertMinutes),
+    printerAlertEmail:              data.printerAlertEmail ?? '',
+    printerAlertMinutes:            clampPrinterMinutes(data.printerAlertMinutes ?? DEFAULT_SETTINGS.printerAlertMinutes),
   };
+}
+
+// Tighter clamp for the printer alert threshold — paper-out / jam alerts
+// want to fire quickly, so we allow as low as 1 min. Capped at 60 since
+// anything longer makes the alert nearly useless.
+function clampPrinterMinutes(v) {
+  const n = parseInt(v, 10);
+  if (!Number.isFinite(n)) return 3;
+  return Math.max(1, Math.min(60, n));
 }
 
 function validateHours(arr) {

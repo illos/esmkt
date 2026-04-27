@@ -41,17 +41,27 @@ export async function onRequestGet({ env }) {
   let lastSeen = 0;
   let version  = '';
   let pendingOrders = 0;
+  let printerStatus = null;
+  let printerStatusAt = 0;
+  let printerUnreadySince = 0;
 
   // ── Preferred: D1 ────────────────────────────────────────────────────────
   if (env.ORDERS_DB) {
     try {
       const stateRows = await env.ORDERS_DB
         .prepare(`SELECT key, value FROM print_server_state
-                  WHERE key IN ('last_heartbeat_ms', 'print_server_version')`)
+                  WHERE key IN (
+                    'last_heartbeat_ms', 'print_server_version',
+                    'printer_status_json', 'printer_status_at',
+                    'printer_unready_since'
+                  )`)
         .all();
       for (const row of stateRows.results || []) {
-        if (row.key === 'last_heartbeat_ms')    lastSeen = parseInt(row.value, 10) || 0;
-        if (row.key === 'print_server_version') version  = row.value || '';
+        if (row.key === 'last_heartbeat_ms')      lastSeen            = parseInt(row.value, 10) || 0;
+        if (row.key === 'print_server_version')   version             = row.value || '';
+        if (row.key === 'printer_status_json')    printerStatus       = safeParse(row.value);
+        if (row.key === 'printer_status_at')      printerStatusAt     = parseInt(row.value, 10) || 0;
+        if (row.key === 'printer_unready_since')  printerUnreadySince = parseInt(row.value, 10) || 0;
       }
       const pending = await env.ORDERS_DB
         .prepare(`SELECT COUNT(*) AS n FROM orders WHERE status = 'pending'`)
@@ -74,6 +84,12 @@ export async function onRequestGet({ env }) {
   const configured = lastSeen > 0;
   const online     = configured && age < ONLINE_WINDOW_MS;
 
+  // Printer health is meaningful only if we've seen a printer status payload
+  // AND the print server is currently online (otherwise the status may be stale).
+  const printer = computePrinterStatus({
+    online, printerStatus, printerStatusAt, printerUnreadySince,
+  });
+
   return json({
     configured,
     online,
@@ -81,7 +97,54 @@ export async function onRequestGet({ env }) {
     secondsSinceLastSeen: configured ? Math.floor(age / 1000) : null,
     version,
     pendingOrders,
+    printer,
+    // Convenience: what the menu page actually needs to gate ordering.
+    // True only if both server is online AND printer is ready (or unknown
+    // state but printer-required isn't toggled — the menu side checks that).
+    ready: online && (printer.known ? printer.ready : true),
   });
+}
+
+function computePrinterStatus({ online, printerStatus, printerStatusAt, printerUnreadySince }) {
+  // No status received yet
+  if (!printerStatus || !printerStatusAt) {
+    return { known: false, ready: false, human_status: 'Unknown', state: '', reasons: [], queued_jobs: 0, unready_since: null };
+  }
+  const ready  = printerStatus.ready === true;
+  const human  = ready ? 'Ready' : humanizeReasons(printerStatus.reasons || [], printerStatus.state, printerStatus.enabled);
+  return {
+    known:        true,
+    ready,
+    human_status: ready ? 'Ready' : human,
+    state:        printerStatus.state || '',
+    reasons:      printerStatus.reasons || [],
+    queued_jobs:  printerStatus.queued_jobs || 0,
+    unready_since: printerUnreadySince || null,
+    status_at:     printerStatusAt || null,
+    status_stale:  online ? false : true, // payload is from the last heartbeat — meaningful only when server is online
+  };
+}
+
+function humanizeReasons(reasons, state, enabled) {
+  if (enabled === false) return 'Printer disabled';
+  if (state === 'stopped') return 'Printer stopped';
+  for (const r of reasons) {
+    if (!r || r === 'none') continue;
+    if (r.includes('media-empty'))   return 'Out of paper';
+    if (r.includes('media-jam'))     return 'Paper jam';
+    if (r.includes('cover-open'))    return 'Cover open';
+    if (r.includes('door-open'))     return 'Door open';
+    if (r.includes('toner-empty'))   return 'Toner empty';
+    if (r.includes('marker-supply-empty')) return 'Supply empty';
+    if (r.includes('offline'))       return 'Printer offline';
+    if (r.includes('connecting'))    return 'Connecting…';
+    return 'Error: ' + r.replace(/-(error|warning|report)$/, '').replace(/-/g, ' ');
+  }
+  return 'Not ready';
+}
+
+function safeParse(s) {
+  try { return JSON.parse(s); } catch (_) { return null; }
 }
 
 function json(data, status = 200) {

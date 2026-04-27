@@ -29,7 +29,13 @@ export default {
    * The handler runs in a fresh isolate each invocation.
    */
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(checkAndAlert(env));
+    // Two independent checks each tick: heartbeat-stale (print server
+    // offline) and printer-not-ready. Each has its own threshold and its
+    // own 1-hour cooldown so a sustained outage doesn't spam the inbox.
+    ctx.waitUntil(Promise.all([
+      checkAndAlert(env),
+      checkPrinterAndAlert(env),
+    ]));
   },
 
   /**
@@ -44,8 +50,11 @@ export default {
       const auth = request.headers.get('Authorization') || '';
       const expected = env.PRINT_SERVER_SECRET || '';
       const sendEmail = expected && auth === `Bearer ${expected}`;
-      const result = await checkAndAlert(env, { dryRun: !sendEmail });
-      return Response.json(result);
+      const result = await Promise.all([
+        checkAndAlert(env,         { dryRun: !sendEmail }),
+        checkPrinterAndAlert(env,  { dryRun: !sendEmail }),
+      ]);
+      return Response.json({ heartbeat: result[0], printer: result[1] });
     }
     return new Response('esmkt offline-alert worker — see /manual-check', {
       headers: { 'Content-Type': 'text/plain' },
@@ -193,6 +202,198 @@ is still offline an hour from now.
         subject,
         text,
       }),
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      return { ok: false, error: `Resend ${res.status}: ${body.slice(0, 200)}` };
+    }
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: String(e && e.message || e) };
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// PRINTER-NOT-READY ALERT (separate from the print-server-offline alert)
+// ────────────────────────────────────────────────────────────────────────────
+//
+// Triggered when the printer has been in a non-ready state (out of paper,
+// jam, cover open, etc.) longer than settings.printerAlertMinutes.
+// Recipient lookup chain: settings.printerAlertEmail → printServerAlertEmail
+// → contactEmail. 1-hour cooldown to prevent spam during a sustained outage.
+//
+// Skips:
+//   - never_configured       — no printer status payload received yet
+//   - server_offline         — print server isn't online so the status is
+//                              stale; the heartbeat-stale alert covers this
+//   - currently_ready        — printer is ready; clear the unready latch so
+//                              the next problem starts a fresh threshold
+//   - within_threshold       — unready but for less than the threshold
+//   - recently_alerted       — sent an alert within the last hour
+//   - no_recipient_configured
+
+async function checkPrinterAndAlert(env, { dryRun = false } = {}) {
+  const now = Date.now();
+  const settings = await readSettings(env);
+  const thresholdMs = (Number(settings.printerAlertMinutes) || 3) * 60 * 1000;
+  const recipient = (
+    settings.printerAlertEmail ||
+    settings.printServerAlertEmail ||
+    settings.contactEmail || ''
+  ).trim();
+
+  const state = await readPrinterState(env);
+  if (!state.has_status) return { skipped: 'never_configured' };
+  if (!state.server_online) return { skipped: 'server_offline' };
+
+  if (state.printer_ready) {
+    // Clear the unready latch so the next problem gets a fresh threshold
+    if (state.unready_since && env.ORDERS_DB) {
+      await env.ORDERS_DB
+        .prepare(`UPDATE print_server_state SET value='0' WHERE key='printer_unready_since'`)
+        .run();
+    }
+    return { skipped: 'currently_ready' };
+  }
+
+  // Printer is unready. How long?
+  if (!state.unready_since) {
+    // Defensive: no latch even though printer is unready. The next heartbeat
+    // will set it. Skip this tick.
+    return { skipped: 'no_unready_latch_yet' };
+  }
+  const gapMs = now - state.unready_since;
+  if (gapMs < thresholdMs) {
+    return { skipped: 'within_threshold', gap_minutes: Math.floor(gapMs / 60000), threshold_minutes: thresholdMs / 60000 };
+  }
+
+  const ALERT_COOLDOWN_MS = 60 * 60 * 1000;
+  if (state.last_alert_ms && (now - state.last_alert_ms) < ALERT_COOLDOWN_MS) {
+    return { skipped: 'recently_alerted', last_alert_minutes_ago: Math.floor((now - state.last_alert_ms) / 60000) };
+  }
+
+  if (!recipient) return { skipped: 'no_recipient_configured' };
+  if (dryRun) {
+    return {
+      would_send: true, recipient,
+      gap_minutes: Math.floor(gapMs / 60000),
+      problem: state.human_status,
+    };
+  }
+
+  const sendResult = await sendPrinterAlertEmail(env, recipient, state, gapMs);
+  if (sendResult.ok) {
+    await env.ORDERS_DB.batch([
+      env.ORDERS_DB
+        .prepare(`INSERT INTO print_server_state(key, value) VALUES ('last_printer_alert_ms', ?1)
+                  ON CONFLICT(key) DO UPDATE SET value = excluded.value`)
+        .bind(String(now)),
+      env.ORDERS_DB
+        .prepare(`INSERT INTO print_server_state(key, value) VALUES ('last_printer_alert_recip', ?1)
+                  ON CONFLICT(key) DO UPDATE SET value = excluded.value`)
+        .bind(recipient),
+    ]);
+  }
+
+  return {
+    sent: sendResult.ok, recipient,
+    gap_minutes: Math.floor(gapMs / 60000),
+    problem: state.human_status,
+    error: sendResult.error || null,
+  };
+}
+
+async function readPrinterState(env) {
+  const out = {
+    has_status:      false,
+    server_online:   false,
+    printer_ready:   false,
+    human_status:    'Unknown',
+    unready_since:   0,
+    last_alert_ms:   0,
+  };
+  if (!env.ORDERS_DB) return out;
+  try {
+    const rows = await env.ORDERS_DB
+      .prepare(`SELECT key, value FROM print_server_state
+                WHERE key IN (
+                  'last_heartbeat_ms', 'printer_status_json',
+                  'printer_unready_since', 'last_printer_alert_ms'
+                )`)
+      .all();
+    let lastSeenMs = 0;
+    let statusJson = null;
+    for (const row of rows.results || []) {
+      if (row.key === 'last_heartbeat_ms')        lastSeenMs        = parseInt(row.value, 10) || 0;
+      if (row.key === 'printer_unready_since')    out.unready_since = parseInt(row.value, 10) || 0;
+      if (row.key === 'last_printer_alert_ms')    out.last_alert_ms = parseInt(row.value, 10) || 0;
+      if (row.key === 'printer_status_json')      statusJson        = row.value;
+    }
+    if (statusJson && statusJson !== '{}' && statusJson !== '') {
+      try {
+        const ps = JSON.parse(statusJson);
+        out.has_status     = true;
+        out.printer_ready  = ps.ready === true;
+        out.human_status   = humanizeReasons(ps.reasons || [], ps.state || '', ps.enabled);
+      } catch (_) {}
+    }
+    // server-online window matches the public status endpoint (90s)
+    out.server_online = lastSeenMs > 0 && (Date.now() - lastSeenMs) < 90 * 1000;
+  } catch (_) {}
+  return out;
+}
+
+function humanizeReasons(reasons, state, enabled) {
+  if (enabled === false) return 'Printer disabled';
+  if (state === 'stopped') return 'Printer stopped';
+  for (const r of reasons) {
+    if (!r || r === 'none') continue;
+    if (r.includes('media-empty'))         return 'Out of paper';
+    if (r.includes('media-jam'))           return 'Paper jam';
+    if (r.includes('cover-open'))          return 'Cover open';
+    if (r.includes('door-open'))           return 'Door open';
+    if (r.includes('toner-empty'))         return 'Toner empty';
+    if (r.includes('marker-supply-empty')) return 'Supply empty';
+    if (r.includes('offline'))             return 'Printer offline';
+    if (r.includes('connecting'))          return 'Connecting…';
+    return 'Error: ' + r.replace(/-(error|warning|report)$/, '').replace(/-/g, ' ');
+  }
+  return 'Not ready';
+}
+
+async function sendPrinterAlertEmail(env, to, state, gapMs) {
+  if (!env.RESEND_API_KEY || !env.RESEND_FROM) {
+    return { ok: false, error: 'RESEND_API_KEY / RESEND_FROM not configured' };
+  }
+  const minutes = Math.floor(gapMs / 60000);
+  const subject = `Esmeralda Market: printer needs attention — ${state.human_status}`;
+  const text =
+`The Esmeralda Market printer has been reporting "${state.human_status}" for ${minutes} minutes.
+
+Online ordering is currently blocked if "Require Print Server for Orders"
+is enabled in the admin Settings tab. Customers will see a generic message
+that ordering is temporarily unavailable.
+
+To resolve:
+  1. At the snackbar PC, check the printer:
+     - Out of paper:  load a new thermal roll.
+     - Paper jam:     open the cover, clear the jam, close.
+     - Cover open:    close the cover.
+     - Other:         see admin Settings for the live status.
+  2. The status indicator in admin Settings updates within ~30s once the
+     printer recovers, and online ordering resumes automatically.
+
+This is an automated alert. You'll receive at most one of these per hour
+while the printer remains in this state.
+`;
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ from: env.RESEND_FROM, to: [to], subject, text }),
     });
     if (!res.ok) {
       const body = await res.text();

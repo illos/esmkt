@@ -158,8 +158,8 @@
     <!-- Restrict orders to snackbar hours -->
     <div class="ordering-status-bar" style="margin-bottom:20px">
       <div class="ordering-status-left">
-        <span class="ordering-status-label">Only Allow Orders During Snackbar Hours</span>
-        <span class="ordering-status-desc" id="ordersOnlyDuringHoursDesc">When on, online ordering is blocked outside the snackbar hours above.</span>
+        <span class="ordering-status-label">Disable Ordering When Snackbar Is Closed</span>
+        <span class="ordering-status-desc" id="ordersOnlyDuringHoursDesc">When enabled, no orders can be placed outside snackbar open hours.</span>
       </div>
       <label class="toggle-switch">
         <input type="checkbox" id="ordersOnlyDuringHoursToggle" checked onchange="saveOrdersOnlyDuringSnackbarHours(this.checked)"/>
@@ -170,12 +170,21 @@
     <div style="height:1px;background:var(--charcoal-border);margin:0 -14px 20px"></div>
 
     <!-- Print-server status indicator -->
-    <div class="ordering-status-bar" style="margin-bottom:14px">
+    <div class="ordering-status-bar" style="margin-bottom:8px">
       <div class="ordering-status-left">
         <span class="ordering-status-label">Print Server</span>
         <span class="ordering-status-desc" id="printServerStatusDesc">&mdash;</span>
       </div>
       <span id="printServerStatusDot" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:rgba(184,176,160,0.4);flex-shrink:0"></span>
+    </div>
+
+    <!-- Printer (CUPS) status indicator -->
+    <div class="ordering-status-bar" style="margin-bottom:14px">
+      <div class="ordering-status-left">
+        <span class="ordering-status-label">Printer</span>
+        <span class="ordering-status-desc" id="printerStatusDesc">&mdash;</span>
+      </div>
+      <span id="printerStatusDot" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:rgba(184,176,160,0.4);flex-shrink:0"></span>
     </div>
 
     <!-- Require-print-server toggle -->
@@ -192,20 +201,39 @@
 
     <!-- Print-server offline-alert email + threshold -->
     <div class="form-group-full" style="margin-bottom:10px">
-      <label class="form-label" for="siPrintAlertEmail">Offline Alert Email</label>
+      <label class="form-label" for="siPrintAlertEmail">Print Server Offline Alert Email</label>
       <input class="form-input" type="email" id="siPrintAlertEmail" placeholder="(blank = use Contact Email)"
         onblur="savePrintServerAlerts()" onkeydown="if(event.key==='Enter')this.blur()"/>
       <p style="font-size:12px;color:var(--cream-dim);margin-top:6px;line-height:1.5">
         Where to email the alert when the print server has been offline beyond the threshold. Leave blank to reuse the Contact Email above.
       </p>
     </div>
-    <div class="form-group-full">
+    <div class="form-group-full" style="margin-bottom:18px">
       <label class="form-label" for="siPrintAlertMinutes">Alert After (minutes offline)</label>
       <input class="form-input" type="number" id="siPrintAlertMinutes" min="2" max="120" step="1" value="10"
         onblur="savePrintServerAlerts()" onkeydown="if(event.key==='Enter')this.blur()"
         style="max-width:140px"/>
       <p style="font-size:12px;color:var(--cream-dim);margin-top:6px;line-height:1.5">
         How long the print server must be offline before the alert email fires. At most one alert per hour while it stays offline.
+      </p>
+    </div>
+
+    <!-- Printer-error alert email + threshold (separate from the print-server one) -->
+    <div class="form-group-full" style="margin-bottom:10px">
+      <label class="form-label" for="siPrinterAlertEmail">Printer Error Alert Email</label>
+      <input class="form-input" type="email" id="siPrinterAlertEmail" placeholder="(blank = use the Print Server email above)"
+        onblur="savePrinterAlerts()" onkeydown="if(event.key==='Enter')this.blur()"/>
+      <p style="font-size:12px;color:var(--cream-dim);margin-top:6px;line-height:1.5">
+        Where to email when the printer reports an error (out of paper, jam, cover open, etc.). Leave blank to reuse the Print Server email above.
+      </p>
+    </div>
+    <div class="form-group-full">
+      <label class="form-label" for="siPrinterAlertMinutes">Alert After (minutes unready)</label>
+      <input class="form-input" type="number" id="siPrinterAlertMinutes" min="1" max="60" step="1" value="3"
+        onblur="savePrinterAlerts()" onkeydown="if(event.key==='Enter')this.blur()"
+        style="max-width:140px"/>
+      <p style="font-size:12px;color:var(--cream-dim);margin-top:6px;line-height:1.5">
+        Tighter than the print-server threshold — paper-out should be addressable fast. At most one printer alert per hour while it stays unready.
       </p>
     </div>
   </div>
@@ -499,8 +527,9 @@
   <div class="modal-box" style="max-width:560px;width:92%">
     <div class="modal-title" id="orderViewTitle">Order</div>
     <div class="modal-body" id="orderViewBody" style="max-height:60vh;overflow-y:auto;padding-top:8px"></div>
-    <div class="modal-actions" style="margin-top:18px;gap:10px">
+    <div class="modal-actions" style="margin-top:18px;gap:10px;flex-wrap:wrap">
       <button class="btn-save" id="orderReprintBtn" onclick="reprintCurrentOrder()">Print at Snackbar</button>
+      <button class="btn-save" id="orderDownloadBtn" onclick="downloadCurrentOrderPdf()" style="background:transparent;border:1px solid var(--gold);color:var(--gold)">Download PDF</button>
       <button class="btn-confirm-cancel" onclick="closeOrderModal()">Close</button>
     </div>
   </div>
@@ -520,6 +549,9 @@
 <div class="toast" id="toast"></div>
 
 <script src="js/sections.js"></script>
+<!-- jsPDF for the order-log PDF download. Loaded async because it's only
+     used when the user clicks Download in the order modal. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
 <script src="js/admin.js"></script>
 </body>
 </html>
