@@ -46,9 +46,52 @@ For the printer, anything CUPS supports (Epson TM-T20III, TM-T88VI, Star TSP100,
 
 ---
 
-## One-time install on the snackbar PC
+## Quick install — `setup.sh`
 
-These steps are written for a fresh **Debian 12 / Ubuntu 22.04 LTS minimal** install. Adapt freely for Raspberry Pi OS or another Debian-flavored distro.
+For Ubuntu / Lubuntu / Debian, the recommended path is the bundled setup script. It walks through everything below — apt installs, user/groups, CUPS printer, `.env` config, systemd unit, and the optional live status monitor — and you can re-run it anytime to update config or fix something.
+
+```bash
+sudo apt install -y git
+git clone https://github.com/REPLACE_WITH_YOUR_GITHUB_USER/esmkt.git ~/esmkt
+cd ~/esmkt/print-server
+./setup.sh
+```
+
+The script self-elevates with `sudo` and shows a menu:
+
+```
+1) Initial install (full walkthrough)
+2) Update config (edit .env)
+3) Printer setup / change printer
+4) Reinstall systemd service
+5) Show service status
+6) Tail live logs
+7) Restart service
+8) Install / remove status-monitor autostart
+q) Exit
+```
+
+Pick **1** for first-time setup. After that, the same script handles ongoing config changes — pick **2** to edit values in `.env` (`API_BASE_URL`, `PRINT_SERVER_SECRET`, `PRINTER_NAME`, etc.) without remembering exact paths or syntax. Each prompt shows the current value as the default; press Enter to keep it.
+
+The script is idempotent — running it again won't break anything that's already set up.
+
+### Live status monitor
+
+Setup option **8** installs an autostart entry so the snackbar PC opens a status terminal at login. The terminal shows a 5-line header (service active state, heartbeat age, printer ready/unready, pending order count) that auto-refreshes every 5 seconds, plus a colorized `journalctl` tail below it (errors red, "printed" green, order ids highlighted, etc.). Useful for spotting problems at a glance from across the snackbar.
+
+You can also run it manually anytime:
+
+```bash
+~/esmkt/print-server/monitor.sh
+```
+
+Press Ctrl-C to exit. Removing the autostart entry is the same setup option — re-run **8** and it offers to delete it.
+
+---
+
+## Manual install (alternative to `setup.sh`)
+
+If you'd rather install by hand or you're on a non-Debian distro, the steps below are what `setup.sh` runs internally. They're written for a fresh **Debian 12 / Ubuntu 22.04 LTS minimal** install. Adapt freely for Raspberry Pi OS or another Debian-flavored distro.
 
 ### 1. Create a service user
 
