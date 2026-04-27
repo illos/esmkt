@@ -1582,7 +1582,8 @@ trix-toolbar .trix-dialog .trix-button:hover {
 .orders-log-table .ot-status.s-printed { background: rgba(80,180,120,0.18);  color: rgba(120,210,150,0.95); }
 .orders-log-table .ot-status.s-failed  { background: rgba(230,120,110,0.18); color: rgba(240,160,150,0.95); }
 
-.btn-orders-log-view {
+.btn-orders-log-view,
+.btn-orders-log-delete {
   background: transparent;
   border: 1px solid var(--charcoal-border);
   color: var(--cream);
@@ -1598,6 +1599,16 @@ trix-toolbar .trix-dialog .trix-button:hover {
 .btn-orders-log-view:hover {
   border-color: var(--gold);
   color: var(--gold);
+}
+.btn-orders-log-delete:hover {
+  border-color: rgba(230,120,110,0.85);
+  color: rgba(240,160,150,0.95);
+}
+.orders-log-table .ot-actions {
+  white-space: nowrap;
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
 }
 
 /* Day-separator row inside the table */

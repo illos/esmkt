@@ -1108,10 +1108,34 @@ function renderOrderRow(o) {
     <td class="ot-name">${escapeHtml(o.customer_name || '—')}${statusBadge}</td>
     <td class="ot-phone">${escapeHtml(o.customer_phone || '—')}</td>
     <td class="ot-right ot-total">${totalStr}</td>
-    <td class="ot-right"><button class="btn-orders-log-view" data-id="${escapeHtml(o.id)}">View</button></td>
+    <td class="ot-right ot-actions">
+      <button class="btn-orders-log-view"   data-id="${escapeHtml(o.id)}">View</button>
+      <button class="btn-orders-log-delete" data-id="${escapeHtml(o.id)}" title="Delete order">Delete</button>
+    </td>
   `;
-  tr.querySelector('button').addEventListener('click', () => openOrderModal(o.id));
+  const btns = tr.querySelectorAll('button');
+  btns[0].addEventListener('click', () => openOrderModal(o.id));
+  btns[1].addEventListener('click', () => deleteOrderFromLog(o.id, tr));
   return tr;
+}
+
+// Hard-deletes an order row from D1 after a confirmation. Removes the row
+// from the table on success. Keeps the surrounding day-separator in place
+// even if the deleted row was the last one of that day — saves a re-render.
+async function deleteOrderFromLog(id, rowEl) {
+  if (!confirm(`Delete order ${id}?\n\nThis cannot be undone.`)) return;
+  try {
+    const res = await apiFetch(`/api/orders/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error || `HTTP ${res.status}`);
+    }
+    if (rowEl && rowEl.parentNode) rowEl.parentNode.removeChild(rowEl);
+    delete ordersLogState.rowsById[id];
+    showToast('Order deleted.');
+  } catch (e) {
+    showToast(`Could not delete: ${e.message}`, true);
+  }
 }
 
 function openOrderModal(id) {
