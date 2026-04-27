@@ -88,6 +88,11 @@ const PRINTER_QUEUE_NAME    = PRINTER_NAME || '';
 // as stuck. Calibrated for thermal receipt printers (jobs normally complete
 // in <5s). Set to 0 to disable queue-based detection.
 const STUCK_JOB_THRESHOLD_MS = parseIntDefault(process.env.STUCK_JOB_THRESHOLD_MS, 30_000);
+// Periodic probe: submit a minimal test job at this interval so the
+// stuck-queue detector still catches paper-out / jam during slow periods
+// when no real orders are coming through. Each probe consumes ~3mm of
+// paper (one line feed). 0 disables.
+const PROBE_INTERVAL_MS      = parseIntDefault(process.env.PROBE_INTERVAL_MS, 5 * 60 * 1000);
 const LOG_FILE              = process.env.LOG_FILE || path.join(__dirname, 'orders.log');
 const GIT_BRANCH            = process.env.GIT_BRANCH || 'main';
 
@@ -125,6 +130,7 @@ console.log(`  Heartbeat:     every ${HEARTBEAT_INTERVAL_MS / 1000}s`);
 console.log(`  Auto-update:   ${UPDATER_INTERVAL_MS > 0 ? `every ${Math.round(UPDATER_INTERVAL_MS / 60000)}m from origin/${GIT_BRANCH}` : 'disabled'}`);
 console.log(`  Chime:         ${CHIME_CMD ? CHIME_CMD : '(disabled)'}`);
 console.log(`  Error chime:   ${PRINTER_ERROR_CHIME_CMD ? PRINTER_ERROR_CHIME_CMD : '(disabled)'}${PRINTER_ERROR_CHIME_INTERVAL_MS > 0 ? ` (every ${Math.round(PRINTER_ERROR_CHIME_INTERVAL_MS / 60000)}m)` : ''}`);
+console.log(`  Probe:         ${PROBE_INTERVAL_MS > 0 ? `every ${Math.round(PROBE_INTERVAL_MS / 60000)}m` : '(disabled)'}`);
 console.log(`  Log file:      ${LOG_FILE}`);
 console.log(`  Version:       ${VERSION}\n`);
 
@@ -132,6 +138,7 @@ console.log(`  Version:       ${VERSION}\n`);
 runHeartbeatLoop();
 runPollLoop();
 runPrinterErrorChimeLoop();
+runProbeLoop();
 if (UPDATER_INTERVAL_MS > 0) runUpdaterLoop();
 
 // Keep the event loop alive even if all timers were somehow cleared.
@@ -397,6 +404,51 @@ function runPrinterErrorChimeLoop() {
       playErrorChime();
     }
   }, PRINTER_ERROR_CHIME_INTERVAL_MS);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// PROBE — periodic 1-line print job to detect paper-out during slow periods
+// ════════════════════════════════════════════════════════════════════════════
+//
+// With raw CUPS queues, the printer's actual state isn't visible until we
+// try to print. The stuck-queue detector watches the queue depth — but it
+// only fires when something is in the queue. During slow hours (no real
+// orders), paper could be removed and we'd still report ready. This probe
+// loop submits a minimal test job (~3mm of paper feed) every PROBE_INTERVAL_MS,
+// so the stuck detector has something to watch. The probe job itself is
+// fire-and-forget — we don't track its outcome here; the heartbeat picks
+// up the consequence (queue stuck or queue drained).
+
+function runProbeLoop() {
+  if (PROBE_INTERVAL_MS <= 0) return;
+  // Skip the very first interval — no need to probe immediately on startup.
+  setInterval(submitProbe, PROBE_INTERVAL_MS);
+}
+
+function submitProbe() {
+  if (os.platform() === 'win32') return;
+  // If we already know the printer is unready, skip — there's no value in
+  // adding more stuck jobs to an already-stuck queue, and the existing
+  // detection has already done its job.
+  if (lastPrinterStatus && lastPrinterStatus.ready === false) return;
+
+  const queue = PRINTER_QUEUE_NAME;
+  const tmpFile = path.join(os.tmpdir(), `esmeralda-probe-${Date.now()}.txt`);
+  try {
+    // Single newline = ~3mm of paper feed on a thermal printer. Smaller
+    // than any actual receipt; staff will recognize these tiny strips.
+    fs.writeFileSync(tmpFile, '\n', 'utf8');
+  } catch (e) {
+    console.warn(`[${ts()}] probe: temp file failed: ${e.message}`);
+    return;
+  }
+  const args = queue ? ['-d', queue, tmpFile] : [tmpFile];
+  execFile('lp', args, (err) => {
+    try { fs.unlinkSync(tmpFile); } catch (_) {}
+    if (err) {
+      console.warn(`[${ts()}] probe: lp failed: ${err.message}`);
+    }
+  });
 }
 
 // ════════════════════════════════════════════════════════════════════════════
