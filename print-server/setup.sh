@@ -271,6 +271,12 @@ action_update_config() {
   local DEFAULT_CHIME="aplay -q \"$PRINT_SERVER_DIR/sounds/order-chime.wav\""
   local DEFAULT_ERR_CHIME="aplay -q \"$PRINT_SERVER_DIR/sounds/error-chime.wav\""
 
+  # If .env still holds an obsolete system-sound path from earlier versions
+  # of setup.sh, discard it so the new bundled-WAV default kicks in. Most
+  # of those system files don't exist on Lubuntu / minimal distros.
+  case "$cur_chime"     in *'/usr/share/sounds/alsa/'*|*'/usr/share/sounds/freedesktop/'*) cur_chime="" ;; esac
+  case "$cur_err_chime" in *'/usr/share/sounds/alsa/'*|*'/usr/share/sounds/freedesktop/'*) cur_err_chime="" ;; esac
+
   info "Edit .env values. Press Enter to keep the current value."
   echo
 
@@ -311,14 +317,24 @@ action_install_service() {
   [ -f "$SYSTEMD_TEMPLATE" ] || die "Template not found: $SYSTEMD_TEMPLATE"
   info "Installing systemd unit at $SYSTEMD_UNIT…"
 
-  # Substitute the User / Group / paths so the unit matches the chosen user
-  # and the actual repo location, regardless of where the repo was cloned.
+  # Resolve the target user's UID so we can hardcode it into the unit's
+  # Environment= lines. systemd's %U specifier doesn't reliably expand to
+  # the User= UID in Environment= directives — it sometimes resolves to 0
+  # (root) because of the order in which systemd parses unit fields. Baking
+  # the actual UID at install time sidesteps this entirely.
+  local target_uid
+  target_uid="$(id -u "$TARGET_USER")"
+  [ -n "$target_uid" ] || die "Could not resolve UID for user '$TARGET_USER'."
+
+  # Substitute the User / Group / paths / UID so the unit matches the chosen
+  # user and the actual repo location, regardless of where the repo was cloned.
   sed -E \
     -e "s|^User=.*|User=$TARGET_USER|" \
     -e "s|^Group=.*|Group=$TARGET_USER|" \
     -e "s|^WorkingDirectory=.*|WorkingDirectory=$PRINT_SERVER_DIR|" \
     -e "s|^ExecStart=.*|ExecStart=/usr/bin/node $PRINT_SERVER_DIR/server.js|" \
     -e "s|^ReadWritePaths=.*|ReadWritePaths=$REPO_DIR /tmp|" \
+    -e "s|/run/user/%U|/run/user/$target_uid|g" \
     "$SYSTEMD_TEMPLATE" > "$SYSTEMD_UNIT"
   chmod 644 "$SYSTEMD_UNIT"
 
