@@ -79,6 +79,8 @@ FILE STRUCTURE
                           beginning with "_" are import-only in Pages).
     ps-auth.js            Verifies Authorization: Bearer ps:<secret> for
                           print-server-issued requests.
+    admin-auth.js         Verifies admin HMAC tokens for endpoints called
+                          from admin.html (orders log, reprint, etc.).
 
   functions/api/          Cloudflare Pages Functions (serverless API routes).
     auth.js               POST login → HMAC token (8hr expiry).
@@ -95,12 +97,20 @@ FILE STRUCTURE
                           order. Persists into D1 (`orders` table).
       pending.js          GET — print server polls for unprinted orders.
                           (auth: Bearer ps:<PRINT_SERVER_SECRET>)
+      log.js              GET — admin Online Orders Log. Two query modes:
+                          ?from=&to= (range) or ?before=&limit= (cursor).
+                          (admin auth)
       [id]/printed.js     POST — print server marks an order printed
-                          (or failed with an error).
+                          (or failed with an error).  (ps-auth)
+      [id]/reprint.js     POST — admin re-queues an old order with a new
+                          RPR-* id; original row is preserved.  (admin auth)
     print-server/
       status.js           GET — public liveness read (configured/online,
-                          last heartbeat age, pending order count).
-      heartbeat.js        POST — print server reports it's alive.
+                          last heartbeat age, pending order count, printer
+                          health, plus convenience `ready` for the menu gate).
+      heartbeat.js        POST — print server reports it's alive AND the
+                          printer's CUPS state. Latches printer_unready_since
+                          on transitions for the alert worker.
                           (auth: Bearer ps:<PRINT_SERVER_SECRET>)
 
   functions/images/[filename].js
@@ -109,19 +119,41 @@ FILE STRUCTURE
   schema/
     d1_init.sql           D1 schema (orders + print_server_state). Apply
                           with `wrangler d1 execute esmeralda-orders ...`.
+                          Idempotent — re-running adds new keys without
+                          touching existing data.
 
   cron-worker/            Companion Cloudflare Worker (NOT a Pages Function).
-    worker.js             Cron-triggered every 5 min. Reads heartbeat from
-                          D1; emails an alert if offline beyond threshold.
+    worker.js             Cron-triggered every 5 min. Two independent
+                          checks per tick:
+                            - heartbeat-stale → "print server offline" email
+                            - printer-not-ready → "printer needs attention" email
+                          Each has its own threshold + 1-hour cooldown.
                           Manual trigger via /manual-check (auth required).
     wrangler.toml         Separate config; deploy with `wrangler deploy`
                           from inside this directory.
 
   assets/                 Static images (logo, landscape photos, etc.).
   print-server/           Polling Node client that runs on the snackbar PC.
-                          Pulls pending orders, prints, plays a chime,
-                          heartbeats, and self-updates from this repo.
                           See print-server/README.md.
+    server.js             Main process. Loops: poll, heartbeat, probe,
+                          error-chime, auto-updater.
+    setup.sh              Idempotent menu-driven installer/config tool for
+                          Ubuntu/Lubuntu/Debian. Replaces ~90% of the
+                          manual walkthrough. Re-run anytime to update.
+    monitor.sh            Live status terminal — header (server state +
+                          printer state + pending orders) refreshed every
+                          5s, plus colorized journalctl tail. Auto-launches
+                          at login if installed via setup.sh option 8.
+    esmkt-print.service   systemd unit template; setup.sh substitutes the
+                          User= / paths / UID before installing.
+    sounds/
+      order-chime.wav     Bundled order chime (~1.2s bell). Default for
+                          CHIME_CMD — works without system sound themes.
+      error-chime.wav     Bundled printer-error chime (~0.5s 3-beep alert).
+                          Default for PRINTER_ERROR_CHIME_CMD.
+    package.json          Zero runtime deps; uses Node 18+ built-ins.
+    .env.example          Annotated template for print-server/.env.
+
   readme.txt              This file.
   wrangler.toml           Cloudflare Pages config (KV + R2 + D1 bindings).
 
@@ -210,10 +242,15 @@ builder reads the schema.
 KV KEYS
 ================================================================================
 
-  settings                Site settings (phone, hours, links, flags,
-                          turnstileSiteKey, contactEmail,
-                          printServerRequired, printServerAlertEmail,
-                          printServerOfflineAlertMinutes)
+  settings                Site settings — fields:
+                            phone, storeHours, deliHours, deliTax
+                            heroDescription, heroButtonText, heroButtonLink,
+                            heroBgPhoto, quickLinks
+                            contactEmail, turnstileSiteKey
+                            onlineOrdering, ordersOnlyDuringSnackbarHours
+                            printServerRequired
+                            printServerAlertEmail, printServerOfflineAlertMinutes
+                            printerAlertEmail, printerAlertMinutes
   menu                    Snackbar menu (categories + items)
   events                  Events list
   page_home               Homepage sections array
@@ -231,14 +268,35 @@ D1 TABLES (binding: ORDERS_DB)
 Schema lives in schema/d1_init.sql. Apply with:
   wrangler d1 execute esmeralda-orders --remote --file=./schema/d1_init.sql
 
-  orders                  One row per customer order.
-                          Columns: id, payload_json, status (pending /
-                          printed / failed), created_at, printed_at,
-                          print_error.
+The schema is idempotent — re-running it adds any newly-introduced state
+keys (e.g. printer_status_json) without touching existing data.
 
-  print_server_state      Singleton key/value table.
-                          Keys: last_heartbeat_ms, last_alert_sent_ms,
-                          last_alert_recipient, print_server_version.
+  orders                  One row per customer order.
+                          Columns:
+                            id           TEXT  PK  ("ESM-..." or "RPR-...")
+                            payload_json TEXT      full original order JSON
+                            status       TEXT      pending | printed | failed
+                            created_at   INTEGER   unix ms
+                            printed_at   INTEGER   unix ms (nullable)
+                            print_error  TEXT      last error from print server
+                          Index: idx_orders_status_created on (status, created_at)
+                          for the print server's pending-poll query.
+
+  print_server_state      Singleton key/value table. Seeded with these keys:
+                            last_heartbeat_ms        most recent heartbeat
+                            print_server_version     reported by heartbeat
+                            last_alert_sent_ms       last server-offline email
+                            last_alert_recipient
+                            printer_status_json      { state, reasons[],
+                                                       enabled, queued_jobs,
+                                                       ready }
+                            printer_status_at        when the JSON was last
+                                                     updated
+                            printer_unready_since    unix ms — latched on
+                                                     transitions to !ready,
+                                                     cleared on recovery
+                            last_printer_alert_ms    last printer-error email
+                            last_printer_alert_recip
 
 
 ================================================================================
@@ -256,8 +314,18 @@ admin.html has six tabs:
                editor UI as Home Page.
   Menu         Snackbar menu item CRUD (per-item edit form, categories).
   Events       Events CRUD with drag-to-reorder.
-  Settings     Tax rate, contact email, Turnstile site key, quick links,
-               Facebook strip, print server toggle, online ordering toggle.
+  Settings     - Snackbar tax rate
+               - Online Ordering toggle
+               - "Disable Ordering When Snackbar Is Closed" toggle
+               - Print Server status indicator (auto-refreshes every 30s)
+               - Printer status indicator (out of paper / cover open / etc.)
+               - "Require Print Server for Orders" toggle
+               - Print Server Offline Alert Email + threshold
+               - Printer Error Alert Email + threshold (separate, faster)
+               - Online Orders Log (paginated 20 per page; View modal with
+                 Reprint at Snackbar + Download PDF)
+               - Contact Form Bot Protection (Turnstile site key)
+               - Contact info, quick links, Facebook strip
 
 AUTH:
   Login requires the admin password. If TURNSTILE_SECRET is configured on
@@ -298,44 +366,81 @@ PRINT SERVER INTEGRATION
 
 A small Node process (in print-server/) runs on the snackbar PC. It is a
 polling client — no inbound port is exposed. See print-server/README.md
-for the full setup walkthrough.
+for the full setup walkthrough (recommended path is the bundled setup.sh).
 
 Loops it runs:
-  - POLL  every 5s  → GET /api/orders/pending → print → POST /printed
-  - HEART every 30s → POST /api/print-server/heartbeat
-  - UPDATE every 10m → git fetch + pull + restart on new commits
+  - POLL    every 5s   → GET /api/orders/pending → print → POST /printed
+  - HEART   every 30s  → POST /api/print-server/heartbeat with printer status
+  - PROBE   every 5min → tiny test print to keep the queue alive even
+                          during slow periods (so the stuck-queue detector
+                          fires when there are no real orders)
+  - CHIME   every 3min → repeats the error chime while printer is unready
+  - UPDATE  every 10m  → git fetch + pull + restart on new commits
 
 Order flow:
   1. Customer submits via menu.html → POST /api/orders.
   2. Order persists in D1 with status='pending'.
-  3. Print server picks it up on next poll, prints, plays a chime,
+  3. Print server picks it up on next poll, prints, plays the order chime,
      marks it 'printed' (or 'failed' with an error message).
 
-Liveness:
+Printer health detection:
+  Each heartbeat, the print server runs `lpstat -l -p <queue>` plus
+  `lpstat -o <queue>` to gather:
+    - state: idle | printing | stopped
+    - reasons: ['none'] or CUPS state codes (media-empty-error, etc.)
+    - enabled: boolean
+    - queued_jobs: count of pending jobs
+
+  Stuck-queue overlay: with raw CUPS queues + simple thermal printers,
+  CUPS often can't surface paper-out / jam directly. To work around that,
+  if any job has been in the queue longer than STUCK_JOB_THRESHOLD_MS
+  (default 30s), the print server adds a synthetic "queue-stuck-error"
+  reason and flips printer_ready to false. The periodic probe ensures
+  there's always something in the queue to detect against, even at slow
+  hours. The website humanizes "queue-stuck-error" as
+  "Printer not responding (likely out of paper / jam / cover open)".
+
+Liveness + readiness:
   - GET /api/print-server/status considers the server "online" if a
     heartbeat arrived in the last 90s (lets us miss 2 of the 30s
-    heartbeats before flipping to offline).
+    heartbeats before flipping to offline). It also surfaces the printer
+    block (ready/human_status/state/reasons) and a convenience `ready`
+    boolean = (online && printer_ready).
   - When admin → Settings → "Require Print Server for Orders" is on,
-    js/menu.js refuses orders while the server is offline.
+    js/menu.js refuses orders unless `ready` is true. The customer
+    banner stays generic ("Online ordering unavailable / please call")
+    — never leaks the underlying cause to customers.
 
-Offline alert email (cron-worker/worker.js):
-  - Every 5 minutes the companion Worker checks heartbeat age.
-  - If it exceeds settings.printServerOfflineAlertMinutes (default 10)
-    AND no alert was sent in the last hour, send a Resend email to
-    settings.printServerAlertEmail (or contactEmail if blank).
+Alert emails (cron-worker/worker.js, every 5 minutes):
+  Two independent checks per tick. Each has its own threshold + recipient
+  + 1-hour cooldown so a sustained outage doesn't spam the inbox:
+
+  1. Print-server-offline alert
+       - fires when last heartbeat was > printServerOfflineAlertMinutes
+         minutes ago (default 10)
+       - recipient: printServerAlertEmail || contactEmail
+  2. Printer-not-ready alert
+       - fires when printer_unready_since has been latched > printerAlertMinutes
+         minutes (default 3 — tighter, since paper-out is fast to fix)
+       - recipient: printerAlertEmail || printServerAlertEmail || contactEmail
+       - skipped if server is offline (the offline email already covers it)
 
 Auth:
   - Print-server endpoints use a static shared secret in
     `Authorization: Bearer ps:<PRINT_SERVER_SECRET>`. The same value
     must be set as a Cloudflare Pages secret AND in the snackbar PC's
     print-server/.env file.
+  - Admin-only order endpoints (log, reprint) use the same HMAC token
+    system as menu/settings/events.
 
 Endpoints (live):
   POST /api/orders                       — public; customer submits order
-  GET  /api/orders/pending               — print server polls    (ps-auth)
-  POST /api/orders/:id/printed           — print server marks done (ps-auth)
-  GET  /api/print-server/status          — public liveness probe
-  POST /api/print-server/heartbeat       — print server pings    (ps-auth)
+  GET  /api/orders/log                   — admin paginated history (admin auth)
+  POST /api/orders/:id/reprint           — admin re-queue old order   (admin auth)
+  GET  /api/orders/pending               — print server polls          (ps-auth)
+  POST /api/orders/:id/printed           — print server marks done     (ps-auth)
+  GET  /api/print-server/status          — public liveness + printer health
+  POST /api/print-server/heartbeat       — print server + printer state (ps-auth)
 
 
 ================================================================================

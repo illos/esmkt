@@ -1,10 +1,12 @@
 # Esmeralda Market — Print Server
 
-A small Node.js process that runs unattended on the snackbar PC. It does three things on a loop:
+A small Node.js process that runs unattended on the snackbar PC. It does several things on a loop:
 
-1. **Polls the website** (`/api/orders/pending`) every few seconds, prints any new orders to a thermal receipt printer, plays a chime, and marks them done.
-2. **Sends a heartbeat** (`/api/print-server/heartbeat`) every 30 seconds so the website knows it's alive. If the heartbeat stops, online ordering can be auto-disabled and an alert email is sent to the owner.
-3. **Auto-updates** itself by `git pull`-ing this repo every 10 minutes. New commits land on the snackbar PC without anyone driving out there.
+1. **Polls the website** (`/api/orders/pending`) every few seconds, prints any new orders to a thermal receipt printer, plays an order chime, and marks them done.
+2. **Sends a heartbeat** (`/api/print-server/heartbeat`) every 30 seconds — and includes a snapshot of the printer's CUPS state (idle/stopped, paper-out, cover-open, queued-jobs count). If the heartbeat stops or the printer reports a problem, online ordering can be auto-disabled and an alert email is sent to the owner.
+3. **Probes the printer** every 5 minutes with a tiny 1-line test job so the stuck-queue detector still catches paper-out during slow hours when no real orders are flowing.
+4. **Plays an error chime** at the snackbar (a different sound from the order chime) when the printer goes unready, then repeats every 3 minutes until it's fixed.
+5. **Auto-updates** itself by `git pull`-ing this repo every 10 minutes. New commits land on the snackbar PC without anyone driving out there.
 
 There is **no inbound port** — the snackbar PC only makes outbound HTTPS calls. That means no port-forwarding, no dynamic DNS, no firewall openings.
 
@@ -169,14 +171,32 @@ The secret is generated once by you and shared between the Cloudflare deployment
 
 ```bash
 sudo cp esmkt-print.service /etc/systemd/system/
-# Open it and replace the GitHub URL + paths if you used different ones
 sudo nano /etc/systemd/system/esmkt-print.service
+```
+
+In the editor, replace **two things** in the unit:
+
+1. The `Documentation=` URL placeholder with your actual GitHub repo URL.
+2. The `%U` specifier in the two `Environment=` lines with your user's actual UID (e.g. `1000` — find with `id -u esmkt`). systemd's `%U` doesn't always expand correctly in `Environment=` directives — sometimes resolves to `0` (root) — so hardcode the value.
+
+Resulting `Environment=` lines should read:
+
+```
+Environment="XDG_RUNTIME_DIR=/run/user/1000"
+Environment="PULSE_SERVER=unix:/run/user/1000/pulse/native"
+```
+
+Then enable and start:
+
+```bash
 sudo systemctl daemon-reload
 sudo systemctl enable --now esmkt-print
 sudo journalctl -u esmkt-print -f       # watch the boot output
 ```
 
-You should see the boot banner, then heartbeat + poll log lines every interval.
+You should see the boot banner (with `Probe: every 5m` and `Error chime: …` lines), then heartbeat + poll log lines every interval.
+
+(If you're using `setup.sh`, option 4 handles all of these substitutions automatically — including hardcoding the UID — so you don't have to edit the unit by hand. The manual steps above are only for non-Debian distros or hand installs.)
 
 ### 7. (Optional) Verify in the admin
 
@@ -190,17 +210,23 @@ To test the order pipeline end-to-end, place a test order from the menu page on 
 
 All config lives in `print-server/.env`. The full list with defaults is in `.env.example`. Most installs only need to set `API_BASE_URL` and `PRINT_SERVER_SECRET`.
 
-| Variable                | Default                                                     | Notes |
-|-------------------------|-------------------------------------------------------------|-------|
-| `API_BASE_URL`          | (required)                                                  | Production: `https://esmeraldamarket.com`. Staging: `https://esmkt.pages.dev`. |
-| `PRINT_SERVER_SECRET`   | (required)                                                  | Must match the Cloudflare Pages secret of the same name. |
-| `PRINTER_NAME`          | system default                                              | Override with a CUPS / Windows printer name. |
-| `POLL_INTERVAL_MS`      | `5000` (5 s)                                                | How often to poll for new orders. |
-| `HEARTBEAT_INTERVAL_MS` | `30000` (30 s)                                              | The website considers the server offline after 90 s. |
-| `UPDATER_INTERVAL_MS`   | `600000` (10 min)                                           | `0` disables auto-update. |
-| `GIT_BRANCH`            | `main`                                                      | Branch the auto-updater tracks. |
-| `CHIME_CMD`             | `aplay -q /usr/share/sounds/alsa/Front_Center.wav`          | Set to `""` to disable. |
-| `LOG_FILE`              | `./orders.log`                                              | NDJSON log of every printed order. |
+| Variable                          | Default                                                                        | Notes |
+|-----------------------------------|--------------------------------------------------------------------------------|-------|
+| `API_BASE_URL`                    | (required)                                                                     | Production: `https://esmeraldamarket.com`. Staging: `https://esmkt.pages.dev`. |
+| `PRINT_SERVER_SECRET`             | (required)                                                                     | Must match the Cloudflare Pages secret of the same name. |
+| `PRINTER_NAME`                    | system default                                                                 | CUPS queue name. `setup.sh` writes `snackbar` here on first run. |
+| `POLL_INTERVAL_MS`                | `5000` (5 s)                                                                   | How often to poll for new orders. |
+| `HEARTBEAT_INTERVAL_MS`           | `30000` (30 s)                                                                 | The website considers the server offline after 90 s. |
+| `UPDATER_INTERVAL_MS`             | `600000` (10 min)                                                              | `0` disables auto-update. |
+| `GIT_BRANCH`                      | `main`                                                                         | Branch the auto-updater tracks. |
+| `CHIME_CMD`                       | `aplay -q "<install>/sounds/order-chime.wav"`                                  | Order chime — bundled WAV. Set to `""` to disable. |
+| `PRINTER_ERROR_CHIME_CMD`         | `aplay -q "<install>/sounds/error-chime.wav"`                                  | Played when printer goes unready, then on the repeat interval. Set to `""` to disable. |
+| `PRINTER_ERROR_CHIME_INTERVAL_MS` | `180000` (3 min)                                                               | How often to repeat the error chime while printer stays unready. `0` disables the repeat (still plays once on the transition). |
+| `STUCK_JOB_THRESHOLD_MS`          | `30000` (30 s)                                                                 | How long a job may sit in the CUPS queue before we treat the printer as stuck. `0` disables queue-based detection. |
+| `PROBE_INTERVAL_MS`               | `300000` (5 min)                                                               | Periodic 1-line probe so the stuck detector also catches problems with no real orders. `0` disables. |
+| `LOG_FILE`                        | `./orders.log`                                                                 | NDJSON log of every printed order. |
+
+The bundled WAVs are committed to `print-server/sounds/` and travel with the repo, so there's no dependency on the system having `freedesktop-sound-theme` or any specific ALSA sample files. If you want to use a different sound, drop a new `.wav` in that directory and point `CHIME_CMD` at it.
 
 ---
 
@@ -243,18 +269,43 @@ To skip a deploy without reverting, set `UPDATER_INTERVAL_MS=0` in `.env` and re
 
 Every order received and printed is appended to `orders.log` (NDJSON — one JSON object per line) so you have a local backup independent of the website. Rotate it with `logrotate` if it gets large.
 
+### How printer health detection works
+
+Two complementary signals are sent to the website with each heartbeat:
+
+1. **CUPS state** — the print server runs `lpstat -l -p <queue>` and parses any `reasons:` line, `state:` value, and the enabled flag. On printers with proper drivers (e.g. Epson `tmt-cups` package), CUPS reports `media-empty-error` when paper runs out, `cover-open-error`, `media-jam-error`, etc. The website maps these to friendly text ("Out of paper", "Cover open", etc.).
+
+2. **Stuck-queue overlay** — with a `raw` CUPS queue + a basic thermal printer, CUPS itself often can't see paper-out / jam (no driver-side state codes available). To work around that, the print server also runs `lpstat -o <queue>` to count pending jobs. If any job has been queued longer than `STUCK_JOB_THRESHOLD_MS` (default 30s), it adds a synthetic `queue-stuck-error` reason and flips printer-ready to false. The website renders this as **"Printer not responding (likely out of paper / jam / cover open)"**.
+
+The stuck-queue check only fires when something is actually being printed. To make sure detection still works during slow hours when no real orders are coming in, the print server sends a periodic **probe** — a single newline submitted as a print job every `PROBE_INTERVAL_MS` (default 5 min). On a healthy printer it produces a tiny ~3mm paper sliver; on a broken printer it queues, gets stuck, and trips the detector within 30s.
+
+Probes only fire when the printer is currently believed to be ready — once an unready state is detected, no more probes are sent until recovery.
+
 ---
 
 ## Troubleshooting
 
-**Indicator stays red in admin Settings.** The service isn't starting or can't reach Cloudflare. Check `sudo journalctl -u esmkt-print -n 200`. Common causes:
+**Print Server indicator stays red in admin Settings.** The service isn't starting or can't reach Cloudflare. Check `sudo journalctl -u esmkt-print -n 200`. Common causes:
 - `API_BASE_URL` typo or missing scheme.
 - `PRINT_SERVER_SECRET` doesn't match the Cloudflare value (heartbeat returns 401).
 - DNS or outbound firewall blocking the Cloudflare domain.
 
 **Orders never print but the indicator is green.** Heartbeat works (so auth and connectivity are fine) but printing fails. Check the log lines after `[error] print failed:`. Run a manual smoke test: `echo TEST | lp -d snackbar`.
 
-**Chime doesn't play.** The `esmkt` user might not be in the `audio` group, or the headless box has no audio output device. Set `CHIME_CMD=""` in `.env` to silence; the printer is loud enough on its own.
+**Printer indicator says "Printer not responding (likely out of paper / jam / cover open)".** The stuck-queue detector is firing — there's a job that's been sitting in the CUPS queue past `STUCK_JOB_THRESHOLD_MS` without completing. Almost always a paper / cover / jam issue. Check the printer physically. After fixing, the queue drains, the next heartbeat clears the synthetic reason, the indicator goes green automatically.
+
+If you're sure the printer is fine and the indicator is wrong, look at `lpstat -o snackbar` — if it shows queued jobs that aren't real, cancel them with `lprm -P snackbar -` (cancels all). The next heartbeat should report ready.
+
+**`aplay: audio open error: Host is down` in the logs / chime not playing.** ALSA can't reach a sound device because the systemd service runs outside your desktop's PulseAudio session. The systemd unit injects `XDG_RUNTIME_DIR` and `PULSE_SERVER` env vars pointing at the user's pulse socket — `setup.sh` option 4 hardcodes the actual UID at install time (systemd's `%U` specifier doesn't always expand correctly in `Environment=` lines, sometimes resolving to UID 0). To verify:
+
+```bash
+# Should show /run/user/1000/... (NOT /run/user/0/...)
+sudo systemctl show esmkt-print | grep -iE "Environment|PULSE"
+```
+
+If you see `0` anywhere, re-run `sudo ./setup.sh` → option 4 → confirm restart. If it still fails after reinstall, confirm auto-login is enabled for your user (the pulse socket only exists while logged in) and that your user is in the `audio` group.
+
+If audio isn't critical to your operation, set `CHIME_CMD=""` and `PRINTER_ERROR_CHIME_CMD=""` in `.env` — the thermal printer is audible on its own and the website indicator + email alert still cover printer problems.
 
 **Need to test without involving real customers.** Use the staging URL (`https://esmkt.pages.dev`) in `API_BASE_URL`, place a test order from staging menu, watch it print. Or hit the heartbeat endpoint manually:
 
@@ -266,6 +317,20 @@ curl -X POST https://esmeraldamarket.com/api/print-server/heartbeat \
 ```
 
 A 200 means the server-side wiring is good; a 401 means the secret doesn't match.
+
+**Force an immediate update without waiting for the 10-minute auto-updater.**
+
+```bash
+cd ~/esmkt && git pull && sudo systemctl restart esmkt-print
+```
+
+**Confirm which version is actually running.**
+
+```bash
+sudo journalctl -u esmkt-print -n 30 --no-pager | grep "Version:"
+```
+
+The boot banner prints the package.json version. Useful as a deploy marker after pushing changes.
 
 ---
 
