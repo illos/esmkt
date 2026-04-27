@@ -1527,3 +1527,109 @@ trix-toolbar .trix-dialog .trix-button:hover {
 .login-turnstile-wrap #loginTurnstileWidget {
   min-height: 65px;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ONLINE ORDERS LOG TABLE
+   ═══════════════════════════════════════════════════════════════════════════ */
+.orders-log-table-wrap {
+  border: 1px solid var(--charcoal-border);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+.orders-log-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.orders-log-table thead th {
+  background: rgba(255,255,255,0.03);
+  color: var(--cream-dim);
+  font-family: 'Oswald', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-size: 10px;
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--charcoal-border);
+  font-weight: 500;
+}
+.orders-log-table thead th.ot-right { text-align: right; }
+.orders-log-table tbody td {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  color: var(--cream);
+  vertical-align: middle;
+}
+.orders-log-table tbody tr:last-child td { border-bottom: none; }
+.orders-log-table tbody tr:hover { background: rgba(255,255,255,0.02); }
+.orders-log-table .ot-right { text-align: right; }
+.orders-log-table .ot-name  { font-weight: 500; }
+.orders-log-table .ot-phone,
+.orders-log-table .ot-date  { color: var(--cream-dim); }
+.orders-log-table .ot-total { font-variant-numeric: tabular-nums; }
+.orders-log-table .ot-status {
+  display: inline-block;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 2px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+.orders-log-table .ot-status.s-pending { background: rgba(184,176,160,0.18); color: var(--cream-dim); }
+.orders-log-table .ot-status.s-printed { background: rgba(80,180,120,0.18);  color: rgba(120,210,150,0.95); }
+.orders-log-table .ot-status.s-failed  { background: rgba(230,120,110,0.18); color: rgba(240,160,150,0.95); }
+
+.btn-orders-log-view {
+  background: transparent;
+  border: 1px solid var(--charcoal-border);
+  color: var(--cream);
+  padding: 4px 12px;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  font-family: 'Oswald', sans-serif;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: border-color 120ms ease, color 120ms ease;
+}
+.btn-orders-log-view:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+/* Day-separator row inside the table */
+.orders-log-table .ot-day-sep td {
+  background: rgba(255,255,255,0.02);
+  color: var(--cream-dim);
+  font-family: 'Oswald', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-size: 10px;
+  padding: 8px 12px;
+}
+
+/* Modal — receipt-style preview body */
+#orderViewBody { text-align: left; }
+#orderViewBody .ovb-meta {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 12px;
+  font-size: 13px;
+  color: var(--cream);
+  margin-bottom: 14px;
+}
+#orderViewBody .ovb-meta .k { color: var(--cream-dim); }
+#orderViewBody .ovb-items {
+  border-top: 1px dashed var(--charcoal-border);
+  border-bottom: 1px dashed var(--charcoal-border);
+  padding: 10px 0;
+  font-size: 13px;
+}
+#orderViewBody .ovb-item-row { display: flex; justify-content: space-between; padding: 2px 0; }
+#orderViewBody .ovb-item-sub { color: var(--cream-dim); padding-left: 14px; font-size: 12px; }
+#orderViewBody .ovb-totals { padding-top: 10px; font-size: 13px; }
+#orderViewBody .ovb-totals .tot-row { display: flex; justify-content: space-between; padding: 1px 0; }
+#orderViewBody .ovb-totals .tot-row.grand { border-top: 1px solid var(--charcoal-border); margin-top: 6px; padding-top: 6px; font-size: 15px; color: var(--gold); }

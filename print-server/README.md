@@ -77,14 +77,24 @@ sudo apt install -y nodejs
 
 ```bash
 sudo systemctl enable --now cups
-# Plug the printer in (USB or network), then:
+# Plug the printer in (USB), then:
 lpinfo -v                          # see what CUPS detected
-sudo lpadmin -p snackbar -E -v <device-uri> -m everywhere
+sudo lpadmin -p snackbar -E -v <device-uri> -m raw
 sudo lpadmin -d snackbar           # set as default
 echo "TEST" | lp                   # smoke test — should print one line
 ```
 
-Replace `<device-uri>` with the line `lpinfo -v` shows for your printer (e.g. `usb://EPSON/TM-T20III?serial=…`). Use `-m raw` instead of `-m everywhere` if you have a vendor PPD you'd rather use.
+Replace `<device-uri>` with the line `lpinfo -v` shows for your printer (e.g. `usb://EPSON/TM-T20II?serial=…`). The `-m raw` driver tells CUPS not to do any rendering — it pipes plain text directly to the printer, which is exactly what the print server emits (40-char-wide ASCII).
+
+**Why `raw` and not `everywhere`?** CUPS's IPP-Everywhere driver only works with network IPP printers, not USB. Running `lpadmin … -m everywhere` against a USB printer fails with `IPP Everywhere driver requires an IPP connection`. For USB-connected thermal receipt printers, `raw` is the right choice.
+
+**About the deprecation warning.** When you create a raw queue, CUPS prints "Raw queues are deprecated and will stop working in a future version of CUPS." That warning has been there for years and raw queues still work fine. Plan to migrate later (not now) by either installing the printer vendor's official driver — Epson publishes `tmt-cups` for the TM-T20 series — or using a generic text PPD:
+
+```bash
+sudo lpadmin -x snackbar
+sudo lpadmin -p snackbar -E -v <device-uri> -m drv:///sample.drv/generic.ppd
+sudo lpadmin -d snackbar
+```
 
 ### 4. Clone the repo
 

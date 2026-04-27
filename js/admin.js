@@ -951,7 +951,230 @@ async function loadSettings() {
 
   // Print server status + toggle
   loadPrintServerUI();
+
+  // Online Orders Log (today by default; previous days via "Load more")
+  loadOrdersLogToday();
 }
+
+// ─── ONLINE ORDERS LOG ───────────────────────────────────────────────────────
+// Lives in admin Settings tab. Surfaces today's orders on open; each click of
+// "Load earlier orders" pulls one full previous day. Each row has a View
+// button that opens a receipt-style modal with a "Print at Snackbar" action
+// that re-queues the order via /api/orders/:id/reprint.
+
+// State for paging through days. The "oldestDayLoaded" is a Date pinned to
+// midnight in the user's local timezone — each "load more" decrements by 1d.
+let ordersLogState = {
+  oldestDayLoaded: null, // Date at local midnight of the earliest day shown
+  rowsById:        {},   // id → order object (for the view modal lookup)
+  currentlyViewing: null, // id of the order currently open in the modal
+};
+
+async function loadOrdersLogToday() {
+  // Reset state in case the tab is re-entered.
+  ordersLogState.oldestDayLoaded = startOfLocalDay(new Date());
+  ordersLogState.rowsById = {};
+  const body = document.getElementById('ordersLogBody');
+  if (body) body.innerHTML = '';
+  await fetchAndRenderOrdersForDay(ordersLogState.oldestDayLoaded, /* isToday */ true);
+}
+
+async function loadMoreOrdersDay() {
+  if (!ordersLogState.oldestDayLoaded) return;
+  const prev = new Date(ordersLogState.oldestDayLoaded);
+  prev.setDate(prev.getDate() - 1);
+  ordersLogState.oldestDayLoaded = prev;
+  await fetchAndRenderOrdersForDay(prev, /* isToday */ false);
+}
+
+async function fetchAndRenderOrdersForDay(day, isToday) {
+  const status      = document.getElementById('ordersLogStatus');
+  const loading     = document.getElementById('ordersLogLoading');
+  const empty       = document.getElementById('ordersLogEmpty');
+  const tableWrap   = document.getElementById('ordersLogTableWrap');
+  const body        = document.getElementById('ordersLogBody');
+  const loadMoreBtn = document.getElementById('ordersLogLoadMoreBtn');
+
+  if (loading) loading.style.display = '';
+  if (status)  status.textContent = `Loading ${formatDayLabel(day)}…`;
+  if (loadMoreBtn) loadMoreBtn.disabled = true;
+
+  // Day window: [00:00 of `day`, 00:00 of next day)
+  const from = day.getTime();
+  const next = new Date(day); next.setDate(next.getDate() + 1);
+  const to   = next.getTime();
+
+  let orders = [];
+  try {
+    const res = await apiFetch(`/api/orders/log?from=${from}&to=${to}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    orders = Array.isArray(data.orders) ? data.orders : [];
+  } catch (e) {
+    if (status) status.textContent = `Could not load orders for ${formatDayLabel(day)}: ${e.message}`;
+    if (loading) loading.style.display = 'none';
+    if (loadMoreBtn) loadMoreBtn.disabled = false;
+    return;
+  }
+
+  // Cache by id for the modal lookup
+  for (const o of orders) ordersLogState.rowsById[o.id] = o;
+
+  // Append rows. If no rows for this day AND it's the only day we've loaded
+  // (i.e. today is empty), show the "no orders today yet" hint.
+  if (body) {
+    // Day separator
+    const sep = document.createElement('tr');
+    sep.className = 'ot-day-sep';
+    sep.innerHTML = `<td colspan="5">${formatDayLabel(day)}${orders.length === 0 ? ' &middot; <span style="text-transform:none;letter-spacing:0;color:var(--cream-dim)">No orders</span>' : ''}</td>`;
+    body.appendChild(sep);
+
+    for (const o of orders) {
+      body.appendChild(renderOrderRow(o));
+    }
+  }
+
+  const totalRows = body ? body.querySelectorAll('tr:not(.ot-day-sep)').length : 0;
+  if (tableWrap) tableWrap.style.display = totalRows > 0 ? '' : 'none';
+  if (empty)     empty.style.display     = totalRows === 0 && isToday ? '' : 'none';
+
+  if (loading) loading.style.display = 'none';
+  if (loadMoreBtn) {
+    loadMoreBtn.style.display = '';
+    loadMoreBtn.disabled = false;
+    const nextDay = new Date(day); nextDay.setDate(nextDay.getDate() - 1);
+    loadMoreBtn.textContent = `Load orders from ${formatDayLabel(nextDay)}`;
+  }
+  if (status) status.textContent = `Showing orders from ${formatDayLabel(ordersLogState.oldestDayLoaded)} through today.`;
+}
+
+function renderOrderRow(o) {
+  const tr = document.createElement('tr');
+  const dateStr = new Date(o.created_at).toLocaleString('en-US', {
+    month: 'short', day: 'numeric',
+    hour: 'numeric', minute: '2-digit',
+  });
+  const totalStr = (o.total != null) ? `$${Number(o.total).toFixed(2)}` : '—';
+  const statusBadge = `<span class="ot-status s-${escapeHtml(o.status)}">${escapeHtml(o.status)}</span>`;
+
+  tr.innerHTML = `
+    <td class="ot-date">${escapeHtml(dateStr)}</td>
+    <td class="ot-name">${escapeHtml(o.customer_name || '—')}${statusBadge}</td>
+    <td class="ot-phone">${escapeHtml(o.customer_phone || '—')}</td>
+    <td class="ot-right ot-total">${totalStr}</td>
+    <td class="ot-right"><button class="btn-orders-log-view" data-id="${escapeHtml(o.id)}">View</button></td>
+  `;
+  tr.querySelector('button').addEventListener('click', () => openOrderModal(o.id));
+  return tr;
+}
+
+function openOrderModal(id) {
+  const o = ordersLogState.rowsById[id];
+  if (!o) return;
+  ordersLogState.currentlyViewing = id;
+
+  const modal = document.getElementById('orderViewModal');
+  const title = document.getElementById('orderViewTitle');
+  const body  = document.getElementById('orderViewBody');
+  if (!modal || !title || !body) return;
+
+  title.textContent = `Order ${id}`;
+  body.innerHTML = renderOrderModalBody(o);
+  modal.classList.add('visible');
+}
+
+function closeOrderModal() {
+  const modal = document.getElementById('orderViewModal');
+  if (modal) modal.classList.remove('visible');
+  ordersLogState.currentlyViewing = null;
+}
+
+function renderOrderModalBody(o) {
+  const p = o.payload || {};
+  const dateStr = new Date(o.created_at).toLocaleString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric',
+    hour: 'numeric', minute: '2-digit',
+  });
+  let html = '';
+
+  html += '<div class="ovb-meta">';
+  html += `<div class="k">Date</div><div>${escapeHtml(dateStr)}</div>`;
+  html += `<div class="k">Status</div><div><span class="ot-status s-${escapeHtml(o.status)}">${escapeHtml(o.status)}</span></div>`;
+  html += `<div class="k">Pickup</div><div>${escapeHtml(p.pickup_time || 'As soon as ready')}</div>`;
+  html += `<div class="k">Name</div><div>${escapeHtml(p.customer_name || '—')}</div>`;
+  if (p.customer_phone) html += `<div class="k">Phone</div><div>${escapeHtml(p.customer_phone)}</div>`;
+  if (p.notes)          html += `<div class="k">Notes</div><div>${escapeHtml(p.notes)}</div>`;
+  if (p._reprint_of)    html += `<div class="k">Reprint of</div><div>${escapeHtml(p._reprint_of)}</div>`;
+  if (o.print_error)    html += `<div class="k">Error</div><div style="color:rgba(240,160,150,0.95)">${escapeHtml(o.print_error)}</div>`;
+  html += '</div>';
+
+  html += '<div class="ovb-items">';
+  for (const it of (p.items || [])) {
+    html += `<div class="ovb-item-row"><span>${escapeHtml(it.name || '')}</span><span>$${Number(it.base_price || 0).toFixed(2)}</span></div>`;
+    for (const c of (it.choices || [])) {
+      html += `<div class="ovb-item-sub">&rsaquo; ${escapeHtml(c.name)}: ${escapeHtml(c.choice)}</div>`;
+    }
+    for (const opt of (it.options || [])) {
+      html += `<div class="ovb-item-sub">+ ${escapeHtml(opt)}</div>`;
+    }
+  }
+  html += '</div>';
+
+  html += '<div class="ovb-totals">';
+  if (p.subtotal != null) html += `<div class="tot-row"><span>Subtotal</span><span>$${Number(p.subtotal).toFixed(2)}</span></div>`;
+  if (p.tax      != null) html += `<div class="tot-row"><span>Tax${p.taxRate ? ` (${p.taxRate}%)` : ''}</span><span>$${Number(p.tax).toFixed(2)}</span></div>`;
+  if (p.total    != null) html += `<div class="tot-row grand"><span>Total</span><span>$${Number(p.total).toFixed(2)}</span></div>`;
+  html += '</div>';
+
+  return html;
+}
+
+async function reprintCurrentOrder() {
+  const id = ordersLogState.currentlyViewing;
+  if (!id) return;
+  const btn = document.getElementById('orderReprintBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+  try {
+    const res = await apiFetch(`/api/orders/${encodeURIComponent(id)}/reprint`, { method: 'POST' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    showToast(`Reprint queued (${data.id}).`);
+    closeOrderModal();
+    // Refresh today's orders to show the new reprint row.
+    loadOrdersLogToday();
+  } catch (e) {
+    showToast(`Could not reprint: ${e.message}`, true);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Print at Snackbar'; }
+  }
+}
+
+// Helpers — local to this section
+function startOfLocalDay(d) {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+function formatDayLabel(d) {
+  const today = startOfLocalDay(new Date());
+  const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+  if (d.getTime() === today.getTime())     return 'Today';
+  if (d.getTime() === yesterday.getTime()) return 'Yesterday';
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;',
+  }[c]));
+}
+
+// Esc key closes the order modal
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    const modal = document.getElementById('orderViewModal');
+    if (modal && modal.classList.contains('visible')) closeOrderModal();
+  }
+});
 
 async function saveOnlineOrdering(enabled) {
   if (!settingsData) return;

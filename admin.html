@@ -210,6 +210,32 @@
     </div>
   </div>
 
+  <div class="hours-section-title">Online Orders Log</div>
+  <div class="form-card" style="margin-bottom:28px">
+    <div id="ordersLogEmpty" style="display:none;color:var(--cream-dim);font-size:13px;padding:8px 0">
+      No orders today yet. Click below to load yesterday's.
+    </div>
+    <div class="orders-log-table-wrap" id="ordersLogTableWrap" style="display:none">
+      <table class="orders-log-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Name</th>
+            <th>Phone</th>
+            <th class="ot-right">Total</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="ordersLogBody"></tbody>
+      </table>
+    </div>
+    <div id="ordersLogLoading" style="color:var(--cream-dim);font-size:13px;padding:12px 0">Loading orders&hellip;</div>
+    <div class="form-actions" style="margin-top:14px;align-items:center;gap:14px">
+      <button class="btn-save" id="ordersLogLoadMoreBtn" onclick="loadMoreOrdersDay()" style="display:none">Load earlier orders</button>
+      <span id="ordersLogStatus" style="font-size:12px;color:var(--cream-dim)"></span>
+    </div>
+  </div>
+
   <div class="hours-section-title">Contact Form Bot Protection</div>
   <div class="form-card" style="margin-bottom:28px">
     <div class="form-group-full">
@@ -469,6 +495,17 @@
 </div>
 
 <!-- Confirm Modal -->
+<div class="modal-overlay" id="orderViewModal" onclick="if(event.target===this)closeOrderModal()">
+  <div class="modal-box" style="max-width:560px;width:92%">
+    <div class="modal-title" id="orderViewTitle">Order</div>
+    <div class="modal-body" id="orderViewBody" style="max-height:60vh;overflow-y:auto;padding-top:8px"></div>
+    <div class="modal-actions" style="margin-top:18px;gap:10px">
+      <button class="btn-save" id="orderReprintBtn" onclick="reprintCurrentOrder()">Print at Snackbar</button>
+      <button class="btn-confirm-cancel" onclick="closeOrderModal()">Close</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="deleteModal">
   <div class="modal-box">
     <div class="modal-title" id="deleteModalTitle">Delete?</div>
