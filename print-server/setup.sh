@@ -258,17 +258,23 @@ action_update_config() {
     info "Created .env from .env.example."
   fi
 
-  local cur_url cur_secret cur_printer cur_branch cur_chime
+  local cur_url cur_secret cur_printer cur_branch cur_chime cur_err_chime
   cur_url="$(read_env_var API_BASE_URL)"
   cur_secret="$(read_env_var PRINT_SERVER_SECRET)"
   cur_printer="$(read_env_var PRINTER_NAME)"
   cur_branch="$(read_env_var GIT_BRANCH)"
   cur_chime="$(read_env_var CHIME_CMD)"
+  cur_err_chime="$(read_env_var PRINTER_ERROR_CHIME_CMD)"
+
+  # Defaults reference the bundled WAV files in print-server/sounds/.
+  # These are committed to the repo so they're present on every install.
+  local DEFAULT_CHIME="aplay -q \"$PRINT_SERVER_DIR/sounds/order-chime.wav\""
+  local DEFAULT_ERR_CHIME="aplay -q \"$PRINT_SERVER_DIR/sounds/error-chime.wav\""
 
   info "Edit .env values. Press Enter to keep the current value."
   echo
 
-  local API_URL SECRET PRINTER BRANCH CHIME
+  local API_URL SECRET PRINTER BRANCH CHIME ERR_CHIME
   prompt API_URL "API_BASE_URL" "${cur_url:-https://esmeraldamarket.com}"
   while ! [[ "$API_URL" =~ ^https?://[^[:space:]]+$ ]]; do
     err "Must start with http:// or https://"
@@ -281,15 +287,17 @@ action_update_config() {
     prompt_secret SECRET "PRINT_SERVER_SECRET" "$cur_secret"
   done
 
-  prompt PRINTER "PRINTER_NAME (blank = system default)" "$cur_printer"
-  prompt BRANCH  "GIT_BRANCH"                            "${cur_branch:-main}"
-  prompt CHIME   "CHIME_CMD (blank to disable order chime)" "${cur_chime:-aplay -q /usr/share/sounds/alsa/Front_Center.wav}"
+  prompt PRINTER   "PRINTER_NAME (blank = system default)"        "$cur_printer"
+  prompt BRANCH    "GIT_BRANCH"                                   "${cur_branch:-main}"
+  prompt CHIME     "CHIME_CMD (blank to disable order chime)"     "${cur_chime:-$DEFAULT_CHIME}"
+  prompt ERR_CHIME "PRINTER_ERROR_CHIME_CMD (blank to disable)"   "${cur_err_chime:-$DEFAULT_ERR_CHIME}"
 
-  write_env_var API_BASE_URL          "$API_URL"
-  write_env_var PRINT_SERVER_SECRET   "$SECRET"
-  write_env_var PRINTER_NAME          "$PRINTER"
-  write_env_var GIT_BRANCH            "$BRANCH"
-  write_env_var CHIME_CMD             "$CHIME"
+  write_env_var API_BASE_URL            "$API_URL"
+  write_env_var PRINT_SERVER_SECRET     "$SECRET"
+  write_env_var PRINTER_NAME            "$PRINTER"
+  write_env_var GIT_BRANCH              "$BRANCH"
+  write_env_var CHIME_CMD               "$CHIME"
+  write_env_var PRINTER_ERROR_CHIME_CMD "$ERR_CHIME"
   ok "Saved $ENV_FILE"
 
   if [ -f "$SYSTEMD_UNIT" ] && [ "$(service_status)" = "active" ]; then

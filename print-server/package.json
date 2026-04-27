@@ -1,6 +1,6 @@
 {
   "name": "esmeralda-print-server",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "description": "Polling print server for Esmeralda Market snackbar order receipts. Pulls orders from the website API, prints them, sends heartbeats, monitors printer health (lpstat + stuck-queue + periodic probe), and self-updates from GitHub.",
   "main": "server.js",
   "scripts": {
