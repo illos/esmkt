@@ -3241,11 +3241,17 @@ function toggleSectionHidden(sectionId) {
 // The Print Server card in Settings. Shows server status (not configured /
 // offline / online) and offers a "require for orders" toggle. The print
 // server itself doesn't exist yet — this UI is scaffolding.
-async function loadPrintServerUI() {
+// Refreshes only the two status indicators (server + printer dots/text).
+// Pulled out of loadPrintServerUI() so the auto-refresh interval doesn't
+// clobber form fields the user might be typing in.
+async function refreshPrintServerStatus() {
   const statusDesc  = document.getElementById('printServerStatusDesc');
   const statusDot   = document.getElementById('printServerStatusDot');
   const printerDesc = document.getElementById('printerStatusDesc');
   const printerDot  = document.getElementById('printerStatusDot');
+  // Skip the network call entirely if the elements aren't on the page (e.g.
+  // user is on a different admin tab). Cheap, but no point doing it.
+  if (!statusDesc || !printerDesc) return;
 
   let data = null;
   try {
@@ -3256,6 +3262,7 @@ async function loadPrintServerUI() {
     if (statusDot)   statusDot.style.background  = 'rgba(230,120,110,0.9)';
     if (printerDesc) printerDesc.textContent = '—';
     if (printerDot)  printerDot.style.background = 'rgba(184,176,160,0.4)';
+    return;
   }
 
   // Print server line
@@ -3291,12 +3298,28 @@ async function loadPrintServerUI() {
       printerDot.style.background = 'rgba(230,120,110,0.9)';
     }
   }
+}
 
-  // Require-print-server toggle
+// Module-level so we don't double-register on repeat tab opens.
+let printServerRefreshTimer = null;
+
+async function loadPrintServerUI() {
+  // Live status — fetched immediately AND on a 30-second timer while the
+  // page is open. The timer only refreshes the indicators, never the form
+  // fields, so it's safe to fire while the user is typing.
+  // Cost: ~2.9k requests/day per open admin tab — well under the Cloudflare
+  // free-tier limits (100k/day Pages, 5M/day D1 reads).
+  await refreshPrintServerStatus();
+
+  if (!printServerRefreshTimer) {
+    printServerRefreshTimer = setInterval(refreshPrintServerStatus, 30 * 1000);
+  }
+
+  // One-time form-field population (re-runs on every Settings tab open,
+  // but never via the timer — so user typing isn't clobbered).
   const toggle = document.getElementById('printServerRequiredToggle');
   if (toggle && settingsData) toggle.checked = settingsData.printServerRequired === true;
 
-  // Form fields
   const alertEmailInput = document.getElementById('siPrintAlertEmail');
   const alertMinsInput  = document.getElementById('siPrintAlertMinutes');
   if (alertEmailInput && settingsData) alertEmailInput.value = settingsData.printServerAlertEmail || '';
