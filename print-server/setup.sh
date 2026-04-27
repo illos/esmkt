@@ -271,11 +271,18 @@ action_update_config() {
   local DEFAULT_CHIME="aplay -q \"$PRINT_SERVER_DIR/sounds/order-chime.wav\""
   local DEFAULT_ERR_CHIME="aplay -q \"$PRINT_SERVER_DIR/sounds/error-chime.wav\""
 
-  # If .env still holds an obsolete system-sound path from earlier versions
-  # of setup.sh, discard it so the new bundled-WAV default kicks in. Most
-  # of those system files don't exist on Lubuntu / minimal distros.
-  case "$cur_chime"     in *'/usr/share/sounds/alsa/'*|*'/usr/share/sounds/freedesktop/'*) cur_chime="" ;; esac
+  # If .env still holds an obsolete or malformed value from earlier runs,
+  # discard it so the new bundled-WAV default kicks in. Cases caught:
+  #  - obsolete /usr/share/sounds/* paths (don't exist on Lubuntu / minimal)
+  #  - a bare audio file path with no player command (the shell would try
+  #    to execute the .wav directly and fail with "Permission denied")
+  #
+  # The bare-path check requires no whitespace, so legitimate custom commands
+  # like "ffplay -nodisp /custom/sound.mp3" are kept untouched.
+  case "$cur_chime"     in *'/usr/share/sounds/alsa/'*|*'/usr/share/sounds/freedesktop/'*) cur_chime=""     ;; esac
   case "$cur_err_chime" in *'/usr/share/sounds/alsa/'*|*'/usr/share/sounds/freedesktop/'*) cur_err_chime="" ;; esac
+  if [[ "$cur_chime"     =~ ^[^[:space:]]+\.(wav|oga|ogg|mp3|flac)$ ]]; then cur_chime="";     fi
+  if [[ "$cur_err_chime" =~ ^[^[:space:]]+\.(wav|oga|ogg|mp3|flac)$ ]]; then cur_err_chime=""; fi
 
   info "Edit .env values. Press Enter to keep the current value."
   echo
