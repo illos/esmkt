@@ -70,15 +70,22 @@ const PRINTER_NAME          = getPrinterArg() || process.env.PRINTER_NAME || '';
 const POLL_INTERVAL_MS      = parseIntDefault(process.env.POLL_INTERVAL_MS,      5_000);
 const HEARTBEAT_INTERVAL_MS = parseIntDefault(process.env.HEARTBEAT_INTERVAL_MS, 30_000);
 const UPDATER_INTERVAL_MS   = parseIntDefault(process.env.UPDATER_INTERVAL_MS,   10 * 60 * 1000);
+// Bundled sound files (in print-server/sounds/) — work on any Linux distro
+// without depending on system sound themes. aplay is part of alsa-utils,
+// which the setup script installs.
+const SOUNDS_DIR            = path.join(__dirname, 'sounds');
+const DEFAULT_ORDER_WAV     = path.join(SOUNDS_DIR, 'order-chime.wav');
+const DEFAULT_ERROR_WAV     = path.join(SOUNDS_DIR, 'error-chime.wav');
+
 const CHIME_CMD             = process.env.CHIME_CMD == null
-                                ? 'aplay -q /usr/share/sounds/alsa/Front_Center.wav'
+                                ? `aplay -q "${DEFAULT_ORDER_WAV}"`
                                 : process.env.CHIME_CMD;
 // Played immediately when the printer transitions from ready → unready,
 // then every PRINTER_ERROR_CHIME_INTERVAL_MS while it stays unready.
 // More urgent sound than the order chime by default. CHIME_CMD="" disables
 // both; PRINTER_ERROR_CHIME_CMD="" disables only the error chime.
 const PRINTER_ERROR_CHIME_CMD          = process.env.PRINTER_ERROR_CHIME_CMD == null
-  ? 'paplay /usr/share/sounds/freedesktop/stereo/dialog-warning.oga'
+  ? `aplay -q "${DEFAULT_ERROR_WAV}"`
   : process.env.PRINTER_ERROR_CHIME_CMD;
 const PRINTER_ERROR_CHIME_INTERVAL_MS  = parseIntDefault(process.env.PRINTER_ERROR_CHIME_INTERVAL_MS, 3 * 60 * 1000);
 // Default CUPS queue name that we'll lpstat. If PRINTER_NAME is set, use
