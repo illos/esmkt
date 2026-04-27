@@ -41,6 +41,13 @@ const path = require('path');
 // ── load .env (no dependency) ───────────────────────────────────────────────
 loadEnvFile(path.join(__dirname, '.env'));
 
+// ── module-level state ──────────────────────────────────────────────────────
+// Declared up here (not where they're used) because the loop-start calls
+// below trigger pollOnce()/heartbeatOnce() synchronously, and those would
+// hit the temporal dead zone if the `let` declarations were further down.
+let polling = false;
+let heartbeatFailures = 0;
+
 // ── version ─────────────────────────────────────────────────────────────────
 const VERSION = readPackageVersion();
 
@@ -99,8 +106,6 @@ setInterval(() => {}, 1 << 30);
 // HEARTBEAT
 // ════════════════════════════════════════════════════════════════════════════
 
-let heartbeatFailures = 0;
-
 async function runHeartbeatLoop() {
   // Fire one immediately so the website learns we're back fast on restart.
   await heartbeatOnce();
@@ -130,8 +135,6 @@ async function heartbeatOnce() {
 // ════════════════════════════════════════════════════════════════════════════
 // POLL → PRINT
 // ════════════════════════════════════════════════════════════════════════════
-
-let polling = false;
 
 async function runPollLoop() {
   await pollOnce();
