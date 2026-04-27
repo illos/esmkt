@@ -609,10 +609,10 @@ function formatReceipt(order) {
   out += row(order.taxRate ? `Tax (${order.taxRate}%)` : 'Tax', `$${Number(order.tax || 0).toFixed(2)}`) + '\n';
   out += WIDE + '\n';
   out += row('TOTAL', `$${Number(order.total || 0).toFixed(2)}`) + '\n';
-  out += WIDE + '\n\n';
-  out += center('Thank you for stopping by!') + '\n';
-  out += center('Ride safe out there.') + '\n';
-  out += '\n\n\n'; // feed paper
+  out += WIDE + '\n';
+  // Trailing blank lines so the printer feeds enough paper that the TOTAL
+  // line clears the tear bar and isn't cut off when the receipt is torn.
+  out += '\n\n\n\n\n\n\n';
   return out;
 }
 
