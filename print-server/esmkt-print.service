@@ -34,6 +34,16 @@ Group=esmkt
 WorkingDirectory=/home/esmkt/esmkt/print-server
 ExecStart=/usr/bin/node /home/esmkt/esmkt/print-server/server.js
 
+# Audio access — point at the desktop user's PulseAudio socket so `aplay`
+# (used by the order/error chimes) can reach the same audio device the
+# desktop session uses. %U expands to the numeric UID of the User= above
+# at service-start time. PulseAudio's per-user socket lives in
+# /run/user/<UID>/pulse/native; this works as long as the user is logged in
+# (auto-login on Lubuntu satisfies that). If the user isn't logged in,
+# chimes fail silently — the printer / heartbeat / etc. all still work.
+Environment="XDG_RUNTIME_DIR=/run/user/%U"
+Environment="PULSE_SERVER=unix:/run/user/%U/pulse/native"
+
 # The auto-updater exits with code 0 when it pulls new code; systemd
 # restarts us within RestartSec.
 Restart=always
