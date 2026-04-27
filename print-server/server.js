@@ -53,6 +53,12 @@ let lastPrinterStatus = null; // { state, reasons, enabled, queued_jobs, ready }
 // Used by the error-chime timer to decide whether to play the immediate
 // "first time bad" chime (vs. the periodic repeat).
 let lastPrinterReady = true;
+// Stuck-queue detection: timestamp (ms) when we first observed >0 pending
+// jobs in the CUPS queue. Cleared whenever the queue drains. If this stays
+// non-zero longer than STUCK_JOB_THRESHOLD_MS, we flip the printer to unready.
+// This is necessary because raw CUPS queues + simple thermal printers don't
+// surface paper-out / jam via lpstat — they just stop accepting jobs.
+let jobsStuckSince = 0;
 
 // ── version ─────────────────────────────────────────────────────────────────
 const VERSION = readPackageVersion();
@@ -78,6 +84,10 @@ const PRINTER_ERROR_CHIME_INTERVAL_MS  = parseIntDefault(process.env.PRINTER_ERR
 // Default CUPS queue name that we'll lpstat. If PRINTER_NAME is set, use
 // that. Otherwise fall back to whatever lpstat -d says is the default.
 const PRINTER_QUEUE_NAME    = PRINTER_NAME || '';
+// How long a print job may sit in the queue before we treat the printer
+// as stuck. Calibrated for thermal receipt printers (jobs normally complete
+// in <5s). Set to 0 to disable queue-based detection.
+const STUCK_JOB_THRESHOLD_MS = parseIntDefault(process.env.STUCK_JOB_THRESHOLD_MS, 30_000);
 const LOG_FILE              = process.env.LOG_FILE || path.join(__dirname, 'orders.log');
 const GIT_BRANCH            = process.env.GIT_BRANCH || 'main';
 
@@ -406,16 +416,33 @@ async function collectPrinterStatus() {
     exec(cmd, { timeout: 5000 }, (err, stdout) => {
       if (err) return resolve(null);
       const status = parseLpstatOutput(String(stdout || ''));
-      // Best-effort queued jobs count
-      exec(queue ? `lpstat -W not-completed -P "${queue.replace(/"/g, '\\"')}" 2>/dev/null` : 'lpstat -W not-completed 2>/dev/null',
-        { timeout: 5000 },
-        (_jerr, jstdout) => {
-          const lines = String(jstdout || '').split(/\r?\n/).filter(Boolean);
-          status.queued_jobs = lines.length;
-          status.ready = computeReady(status);
-          resolve(status);
+      // Pending jobs query — `lpstat -o <queue>` lists pending jobs only.
+      const jobsCmd = queue ? `lpstat -o "${queue.replace(/"/g, '\\"')}" 2>/dev/null` : 'lpstat -o 2>/dev/null';
+      exec(jobsCmd, { timeout: 5000 }, (_jerr, jstdout) => {
+        const lines = String(jstdout || '').split(/\r?\n/).filter(Boolean);
+        status.queued_jobs = lines.length;
+
+        // Stuck-queue overlay: if there are jobs and they've been there
+        // longer than STUCK_JOB_THRESHOLD_MS, treat the printer as unready.
+        // This is the canonical signal for raw queues, where CUPS itself
+        // doesn't know paper-out / jam / cover-open.
+        const now = Date.now();
+        if (status.queued_jobs > 0) {
+          if (jobsStuckSince === 0) jobsStuckSince = now;
+          const stuckFor = now - jobsStuckSince;
+          if (STUCK_JOB_THRESHOLD_MS > 0 && stuckFor >= STUCK_JOB_THRESHOLD_MS) {
+            // Inject the synthetic reason and force unready
+            if (!status.reasons.includes('queue-stuck-error')) {
+              status.reasons = (status.reasons || []).filter(r => r !== 'none').concat(['queue-stuck-error']);
+            }
+          }
+        } else {
+          jobsStuckSince = 0;
         }
-      );
+
+        status.ready = computeReady(status);
+        resolve(status);
+      });
     });
   });
 }

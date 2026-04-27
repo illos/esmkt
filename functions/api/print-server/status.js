@@ -130,6 +130,7 @@ function humanizeReasons(reasons, state, enabled) {
   if (state === 'stopped') return 'Printer stopped';
   for (const r of reasons) {
     if (!r || r === 'none') continue;
+    if (r.includes('queue-stuck'))   return 'Printer not responding (likely out of paper / jam / cover open)';
     if (r.includes('media-empty'))   return 'Out of paper';
     if (r.includes('media-jam'))     return 'Paper jam';
     if (r.includes('cover-open'))    return 'Cover open';
