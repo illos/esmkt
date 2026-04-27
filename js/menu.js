@@ -206,7 +206,7 @@ async function checkSnackbarHours() {
   if (orderingEl) {
     if (!onlineOrderingEnabled) {
       orderingEl.style.display = '';
-      orderingEl.innerHTML = `<span class="status-card-icon">&#10022;</span><span class="status-card-title">Online ordering closed</span><span class="status-card-sub">Call to order &nbsp;&middot;&nbsp; ${sitePhone}</span>`;
+      orderingEl.innerHTML = `<span class="status-card-icon">&#10022;</span><span class="status-card-title">Online ordering unavailable</span><span class="status-card-sub">Please call to place orders &nbsp;&middot;&nbsp; ${sitePhone}</span>`;
     } else {
       orderingEl.style.display = 'none';
     }
@@ -232,7 +232,7 @@ async function checkSnackbarHours() {
         orderingOpen = false;
         if (orderingEl) {
           orderingEl.style.display = '';
-          orderingEl.innerHTML = `<span class="status-card-icon">&#10022;</span><span class="status-card-title">Snackbar offline</span><span class="status-card-sub">We can't accept new orders right now &nbsp;&middot;&nbsp; ${sitePhone}</span>`;
+          orderingEl.innerHTML = `<span class="status-card-icon">&#10022;</span><span class="status-card-title">Online ordering unavailable</span><span class="status-card-sub">Please call to place orders &nbsp;&middot;&nbsp; ${sitePhone}</span>`;
         }
       }
     } catch (_) {

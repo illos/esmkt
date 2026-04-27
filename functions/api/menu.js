@@ -169,19 +169,31 @@ async function getMenuData(env) {
   // ── Migrate items: rename old field names and ensure new fields exist ────
   // Old schema: addons=string[], defaultAddons=string[], options=object[]
   // New schema: options=string[], defaultOptions=string[], choices=object[]
+  //
+  // BUG HISTORY: an earlier version of this branch destructured the new
+  // fields out into locals and then returned `{ options: [], ..., ...rest }`,
+  // which clobbered every item's options/choices on every read because the
+  // destructured locals were never spread back in. That corrupted KV on
+  // subsequent saves (any menu PUT/POST round-trips through this migration).
+  // The fix below explicitly preserves the destructured locals.
   data.items = data.items.map(item => {
     const { addons, defaultAddons, options, choices, defaultOptions, ...rest } = item;
     if (addons !== undefined) {
       // Old-format item — rename fields
       return {
         ...rest,
-        options:        addons        || [],
-        defaultOptions: defaultAddons || [],
-        choices:        options       || [],
+        options:        Array.isArray(addons)        ? addons        : [],
+        defaultOptions: Array.isArray(defaultAddons) ? defaultAddons : [],
+        choices:        Array.isArray(options)       ? options       : [],
       };
     }
-    // Already new-format — ensure fields exist
-    return { options: [], defaultOptions: [], choices: [], ...rest };
+    // Already new-format — preserve existing arrays, default to [] only if missing.
+    return {
+      ...rest,
+      options:        Array.isArray(options)        ? options        : [],
+      defaultOptions: Array.isArray(defaultOptions) ? defaultOptions : [],
+      choices:        Array.isArray(choices)        ? choices        : [],
+    };
   });
 
   return data;
