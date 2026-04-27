@@ -941,6 +941,10 @@ async function loadSettings() {
   const tax = document.getElementById('siDeliTax');
   if (tax && settingsData.deliTax != null) tax.value = settingsData.deliTax;
 
+  // Restrict-to-snackbar-hours toggle
+  const onlyDuring = document.getElementById('ordersOnlyDuringHoursToggle');
+  if (onlyDuring) onlyDuring.checked = settingsData.ordersOnlyDuringSnackbarHours !== false;
+
   // Turnstile
   const ts = document.getElementById('siTurnstileKey');
   if (ts) ts.value = settingsData.turnstileSiteKey ?? '';
@@ -964,6 +968,28 @@ async function saveOnlineOrdering(enabled) {
   } catch(e) {
     showToast(e.message, true);
     updateOrderingUI(!enabled);
+  }
+}
+
+// Toggles whether the menu page enforces snackbar hours as a gate on
+// accepting orders. Default true; turn off to allow 24/7 pre-orders.
+async function saveOrdersOnlyDuringSnackbarHours(enabled) {
+  if (!settingsData) return;
+  try {
+    const res = await apiFetch('/api/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ordersOnlyDuringSnackbarHours: enabled }),
+    });
+    if (!res.ok) throw new Error('Save failed');
+    settingsData.ordersOnlyDuringSnackbarHours = enabled;
+    showToast(enabled
+      ? 'Orders are now restricted to snackbar hours.'
+      : 'Orders are now accepted any time.');
+  } catch (e) {
+    showToast(e.message, true);
+    const t = document.getElementById('ordersOnlyDuringHoursToggle');
+    if (t) t.checked = !enabled;
   }
 }
 

@@ -144,13 +144,25 @@
     <div style="height:1px;background:var(--charcoal-border);margin:0 -14px 20px"></div>
 
     <!-- Online ordering toggle with live status -->
-    <div class="ordering-status-bar" style="margin-bottom:20px">
+    <div class="ordering-status-bar" style="margin-bottom:14px">
       <div class="ordering-status-left">
         <span class="ordering-status-label">Online Ordering</span>
         <span class="ordering-status-desc" id="orderingStatusDesc">Enabled</span>
       </div>
       <label class="toggle-switch">
         <input type="checkbox" id="onlineOrderingToggle" checked onchange="saveOnlineOrdering(this.checked)"/>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
+    <!-- Restrict orders to snackbar hours -->
+    <div class="ordering-status-bar" style="margin-bottom:20px">
+      <div class="ordering-status-left">
+        <span class="ordering-status-label">Only Allow Orders During Snackbar Hours</span>
+        <span class="ordering-status-desc" id="ordersOnlyDuringHoursDesc">When on, online ordering is blocked outside the snackbar hours above.</span>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="ordersOnlyDuringHoursToggle" checked onchange="saveOrdersOnlyDuringSnackbarHours(this.checked)"/>
         <span class="toggle-slider"></span>
       </label>
     </div>

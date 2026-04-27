@@ -39,6 +39,9 @@ const DEFAULT_SETTINGS = {
     closed: i === 6,   // Sunday closed
   })),
   onlineOrdering:  true,
+  // When true, the menu page refuses new orders outside of snackbar hours.
+  // When false, customers can place orders 24/7 (subject to the other gates).
+  ordersOnlyDuringSnackbarHours: true,
   phone:           '775-572-3200',
   deliTax:         0,
   heroDescription: 'Your full-service desert outpost in Fish Lake Valley — gas up, stock the cooler, and grab a scratch-made snackbar sandwich before hitting the open road.',
@@ -84,6 +87,7 @@ export async function onRequestPut({ request, env }) {
     ...(body.storeHours     !== undefined && { storeHours:     validateHours(body.storeHours) }),
     ...(body.deliHours      !== undefined && { deliHours:      validateHours(body.deliHours) }),
     ...(body.onlineOrdering !== undefined && { onlineOrdering: body.onlineOrdering !== false }),
+    ...(body.ordersOnlyDuringSnackbarHours !== undefined && { ordersOnlyDuringSnackbarHours: body.ordersOnlyDuringSnackbarHours !== false }),
     ...(body.phone          !== undefined && { phone:          String(body.phone).trim() }),
     ...(body.deliTax        !== undefined && { deliTax:        parseFloat(body.deliTax) || 0 }),
     ...(body.heroDescription !== undefined && { heroDescription: String(body.heroDescription) }),
@@ -123,6 +127,7 @@ function migrateSettings(data) {
     storeHours:      merge(data.storeHours, DEFAULT_SETTINGS.storeHours),
     deliHours:       merge(data.deliHours,  DEFAULT_SETTINGS.deliHours),
     onlineOrdering:  data.onlineOrdering !== false,
+    ordersOnlyDuringSnackbarHours: data.ordersOnlyDuringSnackbarHours !== false,
     phone:           data.phone           ?? DEFAULT_SETTINGS.phone,
     deliTax:         typeof data.deliTax === 'number' ? data.deliTax : DEFAULT_SETTINGS.deliTax,
     heroDescription: data.heroDescription ?? DEFAULT_SETTINGS.heroDescription,

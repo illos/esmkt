@@ -30,6 +30,7 @@ let onlineOrderingEnabled = true;  // loaded from /api/settings
 let sitePhone = '775-572-3200';    // loaded from /api/settings
 let snackbarTaxRate = 0;            // loaded from /api/settings (0–100, percent)
 let printServerRequired = false;   // loaded from /api/settings — when true, ordering is gated on print-server liveness
+let ordersOnlyDuringSnackbarHours = true; // loaded from /api/settings — when false, allow pre-orders 24/7
 
 // ─── BOOT ────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
@@ -81,6 +82,7 @@ async function initMenu() {
       }
       onlineOrderingEnabled = sData.onlineOrdering !== false;
       printServerRequired   = sData.printServerRequired === true;
+      ordersOnlyDuringSnackbarHours = sData.ordersOnlyDuringSnackbarHours !== false;
       if (sData.phone)    sitePhone       = sData.phone;
       if (typeof sData.deliTax === 'number') snackbarTaxRate = sData.deliTax;
 
@@ -210,7 +212,12 @@ async function checkSnackbarHours() {
     }
   }
 
-  orderingOpen = snackbarIsOpen && onlineOrderingEnabled;
+  // Gate 1: online ordering toggle (master kill-switch).
+  // Gate 2: snackbar hours, but only if the owner has chosen to enforce them.
+  //         When ordersOnlyDuringSnackbarHours is false, accept orders 24/7
+  //         (useful for pre-orders / overnight queueing).
+  orderingOpen = onlineOrderingEnabled
+              && (snackbarIsOpen || !ordersOnlyDuringSnackbarHours);
 
   // ─── Print-server gate ───────────────────────────────────────────────────
   // If the owner has toggled "Require Print Server for Orders" on in admin
